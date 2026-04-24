@@ -1,20 +1,12 @@
 <script setup>
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import axios from 'axios';
 import { 
-    Search, 
-    UserPlus, 
-    Plus, 
-    ClipboardList, 
-    Stethoscope, 
-    Calendar,
-    MousePointer2,
-    RotateCcw,
-    FileText,
-    Activity,
-    CreditCard
+    Search, UserPlus, Plus, ClipboardList, Stethoscope, 
+    Calendar, MousePointer2, RotateCcw, FileText, Activity, 
+    CreditCard, Users
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -24,8 +16,8 @@ const props = defineProps({
     agendamentos: Array
 });
 
-const form = ref({
-    codigo: '',
+const form = useForm({
+    IdPaciente: '',
     nome: '',
     filiacao_pai: '',
     filiacao_mae: '',
@@ -35,10 +27,10 @@ const form = ref({
     sexo: 'MASCULINO',
     endereco: '',
     tipo_paciente: 'Particular',
-    seguradora: '',
-    consulta: '',
-    medico: '',
-    id_paciente_real: null
+    IdSeguradora: '',
+    IdConsulta: '',
+    IdMedico: '',
+    DataAgendamento: new Date().toISOString().split('T')[0],
 });
 
 const searchLoading = ref(false);
@@ -51,13 +43,28 @@ const buscarPaciente = async () => {
         const response = await axios.post(route('hospitalar.recepcao.search'), { term: searchTerm.value });
         if (response.data && response.data.length > 0) {
             const p = response.data[0];
-            form.value.id_paciente_real = p.Id;
-            form.value.codigo = p.Id;
-            form.value.nome = p.Nome;
-            form.value.telefone = p.Telefone;
-            form.value.endereco = p.Endereco;
+            form.IdPaciente = p.Codigo;
+            form.nome = p.Nome;
+            form.telefone = p.Telefone || '';
+            form.endereco = p.Endereco || '';
+            form.filiacao_pai = p.Pai || '';
+            form.filiacao_mae = p.Mae || '';
+            form.sexo = p.Genero || 'MASCULINO';
+            
+            // Calculate age if birthdate exists
+            if (p.DataNascimento) {
+                const birth = new Date(p.DataNascimento);
+                const today = new Date();
+                let age = today.getFullYear() - birth.getFullYear();
+                const m = today.getMonth() - birth.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+                    age--;
+                }
+                form.idade = age;
+                form.data_nascimento = p.DataNascimento;
+            }
         } else {
-            alert('Paciente não encontrado');
+            alert('Paciente não encontrado. Certifique-se que o paciente está registado.');
         }
     } catch (error) {
         console.error(error);
@@ -67,23 +74,29 @@ const buscarPaciente = async () => {
 };
 
 const agendarConsulta = () => {
-    if (!form.value.id_paciente_real) {
-        alert('Selecione um paciente primeiro');
+    if (!form.IdPaciente) {
+        alert('Selecione um paciente primeiro através da busca.');
         return;
     }
 
-    const data = {
-        IdPaciente: form.value.id_paciente_real,
-        IdMedico: form.value.medico,
-        IdConsulta: form.value.consulta,
-        DataAgendamento: form.value.data_nascimento,
-        IdSeguradora: form.value.tipo_paciente === 'Assegurado' ? form.value.seguradora : null,
-    };
-
-    router.post(route('hospitalar.recepcao.store'), data, {
-        onSuccess: () => alert('Consulta agendada com sucesso!'),
-        onError: (err) => console.log(err)
+    form.post(route('hospitalar.recepcao.store'), {
+        onSuccess: () => {
+            alert('Admissão realizada com sucesso!');
+            form.reset();
+            form.DataAgendamento = new Date().toISOString().split('T')[0];
+            searchTerm.value = '';
+        },
+        onError: (err) => {
+            console.error(err);
+            alert('Erro ao realizar agendamento.');
+        }
     });
+};
+
+const limparForm = () => {
+    form.reset();
+    searchTerm.value = '';
+    form.DataAgendamento = new Date().toISOString().split('T')[0];
 };
 </script>
 
@@ -103,9 +116,12 @@ const agendarConsulta = () => {
                 <p class="text-blue-200 text-sm font-medium tracking-wide mt-1">Recepção Hospitalar AGEOS</p>
             </div>
             <div class="relative z-10 flex items-center space-x-4">
-                <div class="bg-white/10 px-4 py-2 rounded-xl backdrop-blur-md border border-white/20">
-                    <span class="text-xs text-blue-200 block uppercase font-bold tracking-wider">Sistema</span>
-                    <span class="text-sm font-bold flex items-center"><span class="w-2 h-2 rounded-full bg-green-400 mr-2 animate-pulse"></span>Online</span>
+                <div class="text-right border-r border-white/10 pr-4">
+                    <p class="text-[10px] font-black uppercase text-blue-300">Data de Hoje</p>
+                    <p class="text-sm font-bold">{{ new Date().toLocaleDateString('pt-PT') }}</p>
+                </div>
+                <div class="bg-white/10 p-2 rounded-xl backdrop-blur-md border border-white/10">
+                    <Calendar class="w-6 h-6" />
                 </div>
             </div>
         </div>
@@ -126,30 +142,29 @@ const agendarConsulta = () => {
                         <div class="flex items-center space-x-3">
                             <div class="relative">
                                 <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input v-model="searchTerm" @keyup.enter="buscarPaciente" placeholder="Nome ou ID..." class="pl-9 pr-4 py-2 border-gray-200 rounded-lg text-xs w-48 focus:ring-blue-500 focus:border-blue-500 transition-shadow bg-gray-50 hover:bg-white" />
+                                <input v-model="searchTerm" @keyup.enter="buscarPaciente" placeholder="Código (Ex: PC001), Nome ou NIF..." class="pl-9 pr-4 py-2 border-gray-200 rounded-lg text-xs w-64 focus:ring-blue-500 focus:border-blue-500 transition-shadow bg-gray-50 hover:bg-white" />
                             </div>
                             <button @click="buscarPaciente" :disabled="searchLoading" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors disabled:opacity-50 flex items-center shadow-md shadow-blue-500/20">
                                 <span v-if="searchLoading" class="w-3 h-3 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
                                 BUSCAR
                             </button>
-                            <button class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center shadow-md">
-                                <UserPlus class="w-3.5 h-3.5 mr-2" /> NOVO
+                            <button @click="limparForm" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-lg text-xs font-bold transition-colors">
+                                <RotateCcw class="w-3.5 h-3.5" />
                             </button>
                         </div>
                     </div>
 
-                    <!-- Form Grid -->
-                    <div class="space-y-4">
-                        
+                    <form @submit.prevent="agendarConsulta" class="space-y-4">
                         <!-- Row 1 -->
                         <div class="grid grid-cols-12 gap-4 items-center">
-                            <div class="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wide">Código</div>
-                            <div class="col-span-3">
-                                <input v-model="form.codigo" readonly class="w-full bg-gray-50 border-gray-200 rounded-lg px-3 py-2 text-xs font-black text-gray-700 focus:ring-0" placeholder="Auto" />
+                            <div class="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wide">Identificação</div>
+                            <div class="col-span-2 relative">
+                                <span class="absolute -top-2 left-3 bg-white px-1 text-[9px] font-bold text-gray-400">Código</span>
+                                <input v-model="form.IdPaciente" readonly class="w-full border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 font-bold text-blue-600" />
                             </div>
-                            <div class="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wide pl-2">Nome</div>
-                            <div class="col-span-5">
-                                <input v-model="form.nome" class="w-full border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-blue-500 focus:border-blue-500 transition-colors" placeholder="Nome completo do paciente" />
+                            <div class="col-span-8 relative">
+                                <span class="absolute -top-2 left-3 bg-white px-1 text-[9px] font-bold text-gray-400">Nome Completo</span>
+                                <input v-model="form.nome" readonly class="w-full border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 font-bold" />
                             </div>
                         </div>
 
@@ -180,8 +195,8 @@ const agendarConsulta = () => {
                             <div class="col-span-1 text-xs font-bold text-gray-600 uppercase tracking-wide pl-2">Sexo</div>
                             <div class="col-span-2">
                                 <select v-model="form.sexo" class="w-full border-gray-200 rounded-lg px-2 py-2 text-xs focus:ring-blue-500 focus:border-blue-500">
-                                    <option>MASCULINO</option>
-                                    <option>FEMININO</option>
+                                    <option value="MASCULINO">MASCULINO</option>
+                                    <option value="FEMININO">FEMININO</option>
                                 </select>
                             </div>
                         </div>
@@ -191,7 +206,6 @@ const agendarConsulta = () => {
                             <div class="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wide">Endereço</div>
                             <div class="col-span-10 flex space-x-2">
                                 <input v-model="form.endereco" class="flex-grow border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-blue-500 focus:border-blue-500" placeholder="Morada do paciente" />
-                                <button class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 rounded-lg text-xs font-bold transition-colors">N/A</button>
                             </div>
                         </div>
 
@@ -222,77 +236,45 @@ const agendarConsulta = () => {
                         <div class="grid grid-cols-12 gap-4 items-center">
                             <div class="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wide">Seguradora</div>
                             <div class="col-span-10 flex space-x-2">
-                                <select v-model="form.seguradora" :disabled="form.tipo_paciente !== 'Assegurado'" class="flex-grow border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-400">
+                                <select v-model="form.IdSeguradora" :disabled="form.tipo_paciente !== 'Assegurado'" class="flex-grow border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-400">
                                     <option value="">Selecione uma seguradora...</option>
                                     <option v-for="s in props.seguradoras" :key="s.Id" :value="s.Id">{{ s.Nome }}</option>
                                 </select>
-                                <button class="bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 px-3 rounded-lg flex items-center transition-colors">
-                                    <Plus class="w-4 h-4 text-green-500" />
-                                </button>
                             </div>
                         </div>
 
                         <div class="grid grid-cols-12 gap-4 items-center">
                             <div class="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wide">Consulta</div>
                             <div class="col-span-10 flex space-x-2">
-                                <select v-model="form.consulta" class="flex-grow border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-blue-500 focus:border-blue-500">
+                                <select v-model="form.IdConsulta" class="flex-grow border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">Selecione o tipo de consulta...</option>
                                     <option v-for="c in props.consultas" :key="c.Id" :value="c.Id">{{ c.Descricao }} - {{ c.Valor }} KZ</option>
                                 </select>
-                                <button class="bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 px-3 rounded-lg flex items-center transition-colors">
-                                    <Plus class="w-4 h-4 text-green-500" />
-                                </button>
                             </div>
                         </div>
 
                         <div class="grid grid-cols-12 gap-4 items-center">
                             <div class="col-span-2 text-xs font-bold text-gray-600 uppercase tracking-wide">Médico</div>
                             <div class="col-span-10 flex space-x-2">
-                                <select v-model="form.medico" class="flex-grow border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-blue-500 focus:border-blue-500">
+                                <select v-model="form.IdMedico" class="flex-grow border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">Selecione o médico...</option>
                                     <option v-for="m in props.medicos" :key="m.Id" :value="m.Id">{{ m.Nome }}</option>
                                 </select>
-                                <button class="bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 px-3 rounded-lg flex items-center transition-colors">
-                                    <Plus class="w-4 h-4 text-green-500" />
-                                </button>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <!-- Action Panel ("Opções") -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                     <h3 class="text-sm font-black uppercase tracking-widest text-gray-800 flex items-center mb-6">
-                        <Activity class="w-4 h-4 mr-2 text-blue-500" /> AÇÕES E PROCESSAMENTO
-                     </h3>
-                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <button class="flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-blue-50 border border-gray-100 hover:border-blue-200 rounded-xl transition-all group">
-                            <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm mb-2 group-hover:scale-110 transition-transform">
-                                <CreditCard class="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
-                            </div>
-                            <span class="text-[10px] font-bold text-gray-600 uppercase text-center">Solicitar<br/>Serviços</span>
-                        </button>
-                        <button class="flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-blue-50 border border-gray-100 hover:border-blue-200 rounded-xl transition-all group">
-                            <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm mb-2 group-hover:scale-110 transition-transform">
-                                <FileText class="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
-                            </div>
-                            <span class="text-[10px] font-bold text-gray-600 uppercase text-center">Exame<br/>Externo</span>
-                        </button>
-                        <button @click="agendarConsulta" class="flex flex-col items-center justify-center p-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-1 group">
-                            <Calendar class="w-6 h-6 mb-2" />
-                            <span class="text-[10px] font-black uppercase tracking-wider text-center text-blue-50">Agendar<br/>Consulta</span>
-                        </button>
-                        <button class="flex flex-col items-center justify-center p-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-lg shadow-emerald-500/30 transition-all hover:-translate-y-1 group">
-                            <Stethoscope class="w-6 h-6 mb-2" />
-                            <span class="text-[10px] font-black uppercase tracking-wider text-center text-emerald-50">Enviar para<br/>Triagem</span>
-                        </button>
-                     </div>
+                        <div class="mt-8 flex justify-end">
+                            <button type="submit" :disabled="form.processing" class="bg-gray-800 hover:bg-gray-900 text-white px-10 py-3 rounded-xl font-black text-sm transition-all shadow-lg flex items-center">
+                                <span v-if="form.processing" class="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                ADMITIR PACIENTE
+                            </button>
+                        </div>
+                    </form>
                 </div>
-
             </div>
 
-            <!-- Right Column: Tables and Others (5 cols) -->
-            <div class="lg:col-span-5 flex flex-col space-y-6">
+            <!-- Right Column: Queue & Stats (5 cols) -->
+            <div class="lg:col-span-5 space-y-6">
                 
                 <!-- Main Table Section ("Consultas Marcadas") -->
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col flex-grow min-h-[400px]">
@@ -316,7 +298,7 @@ const agendarConsulta = () => {
                                 <div class="flex justify-between items-start pl-3">
                                     <div>
                                         <p class="text-xs font-black text-gray-800 uppercase">{{ agenda.PacienteNome }}</p>
-                                        <p class="text-[10px] text-gray-500 font-medium mt-0.5">{{ agenda.Consulta }} • Dr(a). {{ agenda.Medico || 'N/A' }}</p>
+                                        <p class="text-[10px] text-gray-500 font-medium mt-0.5">{{ agenda.Consulta }}</p>
                                     </div>
                                     <span :class="{
                                         'bg-blue-50 text-blue-700 border-blue-200': agenda.Situacao === 'Triagem',
@@ -328,7 +310,7 @@ const agendarConsulta = () => {
                                 </div>
                                 <div class="mt-3 pl-3 pt-3 border-t border-gray-50 flex justify-between items-center">
                                     <span class="text-[10px] text-gray-400 font-medium">{{ agenda.DataAgendamento }}</span>
-                                    <div class="flex space-x-2">
+                                    <div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button class="text-[10px] font-bold text-blue-600 hover:text-blue-800 transition-colors">Editar</button>
                                         <span class="text-gray-300">|</span>
                                         <button class="text-[10px] font-bold text-gray-500 hover:text-gray-800 transition-colors flex items-center">

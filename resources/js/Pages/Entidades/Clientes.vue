@@ -27,6 +27,8 @@ const props = defineProps({
 
 const searchQuery = ref('');
 const isModalOpen = ref(false);
+const isDeleteModalOpen = ref(false);
+const itemToDelete = ref(null);
 const editingCodigo = ref(null);
 const selectedClientes = ref([]);
 
@@ -78,17 +80,22 @@ const openEditModal = () => {
     }
 };
 
-const deleteCliente = () => {
+const confirmDelete = () => {
     if (selectedClientes.value.length !== 1) {
         alert('Por favor, selecione um cliente para eliminar.');
         return;
     }
-    
-    if (confirm('Tem a certeza que deseja eliminar este cliente?')) {
-        const codigo = selectedClientes.value[0];
-        form.delete(route('clientes.destroy', codigo), {
+    itemToDelete.value = selectedClientes.value[0];
+    isDeleteModalOpen.value = true;
+};
+
+const executeDelete = () => {
+    if (itemToDelete.value) {
+        form.delete(route('clientes.destroy', itemToDelete.value), {
             onSuccess: () => {
                 selectedClientes.value = [];
+                isDeleteModalOpen.value = false;
+                itemToDelete.value = null;
             }
         });
     }
@@ -145,7 +152,7 @@ const submit = () => {
                 <button @click="openEditModal" :class="{'opacity-50 cursor-not-allowed': selectedClientes.length !== 1}" class="flex items-center px-4 py-2 text-xs font-bold text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100">
                     <Edit class="w-4 h-4 mr-2 text-blue-500" /> Editar
                 </button>
-                <button @click="deleteCliente" :class="{'opacity-50 cursor-not-allowed': selectedClientes.length !== 1}" class="flex items-center px-4 py-2 text-xs font-bold text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100">
+                <button @click="confirmDelete" :class="{'opacity-50 cursor-not-allowed': selectedClientes.length !== 1}" class="flex items-center px-4 py-2 text-xs font-bold text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100">
                     <Trash2 class="w-4 h-4 mr-2 text-red-500" /> Eliminar
                 </button>
                 <div class="w-px h-6 bg-gray-200 mx-2"></div>
@@ -365,6 +372,29 @@ const submit = () => {
                         <span v-if="form.processing" class="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                         {{ editingCodigo ? 'Atualizar Cliente' : 'Guardar Cliente' }}
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Confirmação de Eliminação -->
+        <div v-if="isDeleteModalOpen" class="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/60 backdrop-blur-md p-4 animate-fadeIn">
+            <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-md overflow-hidden transform transition-all scale-100">
+                <div class="p-6 text-center">
+                    <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm">
+                        <Trash2 class="w-8 h-8 text-red-500" />
+                    </div>
+                    <h3 class="text-lg font-black text-gray-800 mb-2">Eliminar Registo</h3>
+                    <p class="text-sm text-gray-500 mb-6">Tem a certeza que deseja eliminar o cliente selecionado? Esta ação não pode ser desfeita.</p>
+                    
+                    <div class="flex items-center justify-center space-x-3">
+                        <button @click="isDeleteModalOpen = false" class="px-5 py-2.5 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex-1">
+                            Cancelar
+                        </button>
+                        <button @click="executeDelete" :disabled="form.processing" class="px-5 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-md shadow-red-500/20 transition-colors flex-1 flex items-center justify-center disabled:opacity-50">
+                            <span v-if="form.processing" class="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            Sim, Eliminar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
