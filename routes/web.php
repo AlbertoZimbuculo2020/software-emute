@@ -17,6 +17,7 @@ use App\Http\Controllers\Hospitalar\SeguradoraController;
 use App\Http\Controllers\Hospitalar\ExameController;
 use App\Http\Controllers\Hospitalar\ServicoController;
 use App\Http\Controllers\Hospitalar\EnfermariaController;
+use App\Http\Controllers\Hospitalar\InternamentoController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -120,6 +121,11 @@ Route::get('/hospitalar/enfermaria/details/{id}', [EnfermariaController::class, 
 Route::post('/hospitalar/enfermaria/resultado', [EnfermariaController::class, 'salvarResultado'])->middleware(['auth', 'verified'])->name('hospitalar.enfermaria.resultado');
 Route::post('/hospitalar/enfermaria/farmaco', [EnfermariaController::class, 'storeFarmaco'])->middleware(['auth', 'verified'])->name('hospitalar.enfermaria.farmaco');
 Route::post('/hospitalar/enfermaria/finalizar/{id}', [EnfermariaController::class, 'finalizarAtendimento'])->middleware(['auth', 'verified'])->name('hospitalar.enfermaria.finalizar');
+
+Route::get('/hospitalar/internamento', [InternamentoController::class, 'index'])->middleware(['auth', 'verified'])->name('hospitalar.internamento.index');
+Route::get('/hospitalar/internamento/details/{id}', [InternamentoController::class, 'getDetails'])->middleware(['auth', 'verified'])->name('hospitalar.internamento.details');
+Route::post('/hospitalar/internamento/ato', [InternamentoController::class, 'storeAto'])->middleware(['auth', 'verified'])->name('hospitalar.internamento.ato');
+Route::post('/hospitalar/internamento/alta/{id}', [InternamentoController::class, 'darAlta'])->middleware(['auth', 'verified'])->name('hospitalar.internamento.alta');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

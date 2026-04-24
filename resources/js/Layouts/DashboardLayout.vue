@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { 
     Building2, 
@@ -35,7 +35,10 @@ import {
     ArrowUpFromLine,
     FileStack,
     BarChart3,
-    Package
+    Package,
+    CheckCircle2,
+    AlertCircle,
+    X
 } from 'lucide-vue-next';
 
 const showingSidebar = ref(true);
@@ -48,6 +51,25 @@ const openMenus = ref({
 });
 
 const user = usePage().props.auth.user;
+const flash = computed(() => usePage().props.flash);
+const showToast = ref(false);
+const toastMessage = ref('');
+const toastType = ref('success');
+
+watch(() => flash.value, (newFlash) => {
+    if (newFlash && newFlash.message) {
+        toastMessage.value = newFlash.message;
+        toastType.value = 'success';
+        showToast.value = true;
+        setTimeout(() => { showToast.value = false; }, 5000);
+    }
+    if (newFlash && newFlash.error) {
+        toastMessage.value = newFlash.error;
+        toastType.value = 'error';
+        showToast.value = true;
+        setTimeout(() => { showToast.value = false; }, 5000);
+    }
+}, { deep: true, immediate: true });
 
 const toggleMenu = (menu) => {
     // Fecha outros menus ao abrir um novo (opcional, mas limpo)
@@ -60,6 +82,23 @@ const toggleMenu = (menu) => {
 
 <template>
     <div class="min-h-screen bg-[#F4F7FA] flex font-sans selection:bg-blue-500 selection:text-white">
+        
+        <!-- Elegant Toast Notification -->
+        <Transition name="toast">
+            <div v-if="showToast" :class="toastType === 'success' ? 'bg-white border-emerald-500' : 'bg-white border-rose-500'" class="fixed top-8 right-8 z-[9999] p-6 rounded-[2rem] shadow-2xl shadow-slate-200 border-l-[12px] flex items-center gap-6 min-w-[400px]">
+                <div :class="toastType === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'" class="w-14 h-14 rounded-3xl flex items-center justify-center shrink-0">
+                    <CheckCircle2 v-if="toastType === 'success'" class="w-7 h-7" />
+                    <AlertCircle v-else class="w-7 h-7" />
+                </div>
+                <div class="flex-grow">
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-1">{{ toastType === 'success' ? 'Sucesso' : 'Erro de Sistema' }}</p>
+                    <p class="text-sm font-black text-slate-800 tracking-tight leading-snug">{{ toastMessage }}</p>
+                </div>
+                <button @click="showToast = false" class="p-2 hover:bg-slate-50 rounded-xl transition-all">
+                    <X class="w-5 h-5 text-slate-300" />
+                </button>
+            </div>
+        </Transition>
         
         <!-- Sidebar Moderna -->
         <aside 
@@ -167,9 +206,9 @@ const toggleMenu = (menu) => {
                              <Link :href="route('hospitalar.enfermaria.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                  <Stethoscope class="w-3 h-3 mr-2" /> ENFERMARIA
                              </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
-                                <BedDouble class="w-3 h-3 mr-2" /> INTERNAMENTO
-                            </Link>
+                             <Link :href="route('hospitalar.internamento.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                                 <BedDouble class="w-3 h-3 mr-2" /> INTERNAMENTO
+                             </Link>
                             <Link :href="route('hospitalar.consultorio')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <MonitorSmartphone class="w-3 h-3 mr-2" /> CONSULTÓRIO
                             </Link>
