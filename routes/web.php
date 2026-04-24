@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use App\Http\Controllers\Hospitalar\RecepcaoController;
 use App\Http\Controllers\EmpresaController;
@@ -12,7 +13,44 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    // Top 10 Consultas
+    $topConsultas = DB::table('tb_agendamento')
+        ->select('Consulta as label', DB::raw('count(*) as count'))
+        ->whereNotNull('Consulta')
+        ->groupBy('Consulta')
+        ->orderBy('count', 'desc')
+        ->take(10)
+        ->get();
+
+    // Top 10 Exames
+    $topExames = DB::table('tb_resultado_exame')
+        ->select('Descricao as label', DB::raw('count(*) as count'))
+        ->whereNotNull('Descricao')
+        ->groupBy('Descricao')
+        ->orderBy('count', 'desc')
+        ->take(10)
+        ->get();
+
+    // Distribuição por Estado/Situação
+    $statusStats = DB::table('tb_agendamento')
+        ->select('Situacao as label', DB::raw('count(*) as count'))
+        ->whereNotNull('Situacao')
+        ->groupBy('Situacao')
+        ->get();
+
+    // Resumo
+    $summary = [
+        'totalConsultas' => DB::table('tb_agendamento')->whereMonth('DataAgendamento', now()->month)->count(),
+        'totalExames' => DB::table('tb_resultado_exame')->whereMonth('DataExame', now()->month)->count(),
+        'totalPacientes' => DB::table('tb_paciente')->count(),
+    ];
+
+    return Inertia::render('Dashboard', [
+        'topConsultas' => $topConsultas,
+        'topExames' => $topExames,
+        'statusStats' => $statusStats,
+        'summary' => $summary
+    ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/hospitalar/recepcao', [RecepcaoController::class, 'index'])->middleware(['auth', 'verified'])->name('hospitalar.recepcao');
