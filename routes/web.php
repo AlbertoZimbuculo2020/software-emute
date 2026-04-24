@@ -8,6 +8,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\Hospitalar\RecepcaoController;
 use App\Http\Controllers\EmpresaController;
 use App\Http\Controllers\Entidades\ClienteController;
+use App\Http\Controllers\Entidades\PacienteController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -65,6 +66,11 @@ Route::get('/entidades/clientes', [ClienteController::class, 'index'])->middlewa
 Route::post('/entidades/clientes', [ClienteController::class, 'store'])->middleware(['auth', 'verified'])->name('clientes.store');
 Route::put('/entidades/clientes/{codigo}', [ClienteController::class, 'update'])->middleware(['auth', 'verified'])->name('clientes.update');
 Route::delete('/entidades/clientes/{codigo}', [ClienteController::class, 'destroy'])->middleware(['auth', 'verified'])->name('clientes.destroy');
+
+Route::get('/entidades/pacientes', [PacienteController::class, 'index'])->middleware(['auth', 'verified'])->name('pacientes.index');
+Route::post('/entidades/pacientes', [PacienteController::class, 'store'])->middleware(['auth', 'verified'])->name('pacientes.store');
+Route::put('/entidades/pacientes/{codigo}', [PacienteController::class, 'update'])->middleware(['auth', 'verified'])->name('pacientes.update');
+Route::delete('/entidades/pacientes/{codigo}', [PacienteController::class, 'destroy'])->middleware(['auth', 'verified'])->name('pacientes.destroy');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

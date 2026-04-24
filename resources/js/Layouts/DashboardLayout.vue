@@ -118,7 +118,7 @@ const toggleMenu = (menu) => {
                             <Link :href="route('clientes.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <UserRound class="w-3 h-3 mr-2" /> Clientes
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link :href="route('pacientes.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <HeartPulse class="w-3 h-3 mr-2" /> Paciente
                             </Link>
                             <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
