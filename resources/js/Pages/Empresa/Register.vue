@@ -1,26 +1,62 @@
 <script setup>
-import { ref } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
-import { Save, ArrowLeft, Search } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
+import { Head, router, useForm } from '@inertiajs/vue3';
+import { Save, ArrowLeft, Search, User, Lock } from 'lucide-vue-next';
 
-const form = ref({
-    DESCRICAO: '',
-    NIF: '',
-    SIGLA: '',
-    NUMEROCOMERCIAL: '',
-    REGIME: '',
-    INDICATIVO: '',
-    TELEFONE: '',
-    TELEFONE2: '',
-    EMAIL: '',
-    PROVINCIA: '',
-    CIDADE: '',
-    RUA: ''
+const props = defineProps({
+    empresa: Object
 });
 
+const form = useForm({
+    DESCRICAO: props.empresa?.DESCRICAO || '',
+    NIF: props.empresa?.NIF || '',
+    SIGLA: props.empresa?.SIGLA || '',
+    NUMEROCOMERCIAL: props.empresa?.NUMEROCOMERCIAL || '',
+    REGIME: props.empresa?.REGIME || '',
+    INDICATIVO: props.empresa?.INDICATIVO || '',
+    TELEFONE: props.empresa?.TELEFONE || '',
+    TELEFONE2: props.empresa?.TELEFONE2 || '',
+    EMAIL: props.empresa?.EMAIL || '',
+    PROVINCIA: props.empresa?.PROVINCIA || '',
+    CIDADE: props.empresa?.CIDADE || '',
+    RUA: props.empresa?.RUA || '',
+    IMAGEM: null,
+    LOGIN: '',
+    SENHA: ''
+});
+
+const defaultLogo = props.empresa?.IMAGEM || '/images/logo_official.png';
+const previewUrl = ref(defaultLogo);
+const logoInput = ref(null);
+
+const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        form.IMAGEM = file;
+        previewUrl.value = URL.createObjectURL(file);
+    }
+};
+
+const triggerFileInput = () => {
+    if (logoInput.value) {
+        logoInput.value.click();
+    }
+};
+
 const submit = () => {
-    router.post(route('empresa.store'), form.value, {
-        onFinish: () => {},
+    form.post('/empresa/register', {
+        preserveScroll: true,
+        forceFormData: true,
+        onError: (errors) => {
+            console.error('Validation Errors:', errors);
+            const firstError = Object.values(errors)[0];
+            if (firstError) {
+                alert('Erro de Validação: ' + firstError);
+            } else {
+                alert('Ocorreu um erro ao gravar. Verifique a consola.');
+            }
+        },
+        onSuccess: () => alert('Configurações e Logótipo gravados com sucesso!'),
     });
 };
 </script>
@@ -57,8 +93,10 @@ const submit = () => {
                     </p>
 
                     <!-- Logo Upload Area -->
-                    <div class="w-full aspect-square bg-[#000000]/20 border border-white/20 rounded-2xl flex flex-col items-center justify-center p-8 hover:bg-[#000000]/30 transition-all group cursor-pointer relative overflow-hidden backdrop-blur-sm">
+                    <div @click="triggerFileInput" class="w-full aspect-square bg-[#000000]/20 border border-white/20 rounded-2xl flex flex-col items-center justify-center p-8 hover:bg-[#000000]/30 transition-all group cursor-pointer relative overflow-hidden backdrop-blur-sm">
                         
+                        <input type="file" ref="logoInput" @change="handleFileChange" accept="image/*" class="hidden" />
+
                         <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-[#006BB3]/80 transition-opacity duration-300 z-20 backdrop-blur-sm">
                             <div class="flex items-center space-x-2 bg-white text-[#006BB3] px-5 py-2.5 rounded-full shadow-xl transform scale-95 group-hover:scale-100 transition-transform duration-300">
                                 <Search class="w-4 h-4" />
@@ -66,7 +104,7 @@ const submit = () => {
                             </div>
                         </div>
 
-                        <img src="/images/logo_official.png" class="max-w-full max-h-full object-contain relative z-10 drop-shadow-2xl" alt="Logotipo da Empresa" />
+                        <img :src="previewUrl" class="max-w-full max-h-full object-contain relative z-10 drop-shadow-2xl" alt="Logotipo da Empresa" />
                     </div>
                 </div>
 
@@ -76,13 +114,13 @@ const submit = () => {
             </div>
 
             <!-- Right Side: Form Data -->
-            <div class="lg:w-2/3 p-8 sm:p-12 bg-white flex flex-col">
+            <form @submit.prevent="submit" class="lg:w-2/3 p-8 sm:p-12 bg-white flex flex-col">
                 <div class="flex justify-between items-start mb-10">
                     <div>
                         <h2 class="text-2xl font-bold tracking-tight text-gray-900">Detalhes da Organização</h2>
                         <p class="text-sm text-gray-500 mt-1.5 font-medium">Preencha cuidadosamente os campos abaixo.</p>
                     </div>
-                    <button @click="submit" class="hidden sm:flex items-center justify-center bg-[#006BB3] hover:bg-[#005a96] text-white px-7 py-3.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5 focus:ring-4 focus:ring-blue-500/20 active:translate-y-0">
+                    <button type="submit" class="hidden sm:flex items-center justify-center bg-[#006BB3] hover:bg-[#005a96] text-white px-7 py-3.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5 focus:ring-4 focus:ring-blue-500/20 active:translate-y-0">
                         <Save class="w-4 h-4 mr-2.5" />
                         Salvar Configurações
                     </button>
@@ -188,14 +226,51 @@ const submit = () => {
                         </div>
                     </div>
 
+                    <!-- Divider -->
+                    <div class="col-span-1 md:col-span-2 my-2 border-t border-gray-100"></div>
+
+                    <!-- Utilizador de Acesso Section -->
+                    <div class="col-span-1 md:col-span-2 space-y-6">
+                        <div class="flex items-center space-x-3">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                                <User class="w-4 h-4 text-purple-600" />
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">Utilizador Administrador</h3>
+                                <p class="text-xs text-gray-500">Credenciais para acesso inicial ao sistema (opcional caso já existam utilizadores)</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-1.5">
+                                <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Login</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <User class="h-4 w-4 text-gray-400" />
+                                    </div>
+                                    <input v-model="form.LOGIN" type="text" class="w-full pl-10 bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-3.5 shadow-sm transition-colors font-medium placeholder-gray-400" placeholder="Utilizador Root">
+                                </div>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Senha</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Lock class="h-4 w-4 text-gray-400" />
+                                    </div>
+                                    <input v-model="form.SENHA" type="password" class="w-full pl-10 bg-white border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block p-3.5 shadow-sm transition-colors font-medium placeholder-gray-400" placeholder="••••••••">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- Mobile Submit Button -->
-                <button @click="submit" class="sm:hidden w-full mt-10 flex justify-center items-center bg-[#006BB3] hover:bg-[#005a96] text-white px-6 py-4 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/30 active:scale-[0.98] transition-transform">
+                <button type="submit" class="sm:hidden w-full mt-10 flex justify-center items-center bg-[#006BB3] hover:bg-[#005a96] text-white px-6 py-4 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/30 active:scale-[0.98] transition-transform">
                     <Save class="w-5 h-5 mr-2" />
                     Salvar Configurações
                 </button>
-            </div>
+            </form>
         </div>
     </div>
 </template>

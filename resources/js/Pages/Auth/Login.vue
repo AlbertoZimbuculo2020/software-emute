@@ -119,7 +119,7 @@ const closeApp = () => {
 
             <!-- Right Side: Brand Banner -->
             <div class="w-1/2 bg-gradient-to-br from-[#12F2FF] via-[#247BFF] to-[#2D5BFF] flex flex-col items-center justify-center p-10">
-                <img src="/images/logo_full.png" class="w-full max-w-[280px] h-auto" alt="Emute Software" />
+                <img src="/images/logo_official.png" class="w-full max-w-[280px] h-auto" alt="Emute Software" />
             </div>
         </div>
 
