@@ -69,14 +69,14 @@ const toggleMenu = (menu) => {
             <!-- Logo area -->
             <div class="h-16 flex items-center px-4 bg-blue-700/30 border-b border-white/10 overflow-hidden">
                 <div class="min-w-[40px] h-10 flex items-center justify-center mr-3">
-                    <img src="/images/logo_white.png" class="h-8 w-auto object-contain" alt="Logo" />
+                    <img src="/images/logo.png" class="h-8 w-auto object-contain" alt="Logo" />
                 </div>
                 <span v-if="showingSidebar" class="font-black text-lg tracking-tighter uppercase truncate">EMUTE</span>
             </div>
 
             <!-- Menu Scrollable -->
             <div class="flex-grow overflow-y-auto py-4 custom-scrollbar">
-                <nav class="px-3 space-y-1">
+                <nav class="px-3 space-y-3">
                     
                     <!-- Configurações Dropdown -->
                     <div class="space-y-1">
@@ -229,31 +229,43 @@ const toggleMenu = (menu) => {
         >
             
             <!-- Barra Superior Principal -->
-            <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-20 shadow-sm">
-                <div class="flex items-center space-x-6 text-[10px] font-black uppercase tracking-wider text-gray-400">
-                    <div class="flex items-center space-x-2 text-blue-600">
-                        <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-                        <span>Utilizador: {{ user.NOME_UTILIZADOR || user.name || 'EMUTE' }}</span>
+            <header class="h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-20 shadow-sm">
+                <!-- Esquerda: Info e Links -->
+                <div class="flex items-center space-x-6 text-xs font-medium text-gray-500">
+                    <div class="flex items-center space-x-2 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full border border-blue-100 shadow-sm">
+                        <span class="relative flex h-2.5 w-2.5">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
+                        </span>
+                        <span class="font-bold tracking-wide uppercase text-[10px]">Online</span>
                     </div>
-                    <span>Versão: 1.0.0</span>
-                    <span class="hidden lg:inline text-gray-300">|</span>
-                    <Link href="#" class="hover:text-blue-500 transition-colors hidden lg:block">Configurar Servidor</Link>
-                    <Link href="#" class="hover:text-blue-500 transition-colors hidden lg:block">Atualizações</Link>
+                    <span class="hidden sm:inline bg-gray-100 px-2 py-1 rounded-md text-[10px] font-bold text-gray-600 tracking-wider">v1.0.0</span>
+                    <div class="hidden lg:flex items-center space-x-4 border-l border-gray-200 pl-4">
+                        <Link href="#" class="hover:text-blue-600 transition-colors flex items-center"><Settings class="w-3.5 h-3.5 mr-1.5"/> Servidor</Link>
+                        <Link href="#" class="hover:text-blue-600 transition-colors flex items-center"><ArrowUpFromLine class="w-3.5 h-3.5 mr-1.5"/> Atualizações</Link>
+                    </div>
                 </div>
 
+                <!-- Direita: Perfil e Ações -->
                 <div class="flex items-center space-x-4">
-                    <div class="flex space-x-4 mr-6 text-[10px] uppercase font-bold text-gray-500">
-                        <Link href="#" class="hover:text-blue-500">Suporte Técnico</Link>
-                        <Link href="#" class="hover:text-blue-500">Sobre o Software</Link>
+                    <div class="hidden md:flex space-x-4 mr-2 text-xs font-medium text-gray-500">
+                        <Link href="#" class="hover:text-blue-600 transition-colors flex items-center"><MonitorSmartphone class="w-3.5 h-3.5 mr-1.5"/> Suporte</Link>
                     </div>
                     
-                    <div class="flex items-center space-x-2 bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-xl transition-all border border-gray-200">
-                        <div class="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white">
-                            <UserCircle class="w-4 h-4" />
+                    <!-- User Dropdown/Pill -->
+                    <div class="flex items-center bg-white border border-gray-200 rounded-full p-1 pr-4 shadow-sm hover:shadow-md transition-all cursor-pointer group">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white shadow-inner mr-3 group-hover:scale-105 transition-transform">
+                            <span class="text-xs font-bold">{{ (user.NOME_UTILIZADOR || user.name || 'E').charAt(0).toUpperCase() }}</span>
                         </div>
-                        <Link :href="route('logout')" method="post" as="button" class="flex items-center text-[10px] font-black uppercase tracking-tighter text-red-500">
-                            <LogOut class="w-3 h-3 mr-1" /> Sair
-                        </Link>
+                        <div class="flex flex-col justify-center">
+                            <span class="text-xs font-bold text-gray-700 leading-tight">{{ user.NOME_UTILIZADOR || user.name || 'EMUTE' }}</span>
+                            <span class="text-[10px] text-gray-400 font-medium leading-tight">Administrador</span>
+                        </div>
+                        <div class="ml-4 pl-4 border-l border-gray-100 flex items-center">
+                            <Link :href="route('logout')" method="post" as="button" class="text-gray-400 hover:text-red-500 transition-colors flex items-center justify-center w-6 h-6 rounded-full hover:bg-red-50" title="Terminar Sessão">
+                                <LogOut class="w-4 h-4" />
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </header>

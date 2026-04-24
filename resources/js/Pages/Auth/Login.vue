@@ -44,9 +44,6 @@ const submit = () => {
     });
 };
 
-const closeApp = () => {
-    window.location.href = '/';
-};
 </script>
 
 <template>
@@ -140,18 +137,11 @@ const closeApp = () => {
                     </div>
 
                     <!-- Buttons -->
-                    <div class="flex space-x-3 pt-4">
-                        <button
-                            type="button"
-                            @click="closeApp"
-                            class="flex-1 bg-white border border-gray-200 hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-gray-600 py-3 rounded-xl text-sm font-bold shadow-sm transition-all focus:ring-4 focus:ring-red-500/10 active:scale-95"
-                        >
-                            Sair
-                        </button>
+                    <div class="pt-4">
                         <button
                             type="submit"
                             :disabled="form.processing"
-                            class="flex-[2] bg-gradient-to-r from-[#006BB3] to-[#0091FF] hover:from-[#005a96] hover:to-[#007EE6] text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/25 transition-all hover:-translate-y-0.5 focus:ring-4 focus:ring-blue-500/20 active:translate-y-0 disabled:opacity-70 disabled:hover:translate-y-0 disabled:active:scale-100 active:scale-95 flex items-center justify-center"
+                            class="w-full bg-gradient-to-r from-[#006BB3] to-[#0091FF] hover:from-[#005a96] hover:to-[#007EE6] text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/25 transition-all hover:-translate-y-0.5 focus:ring-4 focus:ring-blue-500/20 active:translate-y-0 disabled:opacity-70 disabled:hover:translate-y-0 disabled:active:scale-100 active:scale-95 flex items-center justify-center"
                         >
                             Entrar no Sistema
                         </button>
