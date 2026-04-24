@@ -107,6 +107,7 @@ const closeApp = () => {
 
                     <!-- Bottom Links -->
                     <div class="flex flex-col items-center pt-6 space-y-2">
+                        <Link :href="route('empresa.register')" class="text-[13px] font-bold text-red-600 hover:underline">Cadastrar Empresa / Configuração</Link>
                         <Link href="#" class="text-[13px] font-bold text-blue-600 hover:underline">Esqueceu a Palavra Passe?</Link>
                         <Link href="#" class="text-[13px] font-bold text-blue-600 hover:underline">Configurar Servidor</Link>
                         <div class="pt-4">
