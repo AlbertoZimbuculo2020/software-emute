@@ -47,16 +47,13 @@ const submit = () => {
     form.post('/empresa/register', {
         preserveScroll: true,
         forceFormData: true,
-        onError: (errors) => {
-            console.error('Validation Errors:', errors);
-            const firstError = Object.values(errors)[0];
-            if (firstError) {
-                alert('Erro de Validação: ' + firstError);
-            } else {
-                alert('Ocorreu um erro ao gravar. Verifique a consola.');
-            }
+        onSuccess: () => {
+            // Elegant redirect handles the success message via Flash Session on Login
         },
-        onSuccess: () => alert('Configurações e Logótipo gravados com sucesso!'),
+        onError: () => {
+            // Errors will be injected into form.errors automatically
+            // and displayed natively in the beautiful inline error section
+        }
     });
 };
 </script>
@@ -120,11 +117,26 @@ const submit = () => {
                         <h2 class="text-2xl font-bold tracking-tight text-gray-900">Detalhes da Organização</h2>
                         <p class="text-sm text-gray-500 mt-1.5 font-medium">Preencha cuidadosamente os campos abaixo.</p>
                     </div>
-                    <button type="submit" class="hidden sm:flex items-center justify-center bg-[#006BB3] hover:bg-[#005a96] text-white px-7 py-3.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5 focus:ring-4 focus:ring-blue-500/20 active:translate-y-0">
+                    <button type="submit" class="hidden sm:flex items-center justify-center bg-[#006BB3] hover:bg-[#005a96] text-white px-7 py-3.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5 focus:ring-4 focus:ring-blue-500/20 active:translate-y-0 disabled:opacity-70 disabled:hover:translate-y-0" :disabled="form.processing">
                         <Save class="w-4 h-4 mr-2.5" />
                         Salvar Configurações
                     </button>
                 </div>
+
+                <!-- Validation Error Banner -->
+                <transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
+                    <div v-show="Object.keys(form.errors).length > 0" class="mb-8 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start space-x-3">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-red-800">Verifique os dados submetidos</h3>
+                            <ul class="mt-1 text-[13px] text-red-700 list-disc list-inside">
+                                <li v-for="(error, field) in form.errors" :key="field">{{ error }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </transition>
 
                 <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                     
