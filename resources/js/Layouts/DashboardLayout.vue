@@ -125,7 +125,7 @@ const toggleMenu = (menu) => {
                             <ChevronDown v-if="showingSidebar" :class="openMenus.config ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" />
                         </button>
                         <div v-show="openMenus.config && showingSidebar" class="pl-10 space-y-1 animate-fadeIn">
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link :href="route('configuracoes.empresa.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <Building2 class="w-3 h-3 mr-2" /> Alterar dados da Empresa
                             </Link>
                             <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">

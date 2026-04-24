@@ -20,6 +20,7 @@ use App\Http\Controllers\Hospitalar\EnfermariaController;
 use App\Http\Controllers\Hospitalar\InternamentoController;
 use App\Http\Controllers\Hospitalar\LaboratorioController;
 use App\Http\Controllers\Hospitalar\RaioXController;
+use App\Http\Controllers\Configuracoes\EmpresaSettingsController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -138,6 +139,9 @@ Route::get('/hospitalar/raiox', [RaioXController::class, 'index'])->middleware([
 Route::get('/hospitalar/raiox/details/{id}', [RaioXController::class, 'getDetails'])->middleware(['auth', 'verified'])->name('hospitalar.raiox.details');
 Route::post('/hospitalar/raiox/resultado', [RaioXController::class, 'salvarResultado'])->middleware(['auth', 'verified'])->name('hospitalar.raiox.resultado');
 Route::post('/hospitalar/raiox/finalizar/{id}', [RaioXController::class, 'finalizarAtendimento'])->middleware(['auth', 'verified'])->name('hospitalar.raiox.finalizar');
+
+Route::get('/configuracoes/empresa', [EmpresaSettingsController::class, 'index'])->middleware(['auth', 'verified'])->name('configuracoes.empresa.index');
+Route::post('/configuracoes/empresa/update', [EmpresaSettingsController::class, 'update'])->middleware(['auth', 'verified'])->name('configuracoes.empresa.update');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
