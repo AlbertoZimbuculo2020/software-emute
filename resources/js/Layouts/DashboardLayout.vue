@@ -144,7 +144,7 @@ const toggleMenu = (menu) => {
                             <Link :href="route('consultas.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <CalendarDays class="w-3 h-3 mr-2" /> Consultas Médicas
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link :href="route('hospitalar.servicos')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <Briefcase class="w-3 h-3 mr-2" /> Serviços
                             </Link>
                         </div>

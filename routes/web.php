@@ -15,6 +15,7 @@ use App\Http\Controllers\Hospitalar\TriagemController;
 use App\Http\Controllers\Hospitalar\ConsultorioController;
 use App\Http\Controllers\Hospitalar\SeguradoraController;
 use App\Http\Controllers\Hospitalar\ExameController;
+use App\Http\Controllers\Hospitalar\ServicoController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -107,6 +108,11 @@ Route::get('/hospitalar/exames', [ExameController::class, 'index'])->middleware(
 Route::post('/hospitalar/exames', [ExameController::class, 'store'])->middleware(['auth', 'verified'])->name('hospitalar.exames.store');
 Route::put('/hospitalar/exames/{id}', [ExameController::class, 'update'])->middleware(['auth', 'verified'])->name('hospitalar.exames.update');
 Route::delete('/hospitalar/exames/{id}', [ExameController::class, 'destroy'])->middleware(['auth', 'verified'])->name('hospitalar.exames.destroy');
+
+Route::get('/hospitalar/servicos', [ServicoController::class, 'index'])->middleware(['auth', 'verified'])->name('hospitalar.servicos');
+Route::post('/hospitalar/servicos', [ServicoController::class, 'store'])->middleware(['auth', 'verified'])->name('hospitalar.servicos.store');
+Route::put('/hospitalar/servicos/{id}', [ServicoController::class, 'update'])->middleware(['auth', 'verified'])->name('hospitalar.servicos.update');
+Route::delete('/hospitalar/servicos/{id}', [ServicoController::class, 'destroy'])->middleware(['auth', 'verified'])->name('hospitalar.servicos.destroy');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
