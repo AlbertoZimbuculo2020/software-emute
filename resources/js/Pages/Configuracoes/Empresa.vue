@@ -95,30 +95,7 @@ const submit = () => {
                             <p class="text-[10px] font-bold text-slate-400 mt-6 px-8 leading-relaxed uppercase tracking-tighter">Use uma imagem quadrada com fundo transparente para melhores resultados.</p>
                         </div>
 
-                        <div class="bg-slate-900 rounded-[3rem] p-8 text-white shadow-xl shadow-slate-200 overflow-hidden relative">
-                            <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
-                            <h3 class="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mb-6">Status Fiscal</h3>
-                            <div class="space-y-4">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-emerald-400">
-                                        <CheckCircle class="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p class="text-[10px] font-black uppercase text-white/40">Sistema Operacional</p>
-                                        <p class="text-sm font-bold tracking-tight">Ambiente de Produção</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-blue-400">
-                                        <ShieldCheck class="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p class="text-[10px] font-black uppercase text-white/40">Certificação AGT</p>
-                                        <p class="text-sm font-bold tracking-tight">Validado com Sucesso</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+
                     </div>
 
                     <!-- Right: Forms -->

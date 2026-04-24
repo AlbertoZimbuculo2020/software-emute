@@ -128,7 +128,7 @@ const toggleMenu = (menu) => {
                             <Link :href="route('configuracoes.empresa.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <Building2 class="w-3 h-3 mr-2" /> Alterar dados da Empresa
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link :href="route('configuracoes.senha.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <KeyRound class="w-3 h-3 mr-2" /> Alterar Minha Senha
                             </Link>
                             <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">

@@ -21,6 +21,7 @@ use App\Http\Controllers\Hospitalar\InternamentoController;
 use App\Http\Controllers\Hospitalar\LaboratorioController;
 use App\Http\Controllers\Hospitalar\RaioXController;
 use App\Http\Controllers\Configuracoes\EmpresaSettingsController;
+use App\Http\Controllers\Configuracoes\SenhaController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -142,6 +143,9 @@ Route::post('/hospitalar/raiox/finalizar/{id}', [RaioXController::class, 'finali
 
 Route::get('/configuracoes/empresa', [EmpresaSettingsController::class, 'index'])->middleware(['auth', 'verified'])->name('configuracoes.empresa.index');
 Route::post('/configuracoes/empresa/update', [EmpresaSettingsController::class, 'update'])->middleware(['auth', 'verified'])->name('configuracoes.empresa.update');
+
+Route::get('/configuracoes/senha', [SenhaController::class, 'edit'])->middleware(['auth', 'verified'])->name('configuracoes.senha.index');
+Route::post('/configuracoes/senha/update', [SenhaController::class, 'update'])->middleware(['auth', 'verified'])->name('configuracoes.senha.update');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
