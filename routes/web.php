@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use App\Http\Controllers\Hospitalar\RecepcaoController;
 use App\Http\Controllers\EmpresaController;
+use App\Http\Controllers\Entidades\ClienteController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -59,6 +60,11 @@ Route::post('/hospitalar/recepcao/store', [RecepcaoController::class, 'store'])-
 
 Route::get('/empresa/register', [EmpresaController::class, 'create'])->name('empresa.register');
 Route::post('/empresa/register', [EmpresaController::class, 'store'])->name('empresa.store');
+
+Route::get('/entidades/clientes', [ClienteController::class, 'index'])->middleware(['auth', 'verified'])->name('clientes.index');
+Route::post('/entidades/clientes', [ClienteController::class, 'store'])->middleware(['auth', 'verified'])->name('clientes.store');
+Route::put('/entidades/clientes/{codigo}', [ClienteController::class, 'update'])->middleware(['auth', 'verified'])->name('clientes.update');
+Route::delete('/entidades/clientes/{codigo}', [ClienteController::class, 'destroy'])->middleware(['auth', 'verified'])->name('clientes.destroy');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
