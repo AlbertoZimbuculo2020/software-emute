@@ -59,12 +59,73 @@ class RecepcaoController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'IdPaciente' => 'required',
+            'IdPaciente' => 'nullable',
+            'nome' => 'required_without:IdPaciente|string|max:250',
             'IdMedico' => 'required',
             'IdConsulta' => 'required',
             'DataAgendamento' => 'required|date',
             'IdSeguradora' => 'nullable',
+            // Patient details for auto-reg
+            'filiacao_pai' => 'nullable|string|max:150',
+            'filiacao_mae' => 'nullable|string|max:150',
+            'data_nascimento' => 'nullable|date',
+            'sexo' => 'nullable|string|max:20',
+            'telefone' => 'nullable|string|max:20',
+            'endereco' => 'nullable|string|max:200',
         ]);
+
+        $idPaciente = $request->IdPaciente;
+
+        // Auto-register patient if not exists
+        if (!$idPaciente) {
+            $lastPaciente = DB::table('tb_paciente')
+                ->join('tb_tipoentidade', 'tb_paciente.IdTipoEntidade', '=', 'tb_tipoentidade.Codigo')
+                ->where('tb_tipoentidade.TipoEntidade', 'Paciente')
+                ->orderBy('tb_paciente.Id', 'desc')
+                ->first();
+
+            $newIdNumber = 1;
+            if ($lastPaciente && $lastPaciente->IdTipoEntidade && preg_match('/PC(\d+)/', $lastPaciente->IdTipoEntidade, $matches)) {
+                $newIdNumber = intval($matches[1]) + 1;
+            }
+            
+            $newCodigo = 'PC' . str_pad($newIdNumber, 3, '0', STR_PAD_LEFT);
+
+            DB::beginTransaction();
+            try {
+                DB::table('tb_entidade')->insert([
+                    'Codigo' => $newCodigo,
+                    'Contribuente' => '999999999',
+                    'Tipo' => 'SINGULAR',
+                    'DataNascimento' => $request->data_nascimento,
+                    'Genero' => $request->sexo,
+                ]);
+
+                DB::table('tb_tipoentidade')->insert([
+                    'Codigo' => $newCodigo,
+                    'IdEntidade' => $newCodigo,
+                    'Nome' => strtoupper($request->nome),
+                    'Telefone' => $request->telefone,
+                    'TipoEntidade' => 'Paciente',
+                    'Pais' => 'Angola',
+                    'Rua' => $request->endereco,
+                    'Estado' => 'Ativo'
+                ]);
+
+                DB::table('tb_paciente')->insert([
+                    'IdTipoEntidade' => $newCodigo,
+                    'Pai' => $request->filiacao_pai,
+                    'Mae' => $request->filiacao_mae,
+                    'Estado' => 'Ativo'
+                ]);
+
+                $idPaciente = $newCodigo;
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return redirect()->back()->withErrors(['error' => 'Falha ao cadastrar paciente automaticamente: ' . $e->getMessage()]);
+            }
+        }
 
         $consultaInfo = DB::table('tb_consulta')->where('Id', $request->IdConsulta)->first();
         $valor = $consultaInfo ? $consultaInfo->Valor : 0;
@@ -85,7 +146,7 @@ class RecepcaoController extends Controller
 
         DB::table('tb_agendamento')->insert([
             'Codigo' => $newCodigo,
-            'IdPaciente' => $request->IdPaciente,
+            'IdPaciente' => $idPaciente,
             'IdMedico' => $request->IdMedico,
             'IdConsulta' => $request->IdConsulta,
             'Consulta' => $nomeConsulta,
@@ -93,10 +154,21 @@ class RecepcaoController extends Controller
             'Seguradora' => $seguradoraNome,
             'DataAgendamento' => $request->DataAgendamento,
             'Valor' => $valor,
-            'Situacao' => 'Triagem',
+            'Situacao' => $request->situacao ?? 'Agendada',
             'Estado' => 'Ativo',
         ]);
 
-        return redirect()->back()->with('message', 'Agendamento/Admissão realizada com sucesso!');
+        return redirect()->back()->with('message', 'Paciente admitido com sucesso!');
+    }
+
+    public function enviarTriagem(Request $request)
+    {
+        $request->validate(['codigo' => 'required']);
+
+        DB::table('tb_agendamento')
+            ->where('Codigo', $request->codigo)
+            ->update(['Situacao' => 'Triagem']);
+
+        return redirect()->back()->with('message', 'Paciente enviado para a triagem!');
     }
 }

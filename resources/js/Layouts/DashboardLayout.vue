@@ -121,10 +121,10 @@ const toggleMenu = (menu) => {
                             <Link :href="route('pacientes.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <HeartPulse class="w-3 h-3 mr-2" /> Paciente
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link :href="route('medicos.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <Stethoscope class="w-3 h-3 mr-2" /> Médico
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                             <Link :href="route('hospitalar.seguradoras')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <ShieldCheck class="w-3 h-3 mr-2" /> Seguradora
                             </Link>
                         </div>
@@ -138,10 +138,10 @@ const toggleMenu = (menu) => {
                             <ChevronDown v-if="showingSidebar" :class="openMenus.outros ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" />
                         </button>
                         <div v-show="openMenus.outros && showingSidebar" class="pl-10 space-y-1 animate-fadeIn">
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link :href="route('hospitalar.exames')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <Microscope class="w-3 h-3 mr-2" /> Exames
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link :href="route('consultas.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <CalendarDays class="w-3 h-3 mr-2" /> Consultas Médicas
                             </Link>
                             <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
@@ -161,7 +161,7 @@ const toggleMenu = (menu) => {
                             <Link :href="route('hospitalar.recepcao')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <ConciergeBell class="w-3 h-3 mr-2" /> RECEPÇÃO
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link :href="route('hospitalar.triagem')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <ClipboardList class="w-3 h-3 mr-2" /> TRIAGEM
                             </Link>
                             <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
@@ -170,11 +170,14 @@ const toggleMenu = (menu) => {
                             <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <BedDouble class="w-3 h-3 mr-2" /> INTERNAMENTO
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link :href="route('hospitalar.consultorio')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <MonitorSmartphone class="w-3 h-3 mr-2" /> CONSULTÓRIO
                             </Link>
                             <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <Beaker class="w-3 h-3 mr-2" /> LABORATÓRIO
+                            </Link>
+                            <Link :href="route('hospitalar.seguradoras')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                                <ShieldCheck class="w-3 h-3 mr-2" /> SEGURADORAS
                             </Link>
                             <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <ScanLine class="w-3 h-3 mr-2" /> RAIO X
