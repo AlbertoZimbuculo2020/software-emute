@@ -158,7 +158,7 @@ const toggleMenu = (menu) => {
                             <ChevronDown v-if="showingSidebar" :class="openMenus.hospitalar ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" />
                         </button>
                         <div v-show="openMenus.hospitalar && showingSidebar" class="pl-10 space-y-1 animate-fadeIn">
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link :href="route('hospitalar.recepcao')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <ConciergeBell class="w-3 h-3 mr-2" /> RECEPÇÃO
                             </Link>
                             <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
