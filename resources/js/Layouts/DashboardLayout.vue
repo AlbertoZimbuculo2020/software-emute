@@ -106,12 +106,12 @@ const toggleMenu = (menu) => {
             class="bg-[#2D82E3] text-white flex flex-col transition-all duration-300 shadow-2xl z-30 fixed inset-y-0"
         >
             <!-- Logo area -->
-            <div class="h-16 flex items-center px-4 bg-blue-700/30 border-b border-white/10 overflow-hidden">
+            <Link :href="route('dashboard')" class="h-16 flex items-center px-4 bg-blue-700/30 border-b border-white/10 overflow-hidden hover:bg-blue-800/40 transition-colors">
                 <div class="min-w-[40px] h-10 flex items-center justify-center mr-3">
                     <img src="/images/logo.png" class="h-8 w-auto object-contain" alt="Logo" />
                 </div>
                 <span v-if="showingSidebar" class="font-black text-lg tracking-tighter uppercase truncate">EMUTE</span>
-            </div>
+            </Link>
 
             <!-- Menu Scrollable -->
             <div class="flex-grow overflow-y-auto py-4 custom-scrollbar">
