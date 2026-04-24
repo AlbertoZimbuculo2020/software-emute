@@ -164,9 +164,9 @@ const toggleMenu = (menu) => {
                             <Link :href="route('hospitalar.triagem')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <ClipboardList class="w-3 h-3 mr-2" /> TRIAGEM
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
-                                <Stethoscope class="w-3 h-3 mr-2" /> ENFERMARIA
-                            </Link>
+                             <Link :href="route('hospitalar.enfermaria.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                                 <Stethoscope class="w-3 h-3 mr-2" /> ENFERMARIA
+                             </Link>
                             <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <BedDouble class="w-3 h-3 mr-2" /> INTERNAMENTO
                             </Link>

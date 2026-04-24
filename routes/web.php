@@ -16,6 +16,7 @@ use App\Http\Controllers\Hospitalar\ConsultorioController;
 use App\Http\Controllers\Hospitalar\SeguradoraController;
 use App\Http\Controllers\Hospitalar\ExameController;
 use App\Http\Controllers\Hospitalar\ServicoController;
+use App\Http\Controllers\Hospitalar\EnfermariaController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -113,6 +114,12 @@ Route::get('/hospitalar/servicos', [ServicoController::class, 'index'])->middlew
 Route::post('/hospitalar/servicos', [ServicoController::class, 'store'])->middleware(['auth', 'verified'])->name('hospitalar.servicos.store');
 Route::put('/hospitalar/servicos/{id}', [ServicoController::class, 'update'])->middleware(['auth', 'verified'])->name('hospitalar.servicos.update');
 Route::delete('/hospitalar/servicos/{id}', [ServicoController::class, 'destroy'])->middleware(['auth', 'verified'])->name('hospitalar.servicos.destroy');
+
+Route::get('/hospitalar/enfermaria', [EnfermariaController::class, 'index'])->middleware(['auth', 'verified'])->name('hospitalar.enfermaria.index');
+Route::get('/hospitalar/enfermaria/details/{id}', [EnfermariaController::class, 'getDetails'])->middleware(['auth', 'verified'])->name('hospitalar.enfermaria.details');
+Route::post('/hospitalar/enfermaria/resultado', [EnfermariaController::class, 'salvarResultado'])->middleware(['auth', 'verified'])->name('hospitalar.enfermaria.resultado');
+Route::post('/hospitalar/enfermaria/farmaco', [EnfermariaController::class, 'storeFarmaco'])->middleware(['auth', 'verified'])->name('hospitalar.enfermaria.farmaco');
+Route::post('/hospitalar/enfermaria/finalizar/{id}', [EnfermariaController::class, 'finalizarAtendimento'])->middleware(['auth', 'verified'])->name('hospitalar.enfermaria.finalizar');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
