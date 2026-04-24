@@ -49,6 +49,9 @@ class ExameController extends Controller
             'Valor' => $request->Valor,
             'Categoria' => $request->Categoria,
             'Tipo' => $request->Tipo ?? 'NORMAL',
+            'Filhos' => $request->Filhos ? json_encode($request->Filhos) : null,
+            'Referencia' => $request->Referencia,
+            'Sugestao' => $request->Sugestao,
             'Exame_Fora' => $request->Exame_Fora,
             'USER' => Auth::user()->name,
             'Estado' => 'Ativo'
@@ -74,6 +77,9 @@ class ExameController extends Controller
                 'Valor' => $request->Valor,
                 'Categoria' => $request->Categoria,
                 'Tipo' => $request->Tipo,
+                'Filhos' => $request->Filhos ? json_encode($request->Filhos) : null,
+                'Referencia' => $request->Referencia,
+                'Sugestao' => $request->Sugestao,
                 'Exame_Fora' => $request->Exame_Fora,
             ]);
 

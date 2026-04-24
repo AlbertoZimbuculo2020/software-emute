@@ -5,7 +5,8 @@ import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import { 
     Microscope, Plus, Search, Edit3, Trash2, 
     X, CheckCircle, AlertCircle, FileText, 
-    DollarSign, Tag, Layers, Save, Info
+    DollarSign, Tag, Layers, Save, Info,
+    ChevronDown, ChevronUp, Beaker, Activity
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -17,6 +18,7 @@ const isModalOpen = ref(false);
 const isEditing = ref(false);
 const editingId = ref(null);
 const searchTerm = ref('');
+const showSubExams = ref(true);
 
 const notification = ref({ show: false, message: '', type: 'success' });
 const showNotification = (message, type = 'success') => {
@@ -31,6 +33,9 @@ const form = useForm({
     Categoria: '',
     Tipo: 'NORMAL',
     Exame_Fora: 'False',
+    Filhos: [],
+    Referencia: '',
+    Sugestao: '',
 });
 
 const filteredExames = computed(() => {
@@ -42,10 +47,24 @@ const filteredExames = computed(() => {
     );
 });
 
+const addFilho = () => {
+    form.Filhos.push({
+        descricao: '',
+        min: '',
+        max: '',
+        unidade: ''
+    });
+};
+
+const removeFilho = (index) => {
+    form.Filhos.splice(index, 1);
+};
+
 const openCreateModal = () => {
     isEditing.value = false;
     form.reset();
     form.Codigo = props.nextId;
+    form.Filhos = [];
     isModalOpen.value = true;
 };
 
@@ -58,6 +77,15 @@ const openEditModal = (ex) => {
     form.Categoria = ex.Categoria || '';
     form.Tipo = ex.Tipo || 'NORMAL';
     form.Exame_Fora = ex.Exame_Fora || 'False';
+    form.Referencia = ex.Referencia || '';
+    form.Sugestao = ex.Sugestao || '';
+    
+    try {
+        form.Filhos = ex.Filhos ? JSON.parse(ex.Filhos) : [];
+    } catch (e) {
+        form.Filhos = [];
+    }
+    
     isModalOpen.value = true;
 };
 
@@ -133,7 +161,7 @@ const formatCurrency = (value) => {
                                     <th class="px-8 py-6 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Descrição do Exame</th>
                                     <th class="px-8 py-6 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Categoria / Tipo</th>
                                     <th class="px-8 py-6 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Preço Unitário</th>
-                                    <th class="px-8 py-6 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Origem</th>
+                                    <th class="px-8 py-6 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Sub-itens</th>
                                     <th class="px-8 py-6 text-right text-[11px] font-black text-slate-400 uppercase tracking-widest">Ações</th>
                                 </tr>
                             </thead>
@@ -157,9 +185,12 @@ const formatCurrency = (value) => {
                                         <span class="text-sm font-black text-slate-700">{{ formatCurrency(ex.Valor) }}</span>
                                     </td>
                                     <td class="px-8 py-6">
-                                        <span :class="ex.Exame_Fora === 'True' ? 'text-amber-600 bg-amber-50' : 'text-emerald-600 bg-emerald-50'" class="px-2 py-0.5 rounded text-[9px] font-black uppercase">
-                                            {{ ex.Exame_Fora === 'True' ? 'EXTERNO' : 'INTERNO' }}
-                                        </span>
+                                        <div v-if="ex.Filhos" class="flex items-center gap-1">
+                                            <span class="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full">
+                                                {{ JSON.parse(ex.Filhos).length }} ITENS
+                                            </span>
+                                        </div>
+                                        <span v-else class="text-[10px] font-bold text-slate-300 uppercase italic">Simples</span>
                                     </td>
                                     <td class="px-8 py-6 text-right">
                                         <div class="flex justify-end gap-3">
@@ -172,14 +203,6 @@ const formatCurrency = (value) => {
                                         </div>
                                     </td>
                                 </tr>
-                                <tr v-if="filteredExames.length === 0">
-                                    <td colspan="6" class="px-8 py-20 text-center">
-                                        <div class="flex flex-col items-center gap-4 opacity-20">
-                                            <Microscope class="w-16 h-16" />
-                                            <p class="text-sm font-black uppercase tracking-widest">Nenhum exame cadastrado</p>
-                                        </div>
-                                    </td>
-                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -187,99 +210,159 @@ const formatCurrency = (value) => {
             </div>
         </div>
 
-        <!-- Modal de Cadastro/Edição -->
+        <!-- Modal de Cadastro Completo -->
         <Transition
             enter-active-class="transition duration-300 ease-out"
-            enter-from-class="opacity-0"
-            enter-to-class="opacity-100"
+            enter-from-class="opacity-0 scale-95"
+            enter-to-class="opacity-100 scale-100"
             leave-active-class="transition duration-200 ease-in"
-            leave-from-class="opacity-100"
-            leave-to-class="opacity-0"
+            leave-from-class="opacity-100 scale-100"
+            leave-to-class="opacity-0 scale-95"
         >
             <div v-if="isModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
                 <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="isModalOpen = false"></div>
                 
-                <div class="relative bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-modalIn">
-                    <div class="p-10 border-b border-slate-100 flex items-center justify-between">
+                <div class="relative bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                    <!-- Modal Header -->
+                    <div class="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                         <div class="flex items-center gap-4">
-                            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
-                                <FileText class="w-6 h-6" />
+                            <div class="p-3 bg-indigo-600 text-white rounded-2xl">
+                                <Activity class="w-6 h-6" />
                             </div>
                             <div>
-                                <h3 class="text-xl font-black text-slate-900 tracking-tight">{{ isEditing ? 'Editar Exame' : 'Novo Exame' }}</h3>
-                                <p class="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Configure as propriedades do serviço</p>
+                                <h3 class="text-xl font-black text-slate-900 tracking-tight">{{ isEditing ? 'Configurar Exame' : 'Novo Registro de Exame' }}</h3>
+                                <p class="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Defina as métricas e valores de referência</p>
                             </div>
                         </div>
-                        <button @click="isModalOpen = false" class="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                        <button @click="isModalOpen = false" class="p-2 hover:bg-slate-200 rounded-xl transition-colors">
                             <X class="w-5 h-5 text-slate-400" />
                         </button>
                     </div>
 
-                    <form @submit.prevent="submitForm" class="p-10 space-y-8">
-                        <div class="grid grid-cols-2 gap-6">
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Código do Sistema</label>
-                                <div class="relative">
-                                    <Tag class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                                    <input v-model="form.Codigo" disabled class="w-full bg-slate-50 border-transparent rounded-2xl pl-12 pr-6 py-4 text-sm font-black text-slate-400 cursor-not-allowed" />
-                                </div>
+                    <!-- Modal Body (Scrollable) -->
+                    <div class="flex-grow overflow-y-auto p-10 space-y-10 custom-scrollbar">
+                        
+                        <!-- Seção 1: Dados Básicos -->
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+                            <div class="md:col-span-3 space-y-2">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Código ID</label>
+                                <input v-model="form.Codigo" disabled class="w-full bg-slate-50 border-transparent rounded-2xl px-6 py-4 text-sm font-black text-slate-400 cursor-not-allowed" />
                             </div>
-                            <div class="space-y-2">
+                            <div class="md:col-span-6 space-y-2">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Descrição Completa</label>
+                                <input v-model="form.Descricao" required placeholder="EX: HEMOGRAMA COMPLETO" class="w-full bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-indigo-500/10 rounded-2xl px-6 py-4 text-sm font-black text-slate-700 transition-all" />
+                            </div>
+                            <div class="md:col-span-3 space-y-2">
                                 <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Preço (AOA)</label>
-                                <div class="relative">
-                                    <DollarSign class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                                    <input type="number" v-model="form.Valor" required class="w-full bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-indigo-500/10 rounded-2xl pl-12 pr-6 py-4 text-sm font-black text-slate-700 transition-all" />
-                                </div>
+                                <input type="number" v-model="form.Valor" required class="w-full bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-indigo-500/10 rounded-2xl px-6 py-4 text-sm font-black text-slate-700 transition-all" />
                             </div>
                         </div>
 
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Descrição do Exame</label>
-                            <div class="relative">
-                                <FileText class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                                <input v-model="form.Descricao" required placeholder="EX: HEMOGRAMA COMPLETO" class="w-full bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-indigo-500/10 rounded-2xl pl-12 pr-6 py-4 text-sm font-black text-slate-700 transition-all placeholder:text-slate-300" />
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                             <div class="space-y-2">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Categoria</label>
-                                <div class="relative">
-                                    <Layers class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                                    <select v-model="form.Categoria" class="w-full bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-indigo-500/10 rounded-2xl pl-12 pr-6 py-4 text-sm font-black text-slate-700 transition-all appearance-none cursor-pointer">
-                                        <option value="">GERAL</option>
-                                        <option value="SANGUE">SANGUE</option>
-                                        <option value="URINA">URINA</option>
-                                        <option value="IMAGEM">IMAGEM</option>
-                                    </select>
-                                </div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Categoria do Exame</label>
+                                <select v-model="form.Categoria" class="w-full bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-indigo-500/10 rounded-2xl px-6 py-4 text-sm font-black text-slate-700 transition-all">
+                                    <option value="">GERAL / SEM CATEGORIA</option>
+                                    <option value="SANGUE">SANGUE / HEMATOLOGIA</option>
+                                    <option value="URINA">URINA / ANÁLISES</option>
+                                    <option value="IMAGEM">IMAGEM / RADIOLOGIA</option>
+                                    <option value="FEZES">PARASITOLOGIA</option>
+                                </select>
                             </div>
                             <div class="space-y-2">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tipo de Exame</label>
-                                <select v-model="form.Tipo" class="w-full bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-indigo-500/10 rounded-2xl px-6 py-4 text-sm font-black text-slate-700 transition-all appearance-none cursor-pointer">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tipo de Serviço</label>
+                                <select v-model="form.Tipo" class="w-full bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-indigo-500/10 rounded-2xl px-6 py-4 text-sm font-black text-slate-700 transition-all">
                                     <option value="NORMAL">NORMAL</option>
                                     <option value="URGENTE">URGENTE</option>
                                 </select>
                             </div>
-                        </div>
-
-                        <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                            <input type="checkbox" v-model="form.Exame_Fora" true-value="True" false-value="False" class="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500" />
-                            <div>
-                                <p class="text-xs font-black text-slate-700 uppercase">Exame Externo</p>
-                                <p class="text-[10px] font-bold text-slate-400">Marque se o exame é realizado fora da clínica</p>
+                            <div class="flex items-center gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                                <input type="checkbox" v-model="form.Exame_Fora" true-value="True" false-value="False" class="w-5 h-5 text-indigo-600 rounded" />
+                                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Exame Externo</span>
                             </div>
                         </div>
 
-                        <div class="pt-6 flex gap-4">
-                            <button type="button" @click="isModalOpen = false" class="flex-grow py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-[11px] tracking-widest hover:bg-slate-200 transition-all uppercase">
-                                Cancelar
-                            </button>
-                            <button type="submit" :disabled="form.processing" class="flex-[2] py-4 bg-indigo-600 text-white rounded-2xl font-black text-[11px] tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 disabled:opacity-50 uppercase flex items-center justify-center gap-3">
-                                <Save class="w-4 h-4" /> {{ isEditing ? 'Guardar Alterações' : 'Confirmar Cadastro' }}
-                            </button>
+                        <hr class="border-slate-100" />
+
+                        <!-- Seção 2: Categoria e Filhos (Onde a mágica acontece) -->
+                        <div class="space-y-6">
+                            <div @click="showSubExams = !showSubExams" class="flex items-center justify-between cursor-pointer group">
+                                <div class="flex items-center gap-3">
+                                    <h4 class="text-xs font-black text-slate-800 uppercase tracking-[0.2em]">Adicionar Categoria e Filhos</h4>
+                                    <div class="h-px w-20 bg-slate-100 group-hover:w-40 transition-all"></div>
+                                </div>
+                                <component :is="showSubExams ? ChevronUp : ChevronDown" class="w-5 h-5 text-slate-300" />
+                            </div>
+
+                            <Transition
+                                enter-active-class="transition duration-200 ease-out"
+                                enter-from-class="opacity-0 -translate-y-4"
+                                enter-to-class="opacity-100 translate-y-0"
+                            >
+                                <div v-if="showSubExams" class="space-y-6">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div class="space-y-2">
+                                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Referências Gerais</label>
+                                            <textarea v-model="form.Referencia" rows="3" class="w-full bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-indigo-500/10 rounded-2xl px-6 py-4 text-sm font-medium transition-all" placeholder="Texto de referência padrão..."></textarea>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Sugestões / Observações</label>
+                                            <textarea v-model="form.Sugestao" rows="3" class="w-full bg-slate-50 border-transparent focus:bg-white focus:ring-4 focus:ring-indigo-500/10 rounded-2xl px-6 py-4 text-sm font-medium transition-all" placeholder="Sugestões para o laudo..."></textarea>
+                                        </div>
+                                    </div>
+
+                                    <!-- Lista de Sub-itens (Filhos) -->
+                                    <div class="bg-slate-50/50 p-8 rounded-[2.5rem] border border-slate-100 space-y-6">
+                                        <div class="flex items-center justify-between">
+                                            <h5 class="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+                                                <Beaker class="w-4 h-4" /> COMPONENTES DO EXAME (FILHOS)
+                                            </h5>
+                                            <button type="button" @click="addFilho" class="text-[9px] font-black text-white bg-indigo-600 px-4 py-2 rounded-xl hover:bg-indigo-700 transition-all uppercase flex items-center gap-2 shadow-lg shadow-indigo-100">
+                                                <Plus class="w-3.5 h-3.5" /> Adicionar Componente
+                                            </button>
+                                        </div>
+
+                                        <div v-if="form.Filhos.length > 0" class="space-y-4">
+                                            <div v-for="(filho, index) in form.Filhos" :key="index" class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row items-end gap-4 animate-fadeIn">
+                                                <div class="flex-grow space-y-2">
+                                                    <label class="text-[9px] font-black text-slate-400 uppercase">Nome do Componente</label>
+                                                    <input v-model="filho.descricao" placeholder="Ex: Hemoglobina" class="w-full bg-slate-50 border-transparent rounded-xl px-4 py-2.5 text-xs font-bold" />
+                                                </div>
+                                                <div class="w-24 space-y-2">
+                                                    <label class="text-[9px] font-black text-slate-400 uppercase text-center block">Min</label>
+                                                    <input v-model="filho.min" placeholder="0" class="w-full bg-slate-50 border-transparent rounded-xl px-4 py-2.5 text-xs font-bold text-center" />
+                                                </div>
+                                                <div class="w-24 space-y-2">
+                                                    <label class="text-[9px] font-black text-slate-400 uppercase text-center block">Max</label>
+                                                    <input v-model="filho.max" placeholder="100" class="w-full bg-slate-50 border-transparent rounded-xl px-4 py-2.5 text-xs font-bold text-center" />
+                                                </div>
+                                                <div class="w-32 space-y-2">
+                                                    <label class="text-[9px] font-black text-slate-400 uppercase">Unidade</label>
+                                                    <input v-model="filho.unidade" placeholder="g/dL" class="w-full bg-slate-50 border-transparent rounded-xl px-4 py-2.5 text-xs font-bold" />
+                                                </div>
+                                                <button type="button" @click="removeFilho(index)" class="p-2.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                                                    <Trash2 class="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div v-else class="py-10 text-center opacity-20 italic text-sm font-bold">
+                                            Nenhum componente adicionado. O exame será tratado como um item simples.
+                                        </div>
+                                    </div>
+                                </div>
+                            </Transition>
                         </div>
-                    </form>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="p-8 bg-slate-50 border-t border-slate-100 flex gap-4">
+                        <button type="button" @click="isModalOpen = false" class="flex-grow py-4 bg-white border border-slate-200 text-slate-500 rounded-2xl font-black text-[11px] tracking-widest hover:bg-slate-100 transition-all uppercase">
+                            Cancelar
+                        </button>
+                        <button type="button" @click="submitForm" :disabled="form.processing" class="flex-[3] py-4 bg-indigo-600 text-white rounded-2xl font-black text-[11px] tracking-[0.2em] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 disabled:opacity-50 uppercase flex items-center justify-center gap-3">
+                            <Save class="w-5 h-5" /> {{ isEditing ? 'Guardar Alterações' : 'Confirmar e Gravar Exame' }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </Transition>
@@ -305,11 +388,21 @@ const formatCurrency = (value) => {
 </template>
 
 <style scoped>
-@keyframes modalIn {
-    from { opacity: 0; transform: scale(0.9) translateY(20px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
 }
-.animate-modalIn {
-    animation: modalIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+}
+.animate-fadeIn {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 </style>
