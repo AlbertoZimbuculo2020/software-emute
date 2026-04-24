@@ -212,15 +212,15 @@ const toggleMenu = (menu) => {
                             <Link :href="route('hospitalar.consultorio')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <MonitorSmartphone class="w-3 h-3 mr-2" /> CONSULTÓRIO
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
-                                <Beaker class="w-3 h-3 mr-2" /> LABORATÓRIO
-                            </Link>
+                             <Link :href="route('hospitalar.laboratorio.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                                 <Beaker class="w-3 h-3 mr-2" /> LABORATÓRIO
+                             </Link>
                             <Link :href="route('hospitalar.seguradoras')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <ShieldCheck class="w-3 h-3 mr-2" /> SEGURADORAS
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
-                                <ScanLine class="w-3 h-3 mr-2" /> RAIO X
-                            </Link>
+                             <Link :href="route('hospitalar.raiox.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                                 <ScanLine class="w-3 h-3 mr-2" /> RAIO X
+                             </Link>
                         </div>
                     </div>
 

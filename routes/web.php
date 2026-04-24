@@ -18,6 +18,8 @@ use App\Http\Controllers\Hospitalar\ExameController;
 use App\Http\Controllers\Hospitalar\ServicoController;
 use App\Http\Controllers\Hospitalar\EnfermariaController;
 use App\Http\Controllers\Hospitalar\InternamentoController;
+use App\Http\Controllers\Hospitalar\LaboratorioController;
+use App\Http\Controllers\Hospitalar\RaioXController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -126,6 +128,16 @@ Route::get('/hospitalar/internamento', [InternamentoController::class, 'index'])
 Route::get('/hospitalar/internamento/details/{id}', [InternamentoController::class, 'getDetails'])->middleware(['auth', 'verified'])->name('hospitalar.internamento.details');
 Route::post('/hospitalar/internamento/ato', [InternamentoController::class, 'storeAto'])->middleware(['auth', 'verified'])->name('hospitalar.internamento.ato');
 Route::post('/hospitalar/internamento/alta/{id}', [InternamentoController::class, 'darAlta'])->middleware(['auth', 'verified'])->name('hospitalar.internamento.alta');
+
+Route::get('/hospitalar/laboratorio', [LaboratorioController::class, 'index'])->middleware(['auth', 'verified'])->name('hospitalar.laboratorio.index');
+Route::get('/hospitalar/laboratorio/details/{id}', [LaboratorioController::class, 'getDetails'])->middleware(['auth', 'verified'])->name('hospitalar.laboratorio.details');
+Route::post('/hospitalar/laboratorio/resultado', [LaboratorioController::class, 'salvarResultado'])->middleware(['auth', 'verified'])->name('hospitalar.laboratorio.resultado');
+Route::post('/hospitalar/laboratorio/finalizar/{id}', [LaboratorioController::class, 'finalizarAtendimento'])->middleware(['auth', 'verified'])->name('hospitalar.laboratorio.finalizar');
+
+Route::get('/hospitalar/raiox', [RaioXController::class, 'index'])->middleware(['auth', 'verified'])->name('hospitalar.raiox.index');
+Route::get('/hospitalar/raiox/details/{id}', [RaioXController::class, 'getDetails'])->middleware(['auth', 'verified'])->name('hospitalar.raiox.details');
+Route::post('/hospitalar/raiox/resultado', [RaioXController::class, 'salvarResultado'])->middleware(['auth', 'verified'])->name('hospitalar.raiox.resultado');
+Route::post('/hospitalar/raiox/finalizar/{id}', [RaioXController::class, 'finalizarAtendimento'])->middleware(['auth', 'verified'])->name('hospitalar.raiox.finalizar');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
