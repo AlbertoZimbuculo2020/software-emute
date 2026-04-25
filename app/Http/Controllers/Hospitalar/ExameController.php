@@ -43,13 +43,31 @@ class ExameController extends Controller
             'Exame_Fora' => 'required|string',
         ]);
 
+        $filhosStr = null;
+        if (!empty($request->Filhos) && is_array($request->Filhos)) {
+            $filhosArr = [];
+            foreach ($request->Filhos as $f) {
+                $nome = trim($f['nome'] ?? '');
+                $de = trim($f['de'] ?? '');
+                $ate = trim($f['ate'] ?? '');
+                
+                if (!empty($nome)) {
+                    // Mantém o formato legacy: "Hemoglobina=de: 12 Até: 16"
+                    $filhosArr[] = "{$nome}=de: {$de} Até: {$ate}";
+                }
+            }
+            if (count($filhosArr) > 0) {
+                $filhosStr = implode('|', $filhosArr);
+            }
+        }
+
         DB::table('tb_exames')->insert([
             'Codigo' => $request->Codigo,
             'Descricao' => strtoupper($request->Descricao),
             'Valor' => $request->Valor,
             'Categoria' => $request->Categoria,
             'Tipo' => $request->Tipo ?? 'NORMAL',
-            'Filhos' => $request->Filhos ? json_encode($request->Filhos) : null,
+            'Filhos' => $filhosStr,
             'Referencia' => $request->Referencia,
             'Sugestao' => $request->Sugestao,
             'Exame_Fora' => $request->Exame_Fora,
@@ -70,6 +88,23 @@ class ExameController extends Controller
             'Exame_Fora' => 'required|string',
         ]);
 
+        $filhosStr = null;
+        if (!empty($request->Filhos) && is_array($request->Filhos)) {
+            $filhosArr = [];
+            foreach ($request->Filhos as $f) {
+                $nome = trim($f['nome'] ?? '');
+                $de = trim($f['de'] ?? '');
+                $ate = trim($f['ate'] ?? '');
+                
+                if (!empty($nome)) {
+                    $filhosArr[] = "{$nome}=de: {$de} Até: {$ate}";
+                }
+            }
+            if (count($filhosArr) > 0) {
+                $filhosStr = implode('|', $filhosArr);
+            }
+        }
+
         DB::table('tb_exames')
             ->where('Id', $id)
             ->update([
@@ -77,7 +112,7 @@ class ExameController extends Controller
                 'Valor' => $request->Valor,
                 'Categoria' => $request->Categoria,
                 'Tipo' => $request->Tipo,
-                'Filhos' => $request->Filhos ? json_encode($request->Filhos) : null,
+                'Filhos' => $filhosStr,
                 'Referencia' => $request->Referencia,
                 'Sugestao' => $request->Sugestao,
                 'Exame_Fora' => $request->Exame_Fora,

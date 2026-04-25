@@ -4,23 +4,90 @@ import { Head, useForm, router } from '@inertiajs/vue3';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import axios from 'axios';
 import { 
-    Users, Search, Activity, History, ClipboardList, 
-    Stethoscope, Beaker, Pill, Save, CheckCircle, 
-    Printer, FileText, ArrowRight, User, Calendar,
-    Thermometer, Weight, HeartPulse, Wind, Droplets,
-    ChevronRight, Info, AlertCircle, Plus, Trash2
+    Users, Search, Activity, History, 
+    Weight,
+    Thermometer,
+    HeartPulse,
+    ClipboardList,
+    Stethoscope,
+    Pill,
+    Printer,
+    User,
+    ChevronDown,
+    Save,
+    Info,
+    ChevronRight,
+    Plus,
+    Trash2,
+    X
 } from 'lucide-vue-next';
 
 const props = defineProps({
-    aguardando: Array
+    aguardando: Array,
+    catalogoExames: Array
 });
 
 const searchTerm = ref('');
 const selectedPaciente = ref(null);
 const triageData = ref(null);
 const patientHistory = ref([]);
-const activeTab = ref('clinical'); // clinical, exams, prescription
+const activeTab = ref('exams'); // clinical, exams, prescription
 const isLoading = ref(false);
+
+// Refs novos para Solicitar Exames
+const activeExamFilter = ref('SOLICITADOS'); // SOLICITADOS, LABORATORIO, RAIOX, FORA
+const showLancarResultadosModal = ref(false);
+const lancarResultadoMode = ref('manual');
+const searchExameTerm = ref('');
+const selectedExameToLancar = ref(null);
+
+const examesSolicitados = ref([]); 
+
+const examesList = computed(() => {
+    let result = [];
+    if (activeExamFilter.value === 'SOLICITADOS') {
+        result = examesSolicitados.value.map(e => ({
+            id: 'sol_' + e.Id,
+            codigo: e.CodExame,
+            nome: e.Descricao,
+            resultado: e.Resultado || 'Pendente',
+            selected: false,
+            isRequested: true
+        }));
+    } else if (activeExamFilter.value === 'LABORATORIO') {
+        result = (props.catalogoExames || []).filter(e => e.Exame_Fora !== 'True' && e.Categoria !== 'IMAGEM' && e.Categoria !== 'RAIO X').map(e => ({
+            id: 'cat_' + e.Id,
+            codigo: e.Codigo,
+            nome: e.Descricao,
+            resultado: '',
+            selected: false,
+            isRequested: false
+        }));
+    } else if (activeExamFilter.value === 'RAIOX') {
+        result = (props.catalogoExames || []).filter(e => e.Categoria === 'IMAGEM' || e.Categoria === 'RAIO X').map(e => ({
+            id: 'cat_' + e.Id,
+            codigo: e.Codigo,
+            nome: e.Descricao,
+            resultado: '',
+            selected: false,
+            isRequested: false
+        }));
+    } else if (activeExamFilter.value === 'FORA') {
+        result = (props.catalogoExames || []).filter(e => e.Exame_Fora === 'True').map(e => ({
+            id: 'cat_' + e.Id,
+            codigo: e.Codigo,
+            nome: e.Descricao,
+            resultado: '',
+            selected: false,
+            isRequested: false
+        }));
+    }
+    
+    if (searchExameTerm.value) {
+        result = result.filter(e => e.nome.toLowerCase().includes(searchExameTerm.value.toLowerCase()));
+    }
+    return result;
+});
 
 const notification = ref({ show: false, message: '', type: 'success' });
 const showNotification = (message, type = 'success') => {
@@ -47,6 +114,11 @@ const filteredAguardando = computed(() => {
     );
 });
 
+const openLancarModal = (exame) => {
+    selectedExameToLancar.value = exame;
+    showLancarResultadosModal.value = true;
+};
+
 const selecionarPaciente = async (paciente) => {
     selectedPaciente.value = paciente;
     isLoading.value = true;
@@ -63,6 +135,7 @@ const selecionarPaciente = async (paciente) => {
         const response = await axios.get(route('hospitalar.consultorio.paciente', paciente.Codigo));
         triageData.value = response.data.triagem;
         patientHistory.value = response.data.historico;
+        examesSolicitados.value = response.data.exames_solicitados || [];
     } catch (error) {
         console.error('Erro ao carregar dados do paciente:', error);
         showNotification('Erro ao carregar dados complementares.', 'error');
@@ -84,14 +157,19 @@ const salvarConsulta = () => {
     });
 };
 
-const calcularIdade = (dataNascimento) => {
+const calcularIdadeFormatoDesktop = (dataNascimento) => {
     if (!dataNascimento) return 'N/D';
     const birthDate = new Date(dataNascimento);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
-    return age + ' anos';
+    
+    if (age === 0) {
+        const months = (today.getFullYear() - birthDate.getFullYear()) * 12 + today.getMonth() - birthDate.getMonth();
+        return months + ' Meses';
+    }
+    return age + ' Anos';
 };
 </script>
 
@@ -176,65 +254,96 @@ const calcularIdade = (dataNascimento) => {
                     <template v-if="selectedPaciente">
                         <!-- Patient Header & Triage Stats -->
                         <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 shrink-0">
-                            <!-- Info Card -->
-                            <div class="xl:col-span-7 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200/60 flex items-center gap-6">
-                                <div class="w-20 h-20 bg-blue-600 rounded-3xl text-white flex items-center justify-center text-3xl font-black shadow-lg shadow-blue-200">
-                                    {{ selectedPaciente.PacienteNome.substring(0, 2).toUpperCase() }}
+                            <div class="xl:col-span-7 bg-white shadow-sm border border-slate-200/80 rounded-lg flex flex-col shrink-0">
+                                <div class="bg-slate-100 text-center py-2.5 border-b border-slate-200/80 font-bold text-slate-700 text-[13px]">
+                                    Dados do Paciente
                                 </div>
-                                <div class="flex-grow">
-                                    <div class="flex items-center gap-3">
-                                        <h1 class="text-xl font-black text-slate-900 uppercase tracking-tight">{{ selectedPaciente.PacienteNome }}</h1>
-                                        <span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black uppercase tracking-widest">PARTICULAR</span>
+                                <div class="p-5 flex flex-col gap-4">
+                                    <div class="flex items-center gap-4">
+                                        <span class="w-24 text-sm font-medium text-slate-600 shrink-0">Código</span>
+                                        <input type="text" :value="selectedPaciente.IdPaciente" readonly class="w-32 bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
+                                        <span class="text-sm font-medium text-slate-600 shrink-0 ml-2">Nome</span>
+                                        <input type="text" :value="selectedPaciente.PacienteNome" readonly class="flex-grow bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
                                     </div>
-                                    <div class="flex items-center gap-4 mt-2">
-                                        <div class="flex items-center gap-2 text-xs font-bold text-slate-400">
-                                            <Calendar class="w-3.5 h-3.5" /> {{ calcularIdade(selectedPaciente.DataNascimento) }}
-                                        </div>
-                                        <div class="flex items-center gap-2 text-xs font-bold text-slate-400">
-                                            <User class="w-3.5 h-3.5" /> {{ selectedPaciente.Genero }}
-                                        </div>
-                                        <div class="flex items-center gap-2 text-xs font-bold text-slate-400">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-slate-200"></span>
-                                            Processo: {{ selectedPaciente.Codigo }}
-                                        </div>
+                                    <div class="flex items-center gap-4">
+                                        <span class="w-24 text-sm font-medium text-slate-600 shrink-0 leading-tight">Data de<br>Nascimento</span>
+                                        <input type="text" :value="selectedPaciente.DataNascimento ? new Date(selectedPaciente.DataNascimento).toLocaleString('pt-PT') : ''" readonly class="flex-grow bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
+                                        <span class="w-12 text-sm font-medium text-slate-600 shrink-0 ml-2 text-right">Idade</span>
+                                        <input type="text" :value="calcularIdadeFormatoDesktop(selectedPaciente.DataNascimento)" readonly class="w-32 bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <span class="w-24 text-sm font-medium text-slate-600 shrink-0">Telefone</span>
+                                        <input type="text" :value="selectedPaciente.Telefone" readonly class="flex-grow bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
+                                        <span class="w-12 text-sm font-medium text-slate-600 shrink-0 ml-2 text-right">Sexo</span>
+                                        <input type="text" :value="selectedPaciente.Genero" readonly class="w-32 bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <span class="w-24 text-sm font-medium text-slate-600 shrink-0">Morada</span>
+                                        <input type="text" :value="selectedPaciente.Rua || selectedPaciente.Cidade || ''" readonly class="flex-grow bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
+                                    </div>
+                                    <hr class="border-slate-100 my-1" />
+                                    <div class="flex items-center gap-6 pl-1">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" readonly :checked="!selectedPaciente.Seguradora" class="w-4 h-4 text-blue-600 border-slate-300 pointer-events-none focus:ring-0" />
+                                            <span class="text-sm text-slate-700">Particular</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" readonly :checked="!!selectedPaciente.Seguradora" class="w-4 h-4 text-blue-600 border-slate-300 pointer-events-none focus:ring-0" />
+                                            <span class="text-sm text-slate-700">Assegurado</span>
+                                        </label>
+                                    </div>
+                                    <div class="flex items-center gap-4 mt-1">
+                                        <span class="w-24 text-sm font-medium text-slate-600 shrink-0">Asseguradora</span>
+                                        <input type="text" :value="selectedPaciente.Seguradora || ''" readonly class="flex-grow bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <span class="w-24 text-sm font-medium text-slate-600 shrink-0">Consulta</span>
+                                        <input type="text" :value="selectedPaciente.Consulta" readonly class="flex-grow bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
+                                        <span class="text-sm font-medium text-slate-600 shrink-0 ml-2">Médico</span>
+                                        <input type="text" :value="selectedPaciente.MedicoNome" readonly class="flex-grow bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none min-w-[200px]" />
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Triage Stats Bento -->
                             <div class="xl:col-span-5 grid grid-cols-3 gap-3">
-                                <div class="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100/50 flex flex-col justify-center">
-                                    <div class="flex items-center gap-2 text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">
-                                        <Weight class="w-3 h-3" /> Peso
-                                    </div>
-                                    <p class="text-lg font-black text-slate-800">{{ triageData?.Peso || '--' }} <span class="text-[10px] text-slate-400">kg</span></p>
+                                <div class="bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100/50 flex flex-col justify-center">
+                                    <div class="flex items-center gap-2 text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">Peso</div>
+                                    <p class="text-sm font-black text-slate-800">{{ triageData?.Peso || '--' }} <span class="text-[9px] text-slate-400">kg</span></p>
                                 </div>
-                                <div class="bg-amber-50/50 p-4 rounded-2xl border border-amber-100/50 flex flex-col justify-center">
-                                    <div class="flex items-center gap-2 text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1">
-                                        <Thermometer class="w-3 h-3" /> Temp
-                                    </div>
-                                    <p class="text-lg font-black text-slate-800">{{ triageData?.Temperatura || '--' }} <span class="text-[10px] text-slate-400">°C</span></p>
+                                <div class="bg-amber-50/50 p-3 rounded-2xl border border-amber-100/50 flex flex-col justify-center">
+                                    <div class="flex items-center gap-2 text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1">Temp. (ºC)</div>
+                                    <p class="text-sm font-black text-slate-800">{{ triageData?.Temperatura || '--' }} <span class="text-[9px] text-slate-400">°C</span></p>
                                 </div>
-                                <div class="bg-rose-50/50 p-4 rounded-2xl border border-rose-100/50 flex flex-col justify-center">
-                                    <div class="flex items-center gap-2 text-[9px] font-black text-rose-600 uppercase tracking-widest mb-1">
-                                        <HeartPulse class="w-3 h-3" /> Pressão
-                                    </div>
+                                <div class="bg-rose-50/50 p-3 rounded-2xl border border-rose-100/50 flex flex-col justify-center">
+                                    <div class="flex items-center gap-2 text-[9px] font-black text-rose-600 uppercase tracking-widest mb-1">Pressão</div>
                                     <p class="text-sm font-black text-slate-800">{{ triageData?.PressaoArterial || '--' }}</p>
+                                </div>
+                                <div class="bg-blue-50/50 p-3 rounded-2xl border border-blue-100/50 flex flex-col justify-center">
+                                    <div class="flex items-center gap-2 text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">Freq. Cardíaca</div>
+                                    <p class="text-sm font-black text-slate-800">{{ triageData?.FrequenciaCardiaca || '--' }}</p>
+                                </div>
+                                <div class="bg-purple-50/50 p-3 rounded-2xl border border-purple-100/50 flex flex-col justify-center">
+                                    <div class="flex items-center gap-2 text-[9px] font-black text-purple-600 uppercase tracking-widest mb-1">Freq. Resp.</div>
+                                    <p class="text-sm font-black text-slate-800">{{ triageData?.FrequenciaRespiratoria || '--' }}</p>
+                                </div>
+                                <div class="bg-cyan-50/50 p-3 rounded-2xl border border-cyan-100/50 flex flex-col justify-center">
+                                    <div class="flex items-center gap-2 text-[9px] font-black text-cyan-600 uppercase tracking-widest mb-1">Sat. Oxigénio</div>
+                                    <p class="text-sm font-black text-slate-800">{{ triageData?.SaturacaoOxigenio || '--' }}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Clinical Tabs & Forms -->
-                        <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200/60 flex flex-col flex-grow overflow-hidden">
-                            <!-- Tab Header -->
+                        <!-- Detailed Content Area -->
+                        <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200/60 flex flex-col flex-grow mt-6 min-h-[700px]">
+                            <!-- Tabs (Match screenshot) -->
                             <div class="px-8 pt-6 flex items-center gap-8 border-b border-slate-100">
-                                <button @click="activeTab = 'clinical'" :class="activeTab === 'clinical' ? 'text-blue-600 border-blue-600' : 'text-slate-400 border-transparent'" class="pb-4 px-2 text-[11px] font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2">
+                                <button @click="activeTab = 'clinical'" :class="activeTab === 'clinical' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 border-transparent'" class="pb-4 px-2 text-[11px] font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2">
                                     <ClipboardList class="w-4 h-4" /> Dados Clínicos
                                 </button>
-                                <button @click="activeTab = 'exams'" :class="activeTab === 'exams' ? 'text-blue-600 border-blue-600' : 'text-slate-400 border-transparent'" class="pb-4 px-2 text-[11px] font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2">
-                                    <Beaker class="w-4 h-4" /> Solicitar Exames
+                                <button @click="activeTab = 'exams'" :class="activeTab === 'exams' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 border-transparent'" class="pb-4 px-2 text-[11px] font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2">
+                                    <Activity class="w-4 h-4" /> Solicitar Exames
                                 </button>
-                                <button @click="activeTab = 'prescription'" :class="activeTab === 'prescription' ? 'text-blue-600 border-blue-600' : 'text-slate-400 border-transparent'" class="pb-4 px-2 text-[11px] font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2">
+                                <button @click="activeTab = 'prescription'" :class="activeTab === 'prescription' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 border-transparent'" class="pb-4 px-2 text-[11px] font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2">
                                     <Pill class="w-4 h-4" /> Receita Médica
                                 </button>
                             </div>
@@ -270,31 +379,85 @@ const calcularIdade = (dataNascimento) => {
                                 </div>
 
                                 <!-- Tab: Exams -->
-                                <div v-if="activeTab === 'exams'" class="space-y-8 animate-fadeIn">
-                                    <div class="flex items-center justify-between bg-slate-50 p-6 rounded-3xl border border-dashed border-slate-200">
-                                        <div class="flex items-center gap-4">
-                                            <div class="p-3 bg-white rounded-2xl shadow-sm text-blue-600">
-                                                <Beaker class="w-6 h-6" />
-                                            </div>
-                                            <div>
-                                                <h3 class="text-sm font-black text-slate-800 uppercase">Solicitação de Exames</h3>
-                                                <p class="text-[11px] text-slate-500 font-bold">Laboratório, Imagem e Especialidades</p>
-                                            </div>
-                                        </div>
-                                        <button class="bg-blue-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-2">
-                                            <Plus class="w-4 h-4" /> Adicionar Exame
+                                <div v-if="activeTab === 'exams'" class="flex-grow flex flex-col gap-4 animate-fadeIn px-8 pt-8">
+                                    <!-- Top Buttons (Pills like screenshot) -->
+                                    <div class="flex gap-3 shrink-0">
+                                        <button @click="activeExamFilter = 'SOLICITADOS'" :class="activeExamFilter === 'SOLICITADOS' ? 'bg-[#3b82f6] text-white shadow-md' : 'bg-[#f0f4f8] text-[#5c8bc0] hover:bg-[#e1e9f1]'" class="flex-grow py-3.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all">Exames Solicitados</button>
+                                        <button @click="activeExamFilter = 'LABORATORIO'" :class="activeExamFilter === 'LABORATORIO' ? 'bg-[#3b82f6] text-white shadow-md' : 'bg-[#f0f4f8] text-[#5c8bc0] hover:bg-[#e1e9f1]'" class="flex-grow py-3.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all">Exames do Laboratório</button>
+                                        <button @click="activeExamFilter = 'RAIOX'" :class="activeExamFilter === 'RAIOX' ? 'bg-[#3b82f6] text-white shadow-md' : 'bg-[#f0f4f8] text-[#5c8bc0] hover:bg-[#e1e9f1]'" class="flex-grow py-3.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all">Raio X</button>
+                                        <button @click="activeExamFilter = 'FORA'" :class="activeExamFilter === 'FORA' ? 'bg-[#3b82f6] text-white shadow-md' : 'bg-[#f0f4f8] text-[#5c8bc0] hover:bg-[#e1e9f1]'" class="flex-grow py-3.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all">Exames Fora</button>
+                                    </div>
+                                    
+                                    <!-- Dark Space Bar (Screenshot separator) -->
+                                    <div class="bg-[#1e3a8a] text-white text-center py-1 rounded-[14px] text-xs font-black tracking-widest shadow-inner shrink-0">
+                                        ...
+                                    </div>
+
+                                    <!-- Middle Action Buttons -->
+                                    <div class="flex gap-3 shrink-0">
+                                        <button class="bg-[#3b82f6] text-white px-8 py-3.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-500 transition-all shadow-md w-64 shrink-0">
+                                            <Activity class="w-4 h-4" /> Enviar no Laboratório
+                                        </button>
+                                        <button class="bg-[#f59e0b] text-white px-8 py-3.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-amber-500 transition-all shadow-md flex-grow">
+                                            <Printer class="w-4 h-4" /> Imprimir Requisição
+                                        </button>
+                                        <button class="bg-[#f59e0b] text-white px-8 py-3.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-amber-500 transition-all shadow-md flex-grow">
+                                            <Printer class="w-4 h-4" /> Imprimir Resultados
+                                        </button>
+                                        <button @click="showLancarResultadosModal = true" class="bg-[#1e293b] text-[#64748b] w-16 flex items-center justify-center rounded-[14px] hover:text-white transition-all shadow-md shrink-0">
+                                            <User class="w-5 h-5" />
                                         </button>
                                     </div>
                                     
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div v-for="i in 3" :key="i" class="p-5 bg-white border border-slate-100 rounded-[2rem] shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all">
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-2 h-2 rounded-full bg-blue-400"></div>
-                                                <p class="text-xs font-black text-slate-700 uppercase">Hemograma Completo</p>
-                                            </div>
-                                            <button class="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-red-500 transition-all">
-                                                <Trash2 class="w-4 h-4" />
-                                            </button>
+                                    <!-- Data Grid (The 'Cruds') -->
+                                    <div class="flex-grow border border-slate-200 rounded-[14px] overflow-hidden shadow-sm flex flex-col mt-2 mb-8 bg-white min-h-[300px]">
+                                        <!-- Search Box -->
+                                        <div class="p-3 border-b border-slate-100 flex gap-3 bg-slate-50/50">
+                                            <input v-model="searchExameTerm" placeholder="Digite o texto a procurar..." class="flex-grow text-xs px-4 py-2 bg-white border border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 rounded-xl transition-all font-medium text-slate-700 shadow-sm outline-none" />
+                                            <button class="px-8 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">Buscar</button>
+                                        </div>
+                                        
+                                        <!-- Table Body -->
+                                        <div class="flex-grow overflow-auto bg-white custom-scrollbar">
+                                            <table class="w-full text-left border-collapse">
+                                                <thead class="sticky top-0 bg-slate-50 border-b border-slate-200 shadow-sm z-10">
+                                                    <tr class="text-[10px] uppercase font-black text-slate-500 tracking-widest">
+                                                        <th class="p-4 w-14 text-center border-r border-slate-100">
+                                                            <input type="checkbox" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                                        </th>
+                                                        <th class="p-4 border-r border-slate-100">Exame</th>
+                                                        <th class="p-4 w-40 text-center">Resultado</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="text-xs font-medium text-slate-600">
+                                                    <!-- Special Input for 'FORA' -->
+                                                    <tr v-if="activeExamFilter === 'FORA'" class="border-b border-slate-100 bg-amber-50 hover:bg-amber-100/50 transition-colors group">
+                                                        <td class="p-4 text-center border-r border-slate-100/50">
+                                                            <input type="checkbox" checked class="w-4 h-4 rounded border-slate-300 text-blue-600" />
+                                                        </td>
+                                                        <td class="p-0 border-r border-slate-100/50">
+                                                            <input type="text" placeholder="Escreva o nome do exame de fora aqui..." class="w-full bg-transparent border-none focus:ring-0 px-4 py-4 text-slate-700 outline-none font-bold" />
+                                                        </td>
+                                                        <td class="p-4 text-center text-slate-400 italic">Pendente...</td>
+                                                    </tr>
+                                                    
+                                                    <tr v-for="exame in examesList" :key="exame.id" class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                                        <td class="p-4 text-center border-r border-slate-100">
+                                                            <input type="checkbox" v-model="exame.selected" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                                        </td>
+                                                        <td class="p-4 font-bold text-slate-700 border-r border-slate-100">{{ exame.nome }}</td>
+                                                        <td class="p-4 text-center">
+                                                            <span v-if="!exame.isRequested" class="text-slate-400">---</span>
+                                                            <button v-else @click="openLancarModal(exame)" class="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm w-full">Lançar Res.</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr v-if="examesList.length === 0 && activeExamFilter !== 'FORA'">
+                                                        <td colspan="3" class="p-12 text-center opacity-40">
+                                                            <p class="text-xs font-black uppercase tracking-widest text-slate-400">Nenhum exame encontrado</p>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
                                 </div>
@@ -348,23 +511,26 @@ const calcularIdade = (dataNascimento) => {
                             </div>
 
                             <!-- Footer Actions -->
-                            <div class="px-8 py-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                                <div class="flex items-center gap-4">
-                                    <button class="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all">
-                                        <Printer class="w-4 h-4" /> Imprimir Relatório
+                            <div class="px-8 py-6 bg-transparent border-t border-slate-100 flex items-center justify-between mt-auto shrink-0">
+                                <div class="flex gap-4 items-center">
+                                    <button class="px-6 py-4 bg-white border border-slate-200 text-slate-500 rounded-[12px] text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
+                                        <Printer class="w-4 h-4 text-slate-400" /> Imprimir Relatório
                                     </button>
-                                    <button class="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all">
-                                        <FileText class="w-4 h-4" /> Imprimir Receita
+                                    <button class="px-6 py-4 bg-white border border-slate-200 text-slate-500 rounded-[12px] text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
+                                        <FileText class="w-4 h-4 text-slate-400" /> Imprimir Receita
                                     </button>
                                 </div>
-                                <div class="flex items-center gap-4">
-                                    <select v-model="form.situacao" class="bg-white border-slate-200 focus:ring-blue-500 focus:border-blue-500 rounded-2xl text-[10px] font-black uppercase tracking-widest py-3 px-6 pr-10 appearance-none cursor-pointer">
-                                        <option value="Finalizado">Finalizar Consulta</option>
-                                        <option value="Laboratorio">Enviar para Lab</option>
-                                        <option value="Reconsulta">Agendar Reconsulta</option>
-                                        <option value="Internamento">Solicitar Internamento</option>
-                                    </select>
-                                    <button @click="salvarConsulta" :disabled="form.processing" class="flex items-center gap-3 px-10 py-3 bg-blue-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 disabled:opacity-50">
+                                <div class="flex gap-4 items-center">
+                                    <div class="relative">
+                                        <select v-model="form.situacao" class="bg-white border border-slate-200 text-slate-700 rounded-[12px] text-xs font-bold py-4 pl-6 pr-12 appearance-none cursor-pointer shadow-sm hover:bg-slate-50 transition-all">
+                                            <option value="Finalizado">Finalizar Consulta</option>
+                                            <option value="Laboratorio">Enviar para Lab</option>
+                                            <option value="Reconsulta">Agendar Reconsulta</option>
+                                            <option value="Internamento">Solicitar Internamento</option>
+                                        </select>
+                                        <ChevronDown class="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    </div>
+                                    <button @click="salvarConsulta" :disabled="form.processing" class="px-10 py-4 bg-blue-600 text-white rounded-[12px] text-[11px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30 flex items-center gap-2 disabled:opacity-50">
                                         <Save class="w-5 h-5" /> GRAVAR DADOS
                                     </button>
                                 </div>
@@ -399,6 +565,142 @@ const calcularIdade = (dataNascimento) => {
                     <AlertCircle v-else class="w-4 h-4 text-white" />
                 </div>
                 <p class="text-[10px] font-black uppercase tracking-widest">{{ notification.message }}</p>
+            </div>
+        </Transition>
+
+        <!-- Modal: Lançar Resultados de Exame -->
+        <Transition
+            enter-active-class="transition duration-300 ease-out"
+            enter-from-class="opacity-0 scale-95"
+            enter-to-class="opacity-100 scale-100"
+            leave-active-class="transition duration-200 ease-in"
+            leave-from-class="opacity-100 scale-100"
+            leave-to-class="opacity-0 scale-95"
+        >
+            <div v-if="showLancarResultadosModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="showLancarResultadosModal = false"></div>
+                
+                <div class="relative bg-white w-full max-w-[1200px] border border-slate-300 shadow-2xl overflow-hidden h-[85vh] flex flex-col">
+                    <!-- Top dark blue header -->
+                    <div class="bg-[#000080] text-white text-center py-2 font-bold uppercase text-[10px] flex justify-between items-center px-4 tracking-widest">
+                        <span>Lançar Resultados de Exames</span>
+                        <span class="text-xs tracking-normal">LANÇAR RESULTADO DE EXAME APARTIR DO CONSULTÓRIO</span>
+                        <button @click="showLancarResultadosModal = false" class="hover:text-red-300 flex items-center gap-1"><X class="w-4 h-4" /> Fechar</button>
+                    </div>
+                    
+                    <div class="bg-indigo-50/50 text-center py-2 text-[11px] font-black text-[#000080] uppercase tracking-widest border-b border-slate-200">
+                        Selecione o Exame e Lança o Resultado
+                    </div>
+
+                    <div class="flex-grow flex flex-col md:flex-row overflow-hidden bg-slate-100">
+                        <!-- Left Panel: Exames List -->
+                        <div class="w-full md:w-1/3 border-r border-slate-300 bg-white flex flex-col">
+                            <div class="p-2 border-b border-slate-200 flex justify-center bg-slate-50">
+                                <button class="text-[10px] uppercase font-black text-slate-500 flex items-center gap-2 hover:text-blue-600 transition-colors">
+                                    <Printer class="w-4 h-4" /> IMPRIMIR RESULTADOS
+                                </button>
+                            </div>
+                            <div class="p-1 px-3 border-b border-slate-200 bg-slate-50/50 flex gap-2 items-center">
+                                <span class="text-[9px] font-bold text-slate-400 italic flex-grow">Arraste o cabeçalho de uma coluna para agrupar...</span>
+                                <Search class="w-3.5 h-3.5 text-slate-400" />
+                            </div>
+                            <div class="flex-grow overflow-auto custom-scrollbar">
+                                <table class="w-full text-left font-bold text-xs border-collapse">
+                                    <thead class="bg-slate-50 border-b border-slate-200 shadow-sm sticky top-0">
+                                        <tr>
+                                            <th class="p-3 text-slate-500 w-10 text-center border-r border-slate-200">#</th>
+                                            <th class="p-3 text-slate-500 border-r border-slate-200">Exame</th>
+                                            <th class="p-3 text-slate-500">Resultado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="ex in examesList" :key="ex.id" @click="selectedExameToLancar = ex" :class="selectedExameToLancar?.id === ex.id ? 'bg-blue-50/50 text-blue-800' : 'hover:bg-slate-50 text-slate-700'" class="border-b border-slate-100 cursor-pointer transition-colors group">
+                                            <td class="p-3 text-center border-r border-slate-100 text-[#000080] font-black pt-2">
+                                                <ArrowRight v-if="selectedExameToLancar?.id === ex.id" class="w-3.5 h-3.5 mx-auto" />
+                                            </td>
+                                            <td class="p-3 border-r border-slate-100 truncate max-w-[150px] group-hover:text-blue-600 transition-colors">{{ ex.nome }}</td>
+                                            <td class="p-3 text-slate-500 font-medium truncate max-w-[100px]">{{ ex.resultado }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Lançamento -->
+                        <div class="w-full md:w-2/3 flex flex-col bg-[#e6e6e6]">
+                            <div class="bg-[#000080] text-white text-center py-4 font-black shadow-inner">
+                                {{ selectedExameToLancar?.nome || 'SELECIONE UM EXAME À ESQUERDA' }}
+                            </div>
+                            
+                            <div class="p-6 overflow-y-auto" v-if="selectedExameToLancar">
+                                <div class="flex flex-wrap items-center gap-8 mb-6 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                    <label class="flex items-center gap-3 cursor-pointer group">
+                                        <div class="relative flex items-center justify-center border border-slate-300 rounded-full w-4 h-4 p-2 group-hover:border-blue-500 transition-colors">
+                                            <input type="radio" v-model="lancarResultadoMode" value="manual" class="absolute opacity-0 w-full h-full cursor-pointer" />
+                                            <div v-show="lancarResultadoMode === 'manual'" class="w-2.5 h-2.5 bg-blue-600 rounded-full"></div>
+                                        </div>
+                                        <span class="text-[11px] font-black uppercase text-slate-700">Preencher Resultado Manualmente</span>
+                                    </label>
+                                    <label class="flex items-center gap-3 cursor-pointer group">
+                                        <div class="relative flex items-center justify-center border border-slate-300 rounded-full w-4 h-4 p-2 group-hover:border-blue-500 transition-colors">
+                                            <input type="radio" v-model="lancarResultadoMode" value="anexar" class="absolute opacity-0 w-full h-full cursor-pointer" />
+                                            <div v-show="lancarResultadoMode === 'anexar'" class="w-2.5 h-2.5 bg-blue-600 rounded-full"></div>
+                                        </div>
+                                        <span class="text-[11px] font-black uppercase text-slate-700">Anexar Resultado (PDF, Imagem)</span>
+                                    </label>
+                                </div>
+
+                                <div v-if="lancarResultadoMode === 'manual'" class="space-y-6">
+                                    <div class="bg-white border border-slate-300 shadow-sm flex flex-col">
+                                        <div class="bg-slate-200/80 px-4 py-2 font-black text-[10px] uppercase text-slate-700 border-b border-slate-300 tracking-widest">Resultado</div>
+                                        <textarea v-model="selectedExameToLancar.resultado" rows="5" class="w-full border-none focus:ring-0 text-sm p-4 font-bold text-slate-800 resize-y" placeholder="Digite o resultado do exame..."></textarea>
+                                    </div>
+                                    
+                                    <div class="bg-white border border-slate-300 shadow-sm flex flex-col">
+                                        <div class="bg-slate-200/80 px-4 py-2 font-black text-[10px] uppercase text-slate-700 border-b border-slate-300 tracking-widest">Observação</div>
+                                        <textarea rows="3" class="w-full border-none focus:ring-0 text-sm p-4 font-bold text-slate-800 resize-y" placeholder="Anotações adicionais do médico..."></textarea>
+                                    </div>
+                                    
+                                    <div class="flex justify-start">
+                                        <button class="bg-white border border-slate-300 px-8 py-3.5 text-[10px] uppercase tracking-widest font-black text-slate-700 hover:bg-slate-50 hover:text-blue-600 shadow-sm transition-colors">Gravar Resultado</button>
+                                    </div>
+                                </div>
+
+                                <div v-else class="space-y-6">
+                                    <div class="flex flex-wrap gap-4 bg-white p-4 border border-slate-300 shadow-sm">
+                                        <button class="bg-white border border-slate-300 px-8 py-2.5 text-[10px] uppercase tracking-widest font-black text-slate-700 hover:bg-slate-50 hover:text-blue-600 shadow-sm transition-colors">Anexar PDF</button>
+                                        <button class="bg-white border border-slate-300 px-8 py-2.5 text-[10px] uppercase tracking-widest font-black text-slate-700 hover:bg-slate-50 hover:text-blue-600 shadow-sm transition-colors">Anexar Imagem</button>
+                                        <button class="bg-white border border-slate-300 px-8 py-2.5 text-[10px] uppercase tracking-widest font-black text-slate-700 hover:bg-slate-50 hover:text-blue-600 shadow-sm transition-colors md:ml-auto">Gravar Anexos</button>
+                                    </div>
+                                    
+                                    <div class="border border-slate-300 bg-slate-200 min-h-[300px] p-4 shadow-inner flex flex-col gap-2">
+                                        <!-- Sample Attachment -->
+                                        <div class="bg-white p-3 flex items-center justify-between border border-slate-300 shadow-sm">
+                                            <div class="flex items-center gap-4">
+                                                <div class="w-12 h-14 bg-red-50 border border-red-200 flex flex-col items-center justify-center text-red-600 font-black shadow-sm">
+                                                    <FileText class="w-6 h-6 mb-1" />
+                                                    <span class="text-[8px] uppercase tracking-widest">PDF</span>
+                                                </div>
+                                                <div>
+                                                    <p class="text-[11px] font-black text-slate-700 uppercase">Arquivo PDF: WhatsApp_Image_2026_03_14.jpeg</p>
+                                                    <p class="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Tamanho PDF: 520Kb</p>
+                                                </div>
+                                            </div>
+                                            <button class="bg-[#f0f0f0] border border-slate-300 px-4 py-2.5 text-[9px] font-black uppercase text-slate-600 hover:bg-white hover:text-red-500 transition-colors shadow-sm tracking-widest">Remover Anexo</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Empty state panel -->
+                            <div v-else class="p-12 flex flex-col items-center justify-center flex-grow text-center opacity-40">
+                                <FileText class="w-16 h-16 text-slate-500 mb-4" />
+                                <p class="text-sm font-black text-slate-700 uppercase tracking-widest">Aguardando Seleção</p>
+                                <p class="text-xs font-bold text-slate-500 mt-2">Escolha um exame na lista ao lado para lançar os resultados correspondentes.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </Transition>
     </DashboardLayout>

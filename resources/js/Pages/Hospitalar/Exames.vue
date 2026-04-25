@@ -49,10 +49,9 @@ const filteredExames = computed(() => {
 
 const addFilho = () => {
     form.Filhos.push({
-        descricao: '',
-        min: '',
-        max: '',
-        unidade: ''
+        nome: '',
+        de: '',
+        ate: ''
     });
 };
 
@@ -80,11 +79,39 @@ const openEditModal = (ex) => {
     form.Referencia = ex.Referencia || '';
     form.Sugestao = ex.Sugestao || '';
     
-    try {
-        form.Filhos = ex.Filhos ? JSON.parse(ex.Filhos) : [];
-    } catch (e) {
-        form.Filhos = [];
+    let parsedFilhos = [];
+    if (ex.Filhos) {
+        if (ex.Filhos.startsWith('[')) {
+            // Compatibilidade com possíveis registros criados como JSON
+            try {
+                let jFilhos = JSON.parse(ex.Filhos);
+                parsedFilhos = jFilhos.map(f => ({
+                    nome: f.descricao || f.nome || '',
+                    de: f.min || f.de || '',
+                    ate: f.max || f.ate || ''
+                }));
+            } catch (e) {}
+        } else {
+            // Formato normal esperado: "Hemoglobina=de: 12 Até: 16|Glóbulos brancos=de: 4.5 Até: 11"
+            const parts = ex.Filhos.split('|');
+            for (const p of parts) {
+                if (!p.trim()) continue;
+                
+                const eqIndex = p.indexOf('=de: ');
+                if (eqIndex !== -1) {
+                    const nome = p.substring(0, eqIndex).trim();
+                    const rest = p.substring(eqIndex + 5);
+                    const ateSplit = rest.split(' Até: ');
+                    const de = ateSplit[0] ? ateSplit[0].trim() : '';
+                    const ate = ateSplit[1] ? ateSplit[1].trim() : '';
+                    parsedFilhos.push({ nome, de, ate });
+                } else {
+                    parsedFilhos.push({ nome: p.trim(), de: '', ate: '' });
+                }
+            }
+        }
     }
+    form.Filhos = parsedFilhos;
     
     isModalOpen.value = true;
 };
@@ -186,8 +213,8 @@ const formatCurrency = (value) => {
                                     </td>
                                     <td class="px-8 py-6">
                                         <div v-if="ex.Filhos" class="flex items-center gap-1">
-                                            <span class="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full">
-                                                {{ JSON.parse(ex.Filhos).length }} ITENS
+                                            <span class="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full" :title="ex.Filhos">
+                                                {{ (ex.Filhos.startsWith('[') ? JSON.parse(ex.Filhos).length : ex.Filhos.split('|').filter(Boolean).length) }} ITENS
                                             </span>
                                         </div>
                                         <span v-else class="text-[10px] font-bold text-slate-300 uppercase italic">Simples</span>
@@ -276,9 +303,9 @@ const formatCurrency = (value) => {
                                     <option value="URGENTE">URGENTE</option>
                                 </select>
                             </div>
-                            <div class="flex items-center gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                                <input type="checkbox" v-model="form.Exame_Fora" true-value="True" false-value="False" class="w-5 h-5 text-indigo-600 rounded" />
-                                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Exame Externo</span>
+                            <div class="flex items-center gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors" @click="form.Exame_Fora = form.Exame_Fora === 'True' ? 'False' : 'True'">
+                                <input type="checkbox" v-model="form.Exame_Fora" true-value="True" false-value="False" class="w-5 h-5 text-indigo-600 rounded cursor-pointer pointer-events-none" />
+                                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest select-none">Exames do consultório ou de fora</span>
                             </div>
                         </div>
 
@@ -325,28 +352,24 @@ const formatCurrency = (value) => {
                                         <div v-if="form.Filhos.length > 0" class="space-y-4">
                                             <div v-for="(filho, index) in form.Filhos" :key="index" class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row items-end gap-4 animate-fadeIn">
                                                 <div class="flex-grow space-y-2">
-                                                    <label class="text-[9px] font-black text-slate-400 uppercase">Nome do Componente</label>
-                                                    <input v-model="filho.descricao" placeholder="Ex: Hemoglobina" class="w-full bg-slate-50 border-transparent rounded-xl px-4 py-2.5 text-xs font-bold" />
+                                                    <label class="text-[9px] font-black text-slate-400 uppercase">Filhos (Nome Categoria)</label>
+                                                    <input v-model="filho.nome" placeholder="Ex: Hemoglobina" class="w-full bg-slate-50 border-transparent rounded-xl px-4 py-2.5 text-xs font-bold" />
                                                 </div>
-                                                <div class="w-24 space-y-2">
-                                                    <label class="text-[9px] font-black text-slate-400 uppercase text-center block">Min</label>
-                                                    <input v-model="filho.min" placeholder="0" class="w-full bg-slate-50 border-transparent rounded-xl px-4 py-2.5 text-xs font-bold text-center" />
+                                                <div class="w-full md:w-36 space-y-2">
+                                                    <label class="text-[9px] font-black text-slate-400 uppercase text-center block whitespace-nowrap">Intervalo de Ref, de:</label>
+                                                    <input v-model="filho.de" placeholder="0" class="w-full bg-slate-50 border-transparent rounded-xl px-4 py-2.5 text-xs font-bold text-center" />
                                                 </div>
-                                                <div class="w-24 space-y-2">
-                                                    <label class="text-[9px] font-black text-slate-400 uppercase text-center block">Max</label>
-                                                    <input v-model="filho.max" placeholder="100" class="w-full bg-slate-50 border-transparent rounded-xl px-4 py-2.5 text-xs font-bold text-center" />
+                                                <div class="w-full md:w-32 space-y-2">
+                                                    <label class="text-[9px] font-black text-slate-400 uppercase text-center block">Até</label>
+                                                    <input v-model="filho.ate" placeholder="100" class="w-full bg-slate-50 border-transparent rounded-xl px-4 py-2.5 text-xs font-bold text-center" />
                                                 </div>
-                                                <div class="w-32 space-y-2">
-                                                    <label class="text-[9px] font-black text-slate-400 uppercase">Unidade</label>
-                                                    <input v-model="filho.unidade" placeholder="g/dL" class="w-full bg-slate-50 border-transparent rounded-xl px-4 py-2.5 text-xs font-bold" />
-                                                </div>
-                                                <button type="button" @click="removeFilho(index)" class="p-2.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                                                <button type="button" @click="removeFilho(index)" class="p-2.5 bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm">
                                                     <Trash2 class="w-4 h-4" />
                                                 </button>
                                             </div>
                                         </div>
                                         <div v-else class="py-10 text-center opacity-20 italic text-sm font-bold">
-                                            Nenhum componente adicionado. O exame será tratado como um item simples.
+                                            Nenhum filho/componente adicionado.
                                         </div>
                                     </div>
                                 </div>

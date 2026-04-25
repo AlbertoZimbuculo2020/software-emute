@@ -11,23 +11,32 @@ class ConsultorioController extends Controller
 {
     public function index()
     {
-        // Pacientes aguardando consulta ou reconsulta
         $aguardando = DB::table('tb_agendamento')
             ->join('tb_tipoentidade', 'tb_agendamento.IdPaciente', '=', 'tb_tipoentidade.Codigo')
             ->leftJoin('tb_entidade', 'tb_tipoentidade.IdEntidade', '=', 'tb_entidade.Codigo')
+            ->leftJoin('tb_tipoentidade as medico', 'tb_agendamento.IdMedico', '=', 'medico.Codigo')
             ->select(
                 'tb_agendamento.*', 
                 'tb_tipoentidade.Nome as PacienteNome',
                 'tb_tipoentidade.Telefone',
+                'tb_tipoentidade.Rua',
+                'tb_tipoentidade.Cidade',
                 'tb_entidade.DataNascimento',
-                'tb_entidade.Genero'
+                'tb_entidade.Genero',
+                'medico.Nome as MedicoNome'
             )
             ->whereIn('tb_agendamento.Situacao', ['Consultorio', 'Reconsulta'])
             ->where('tb_agendamento.Estado', 'Ativo')
             ->get();
 
+        $catalogoExames = DB::table('tb_exames')
+            ->where('Estado', 'Ativo')
+            ->select('Id', 'Codigo', 'Descricao', 'Categoria', 'Tipo', 'Exame_Fora')
+            ->get();
+
         return Inertia::render('Hospitalar/Consultorio', [
-            'aguardando' => $aguardando
+            'aguardando' => $aguardando,
+            'catalogoExames' => $catalogoExames
         ]);
     }
 
@@ -50,9 +59,15 @@ class ConsultorioController extends Controller
             ->limit(10)
             ->get();
 
+        $exames_solicitados = DB::table('tb_resultado_exame')
+            ->where('IdAgenda', $idAgenda)
+            ->where('Estado', '!=', 'Removido')
+            ->get();
+
         return response()->json([
             'triagem' => $triagem,
-            'historico' => $historico
+            'historico' => $historico,
+            'exames_solicitados' => $exames_solicitados
         ]);
     }
 
