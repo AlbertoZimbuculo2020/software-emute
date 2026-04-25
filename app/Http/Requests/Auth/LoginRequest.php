@@ -43,21 +43,29 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $user = \App\Models\User::where('NOME_UTILIZADOR', $this->login)->where('ESTADO', 'Activado')->first();
+        $login = trim($this->login);
+        $senha = $this->senha;
+
+        // Search for user case-insensitively
+        $user = \App\Models\User::where('NOME_UTILIZADOR', $login)
+            ->where('ESTADO', 'Activado')
+            ->first();
 
         if (! $user) {
-            $this->fail('Usuário não encontrado.');
+            $this->fail('Usuário não encontrado ou inativo.');
         }
 
         // Check password using Hybrid Strategy (Bcrypt OR SHA-512)
         $authenticated = false;
 
-        // Try Bcrypt (Laravel default)
-        if (Str::startsWith($user->SENHA, '$2y$') && \Illuminate\Support\Facades\Hash::check($this->senha, $user->SENHA)) {
-            $authenticated = true;
+        // Try Bcrypt (Laravel default & New passwords)
+        if (\Illuminate\Support\Str::startsWith($user->SENHA, '$2y$')) {
+            if (\Illuminate\Support\Facades\Hash::check($senha, $user->SENHA)) {
+                $authenticated = true;
+            }
         } 
-        // Try Legacy SHA-512
-        elseif ($user->SENHA === hash('sha512', $this->senha)) {
+        // Try Legacy SHA-512 (Hexadecimal 128 chars)
+        elseif ($user->SENHA === hash('sha512', $senha)) {
             $authenticated = true;
         }
 

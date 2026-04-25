@@ -19,12 +19,16 @@ import {
     ChevronRight,
     Plus,
     Trash2,
-    X
+    X,
+    CheckCircle,
+    AlertCircle,
+    FileText
 } from 'lucide-vue-next';
 
 const props = defineProps({
     aguardando: Array,
-    catalogoExames: Array
+    catalogoExames: Array,
+    empresa: Object
 });
 
 const searchTerm = ref('');
@@ -42,6 +46,7 @@ const searchExameTerm = ref('');
 const selectedExameToLancar = ref(null);
 
 const examesSolicitados = ref([]); 
+const selectedExams = ref([]); 
 
 const examesList = computed(() => {
     let result = [];
@@ -136,6 +141,7 @@ const selecionarPaciente = async (paciente) => {
         triageData.value = response.data.triagem;
         patientHistory.value = response.data.historico;
         examesSolicitados.value = response.data.exames_solicitados || [];
+        selectedExams.value = []; // Limpar seleções ao trocar de paciente
     } catch (error) {
         console.error('Erro ao carregar dados do paciente:', error);
         showNotification('Erro ao carregar dados complementares.', 'error');
@@ -171,6 +177,61 @@ const calcularIdadeFormatoDesktop = (dataNascimento) => {
     }
     return age + ' Anos';
 };
+
+const examesParaImprimir = computed(() => {
+    let selected = examesList.value.filter(e => selectedExams.value.includes(e.id));
+    
+    if (selected.length === 0) {
+        if (!examesSolicitados.value || examesSolicitados.value.length === 0) return {};
+        let grouped = {};
+        examesSolicitados.value.forEach(e => {
+            const cat = e.Categoria || 'GERAL';
+            if(!grouped[cat]) grouped[cat] = [];
+            grouped[cat].push({ Descricao: e.Descricao || e.ExameDescricao, Resultado: e.Resultado });
+        });
+        return grouped;
+    }
+    
+    let grouped = {};
+    selected.forEach(e => {
+        let original = (props.catalogoExames || []).find(cat => cat.Codigo === e.codigo) || {};
+        const catName = original.Categoria || 'GERAL';
+        if(!grouped[catName]) grouped[catName] = [];
+        grouped[catName].push({
+            Descricao: e.nome,
+            Resultado: e.resultado
+        });
+    });
+    return grouped;
+});
+
+const imprimirRequisicao = () => {
+    if(!selectedPaciente.value) {
+        showNotification('Selecione um paciente primeiro!', 'error');
+        return;
+    }
+    if(Object.keys(examesParaImprimir.value).length === 0) {
+        showNotification('Nenhum exame selecionado para imprimir.', 'error');
+        return;
+    }
+    window.print();
+};
+
+const toggleSelectAll = (event) => {
+    const currentIds = examesList.value.map(e => e.id);
+    if (event.target.checked) {
+        const newSelection = new Set([...selectedExams.value, ...currentIds]);
+        selectedExams.value = Array.from(newSelection);
+    } else {
+        selectedExams.value = selectedExams.value.filter(id => !currentIds.includes(id));
+    }
+};
+
+const isAllSelected = computed(() => {
+    if (examesList.value.length === 0) return false;
+    return examesList.value.every(e => selectedExams.value.includes(e.id));
+});
+
 </script>
 
 <template>
@@ -249,7 +310,7 @@ const calcularIdadeFormatoDesktop = (dataNascimento) => {
                 </div>
 
                 <!-- Main Content Area -->
-                <div class="lg:col-span-9 flex flex-col gap-6 overflow-hidden">
+                <div class="lg:col-span-9 flex flex-col gap-6 overflow-y-auto custom-scrollbar pb-8 pr-2">
                     
                     <template v-if="selectedPaciente">
                         <!-- Patient Header & Triage Stats -->
@@ -379,42 +440,43 @@ const calcularIdadeFormatoDesktop = (dataNascimento) => {
                                 </div>
 
                                 <!-- Tab: Exams -->
-                                <div v-if="activeTab === 'exams'" class="flex-grow flex flex-col gap-4 animate-fadeIn px-8 pt-8">
+                                <div v-if="activeTab === 'exams'" class="flex-grow flex flex-col animate-fadeIn px-2 md:px-12 lg:px-16 pt-6 pb-2">
+                                    
                                     <!-- Top Buttons (Pills like screenshot) -->
-                                    <div class="flex gap-3 shrink-0">
-                                        <button @click="activeExamFilter = 'SOLICITADOS'" :class="activeExamFilter === 'SOLICITADOS' ? 'bg-[#3b82f6] text-white shadow-md' : 'bg-[#f0f4f8] text-[#5c8bc0] hover:bg-[#e1e9f1]'" class="flex-grow py-3.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all">Exames Solicitados</button>
-                                        <button @click="activeExamFilter = 'LABORATORIO'" :class="activeExamFilter === 'LABORATORIO' ? 'bg-[#3b82f6] text-white shadow-md' : 'bg-[#f0f4f8] text-[#5c8bc0] hover:bg-[#e1e9f1]'" class="flex-grow py-3.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all">Exames do Laboratório</button>
-                                        <button @click="activeExamFilter = 'RAIOX'" :class="activeExamFilter === 'RAIOX' ? 'bg-[#3b82f6] text-white shadow-md' : 'bg-[#f0f4f8] text-[#5c8bc0] hover:bg-[#e1e9f1]'" class="flex-grow py-3.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all">Raio X</button>
-                                        <button @click="activeExamFilter = 'FORA'" :class="activeExamFilter === 'FORA' ? 'bg-[#3b82f6] text-white shadow-md' : 'bg-[#f0f4f8] text-[#5c8bc0] hover:bg-[#e1e9f1]'" class="flex-grow py-3.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all">Exames Fora</button>
+                                    <div class="flex gap-4 shrink-0 mb-4">
+                                        <button @click="activeExamFilter = 'SOLICITADOS'" :class="activeExamFilter === 'SOLICITADOS' ? 'bg-[#3b82f6] text-white shadow-lg shadow-blue-500/20' : 'bg-[#f8fafc] text-[#64748b] hover:bg-[#f1f5f9]'" class="flex-grow py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Exames Solicitados</button>
+                                        <button @click="activeExamFilter = 'LABORATORIO'" :class="activeExamFilter === 'LABORATORIO' ? 'bg-[#3b82f6] text-white shadow-lg shadow-blue-500/20' : 'bg-[#f8fafc] text-[#64748b] hover:bg-[#f1f5f9]'" class="flex-grow py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Exames do Laboratório</button>
+                                        <button @click="activeExamFilter = 'RAIOX'" :class="activeExamFilter === 'RAIOX' ? 'bg-[#3b82f6] text-white shadow-lg shadow-blue-500/20' : 'bg-[#f8fafc] text-[#64748b] hover:bg-[#f1f5f9]'" class="flex-grow py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Raio X</button>
+                                        <button @click="activeExamFilter = 'FORA'" :class="activeExamFilter === 'FORA' ? 'bg-[#3b82f6] text-white shadow-lg shadow-blue-500/20' : 'bg-[#f8fafc] text-[#64748b] hover:bg-[#f1f5f9]'" class="flex-grow py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Exames Fora</button>
                                     </div>
                                     
                                     <!-- Dark Space Bar (Screenshot separator) -->
-                                    <div class="bg-[#1e3a8a] text-white text-center py-1 rounded-[14px] text-xs font-black tracking-widest shadow-inner shrink-0">
+                                    <div class="bg-[#1e3a8a] text-white text-center py-1.5 rounded-2xl text-xs font-black tracking-widest shadow-inner shrink-0 mb-4">
                                         ...
                                     </div>
 
                                     <!-- Middle Action Buttons -->
-                                    <div class="flex gap-3 shrink-0">
-                                        <button class="bg-[#3b82f6] text-white px-8 py-3.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-500 transition-all shadow-md w-64 shrink-0">
+                                    <div class="flex gap-4 shrink-0 mb-6">
+                                        <button class="bg-[#3b82f6] text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-blue-500 transition-all shadow-md w-[280px] shrink-0">
                                             <Activity class="w-4 h-4" /> Enviar no Laboratório
                                         </button>
-                                        <button class="bg-[#f59e0b] text-white px-8 py-3.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-amber-500 transition-all shadow-md flex-grow">
+                                        <button @click="imprimirRequisicao" class="bg-[#f59e0b] text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-amber-500 transition-all shadow-md flex-grow">
                                             <Printer class="w-4 h-4" /> Imprimir Requisição
                                         </button>
-                                        <button class="bg-[#f59e0b] text-white px-8 py-3.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-amber-500 transition-all shadow-md flex-grow">
+                                        <button class="bg-[#f59e0b] text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-amber-500 transition-all shadow-md flex-grow">
                                             <Printer class="w-4 h-4" /> Imprimir Resultados
                                         </button>
-                                        <button @click="showLancarResultadosModal = true" class="bg-[#1e293b] text-[#64748b] w-16 flex items-center justify-center rounded-[14px] hover:text-white transition-all shadow-md shrink-0">
+                                        <button @click="showLancarResultadosModal = true" class="bg-[#0f172a] text-[#94a3b8] w-20 flex items-center justify-center rounded-2xl hover:text-white transition-all shadow-md shrink-0">
                                             <User class="w-5 h-5" />
                                         </button>
                                     </div>
                                     
                                     <!-- Data Grid (The 'Cruds') -->
-                                    <div class="flex-grow border border-slate-200 rounded-[14px] overflow-hidden shadow-sm flex flex-col mt-2 mb-8 bg-white min-h-[300px]">
+                                    <div class="flex-grow border border-slate-200 rounded-3xl overflow-hidden shadow-sm flex flex-col mb-8 bg-white min-h-[300px]">
                                         <!-- Search Box -->
-                                        <div class="p-3 border-b border-slate-100 flex gap-3 bg-slate-50/50">
-                                            <input v-model="searchExameTerm" placeholder="Digite o texto a procurar..." class="flex-grow text-xs px-4 py-2 bg-white border border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 rounded-xl transition-all font-medium text-slate-700 shadow-sm outline-none" />
-                                            <button class="px-8 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">Buscar</button>
+                                        <div class="p-4 border-b border-slate-100 flex gap-4 bg-white">
+                                            <input v-model="searchExameTerm" placeholder="Digite o texto a procurar..." class="flex-grow text-xs px-6 py-3.5 bg-white border border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 rounded-2xl transition-all font-medium text-slate-700 shadow-sm outline-none" />
+                                            <button class="px-10 py-3.5 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase text-slate-600 hover:bg-slate-50 transition-colors shadow-sm tracking-widest">Buscar</button>
                                         </div>
                                         
                                         <!-- Table Body -->
@@ -422,38 +484,38 @@ const calcularIdadeFormatoDesktop = (dataNascimento) => {
                                             <table class="w-full text-left border-collapse">
                                                 <thead class="sticky top-0 bg-slate-50 border-b border-slate-200 shadow-sm z-10">
                                                     <tr class="text-[10px] uppercase font-black text-slate-500 tracking-widest">
-                                                        <th class="p-4 w-14 text-center border-r border-slate-100">
-                                                            <input type="checkbox" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                                        <th class="p-5 w-16 text-center border-r border-slate-100">
+                                                            <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
                                                         </th>
-                                                        <th class="p-4 border-r border-slate-100">Exame</th>
-                                                        <th class="p-4 w-40 text-center">Resultado</th>
+                                                        <th class="p-5 border-r border-slate-100">Exame</th>
+                                                        <th class="p-5 w-48 text-center">Resultado</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody class="text-xs font-medium text-slate-600">
                                                     <!-- Special Input for 'FORA' -->
                                                     <tr v-if="activeExamFilter === 'FORA'" class="border-b border-slate-100 bg-amber-50 hover:bg-amber-100/50 transition-colors group">
-                                                        <td class="p-4 text-center border-r border-slate-100/50">
+                                                        <td class="p-5 text-center border-r border-slate-100/50">
                                                             <input type="checkbox" checked class="w-4 h-4 rounded border-slate-300 text-blue-600" />
                                                         </td>
                                                         <td class="p-0 border-r border-slate-100/50">
-                                                            <input type="text" placeholder="Escreva o nome do exame de fora aqui..." class="w-full bg-transparent border-none focus:ring-0 px-4 py-4 text-slate-700 outline-none font-bold" />
+                                                            <input type="text" placeholder="Escreva o nome do exame de fora aqui..." class="w-full bg-transparent border-none focus:ring-0 px-5 py-5 text-slate-700 outline-none font-bold" />
                                                         </td>
-                                                        <td class="p-4 text-center text-slate-400 italic">Pendente...</td>
+                                                        <td class="p-5 text-center text-slate-400 italic">Pendente...</td>
                                                     </tr>
                                                     
                                                     <tr v-for="exame in examesList" :key="exame.id" class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                                        <td class="p-4 text-center border-r border-slate-100">
-                                                            <input type="checkbox" v-model="exame.selected" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                                        <td class="p-5 text-center border-r border-slate-100">
+                                                            <input type="checkbox" :value="exame.id" v-model="selectedExams" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
                                                         </td>
-                                                        <td class="p-4 font-bold text-slate-700 border-r border-slate-100">{{ exame.nome }}</td>
-                                                        <td class="p-4 text-center">
+                                                        <td class="p-5 font-bold text-slate-700 border-r border-slate-100">{{ exame.nome }}</td>
+                                                        <td class="p-5 text-center">
                                                             <span v-if="!exame.isRequested" class="text-slate-400">---</span>
-                                                            <button v-else @click="openLancarModal(exame)" class="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm w-full">Lançar Res.</button>
+                                                            <button v-else @click="openLancarModal(exame)" class="px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-wider transition-colors shadow-sm w-full">Lançar Res.</button>
                                                         </td>
                                                     </tr>
                                                     <tr v-if="examesList.length === 0 && activeExamFilter !== 'FORA'">
-                                                        <td colspan="3" class="p-12 text-center opacity-40">
-                                                            <p class="text-xs font-black uppercase tracking-widest text-slate-400">Nenhum exame encontrado</p>
+                                                        <td colspan="3" class="p-16 text-center opacity-40">
+                                                            <p class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Nenhum exame encontrado</p>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -608,7 +670,9 @@ const calcularIdadeFormatoDesktop = (dataNascimento) => {
                                 <table class="w-full text-left font-bold text-xs border-collapse">
                                     <thead class="bg-slate-50 border-b border-slate-200 shadow-sm sticky top-0">
                                         <tr>
-                                            <th class="p-3 text-slate-500 w-10 text-center border-r border-slate-200">#</th>
+                                            <th class="p-3 text-slate-500 w-10 text-center border-r border-slate-200">
+                                                <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll" class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600" />
+                                            </th>
                                             <th class="p-3 text-slate-500 border-r border-slate-200">Exame</th>
                                             <th class="p-3 text-slate-500">Resultado</th>
                                         </tr>
@@ -616,7 +680,7 @@ const calcularIdadeFormatoDesktop = (dataNascimento) => {
                                     <tbody>
                                         <tr v-for="ex in examesList" :key="ex.id" @click="selectedExameToLancar = ex" :class="selectedExameToLancar?.id === ex.id ? 'bg-blue-50/50 text-blue-800' : 'hover:bg-slate-50 text-slate-700'" class="border-b border-slate-100 cursor-pointer transition-colors group">
                                             <td class="p-3 text-center border-r border-slate-100 text-[#000080] font-black pt-2">
-                                                <ArrowRight v-if="selectedExameToLancar?.id === ex.id" class="w-3.5 h-3.5 mx-auto" />
+                                                <input type="checkbox" :value="ex.id" v-model="selectedExams" @click.stop class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600" />
                                             </td>
                                             <td class="p-3 border-r border-slate-100 truncate max-w-[150px] group-hover:text-blue-600 transition-colors">{{ ex.nome }}</td>
                                             <td class="p-3 text-slate-500 font-medium truncate max-w-[100px]">{{ ex.resultado }}</td>
@@ -703,6 +767,84 @@ const calcularIdadeFormatoDesktop = (dataNascimento) => {
                 </div>
             </div>
         </Transition>
+
+        <!-- PRINT VIEW WRAPPER (HIDDEN ON SCREEN, VISIBLE ON PRINT) -->
+        <div class="hidden print-layout printable-area">
+            <div v-if="selectedPaciente" class="w-full bg-white text-black font-sans print-page">
+                <!-- Header -->
+                <div style="display: flex; border-bottom: 1px dashed black; padding-bottom: 20px; margin-bottom: 20px; align-items: center;">
+                    <div v-if="empresa?.IMAGEM" style="width: 140px; height: 100px; display: flex; align-items: center; justify-content: center; margin-right: 20px;">
+                        <img :src="empresa.IMAGEM" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+                    </div>
+                    <div v-else style="width: 120px; height: 120px; background-color: #333; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; margin-right: 20px;">
+                        <span style="font-weight: 800; font-size: 22px;">EMUTE</span>
+                        <span style="font-size: 10px; letter-spacing: 1px;">SOFTWARE</span>
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <h1 style="font-weight: 900; font-size: 28px; text-transform: uppercase; margin: 0;">{{ empresa?.DESCRICAO || 'INEVITAVEL' }}</h1>
+                        <p style="font-size: 14px; margin: 5px 0;">Contribuinte n° {{ empresa?.NIF || '---' }}</p>
+                        <p style="font-size: 14px; margin: 0;">Contacto: {{ empresa?.TELEFONE || '---' }} | {{ empresa?.EMAIL || '---' }}</p>
+                        <p style="font-size: 14px; margin: 5px 0;">Endereço: {{ empresa?.RUA || '---' }}, {{ empresa?.CIDADE || '' }}</p>
+                    </div>
+                </div>
+
+                <h2 style="text-align: center; font-weight: 900; font-size: 24px; margin-bottom: 20px; border-bottom: 3px solid black; padding-bottom: 10px; text-transform: uppercase;">
+                    Requisições de Exames
+                </h2>
+
+                <!-- Patient Details -->
+                <table style="width: 100%; font-size: 14px; margin-bottom: 30px; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 4px 0;"><strong>Nome:</strong> {{ selectedPaciente.PacienteNome }}</td>
+                        <td style="padding: 4px 0;"><strong>Idade:</strong> {{ calcularIdadeFormatoDesktop(selectedPaciente.DataNascimento) }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px 0;"><strong>Sexo:</strong> {{ selectedPaciente.Genero?.toUpperCase() }}</td>
+                        <td style="padding: 4px 0;"><strong>N° Processo:</strong> {{ selectedPaciente.Codigo }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px 0;"><strong>Data do Exame:</strong> {{ new Date().toLocaleString('pt-PT') }}</td>
+                        <td style="padding: 4px 0;"><strong>Empresa:</strong> {{ selectedPaciente.Entidade || '' }}</td>
+                    </tr>
+                </table>
+
+                <!-- Exams Table Grouped -->
+                <div v-for="(exames, categoria) in examesParaImprimir" :key="categoria" style="margin-bottom: 30px;">
+                    <div style="background-color: #e2e8f0; padding: 8px; border: 1px solid #ccc; font-weight: bold; font-size: 14px;">
+                        Categoria do Exame: {{ categoria }}
+                    </div>
+                    
+                    <div v-for="exame in exames" :key="exame.Descricao" style="margin-bottom: 15px;">
+                        <div style="background-color: #94a3b8; padding: 6px 8px; border: 1px solid #666; font-weight: 900; font-size: 13px;">
+                            Exame: {{ exame.Descricao }}
+                        </div>
+                        <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid black;">
+                                    <th style="padding: 4px; text-align: left;">Dados</th>
+                                    <th style="padding: 4px; text-align: center;">Resultados</th>
+                                    <th style="padding: 4px; text-align: center;">Referencias</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom: 1px solid #ccc;">
+                                    <td style="padding: 6px 4px;">{{ exame.Descricao }}</td>
+                                    <td style="padding: 6px 4px; text-align: center;">{{ exame.Resultado || '' }}</td>
+                                    <td style="padding: 6px 4px; text-align: center;"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Signatures -->
+                <div style="margin-top: 80px; text-align: center;">
+                    <p style="font-style: italic; font-size: 14px; margin-bottom: 40px;">Assinatura do Técnico do Laboratório</p>
+                    <div style="width: 300px; border-bottom: 1px solid black; margin: 0 auto 5px;"></div>
+                    <p style="font-size: 14px; font-weight: bold;">Dr(a). : {{ selectedPaciente.MedicoNome || 'Médico Responsável' }}</p>
+                </div>
+            </div>
+        </div>
     </DashboardLayout>
 </template>
 
@@ -724,5 +866,47 @@ const calcularIdadeFormatoDesktop = (dataNascimento) => {
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<style>
+@media print {
+    /* Ocultar elementos UI nativos do Vue na página original */
+    body * {
+        visibility: hidden;
+    }
+    
+    @page { 
+        size: A4 portrait;
+        margin: 1cm;
+    }
+
+    body, html {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+    }
+
+    /* Mostrar apenas a área de impressão */
+    .printable-area, .printable-area * {
+        visibility: visible;
+    }
+
+    /* Ajuste de posição para cobrir tudo e não aparecer cortado pelo dashboard */
+    .printable-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        display: block !important;
+        background: white !important;
+        color: black !important;
+    }
+    
+    .print-page {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
 }
 </style>

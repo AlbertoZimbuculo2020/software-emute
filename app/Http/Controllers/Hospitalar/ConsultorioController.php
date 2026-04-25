@@ -34,9 +34,15 @@ class ConsultorioController extends Controller
             ->select('Id', 'Codigo', 'Descricao', 'Categoria', 'Tipo', 'Exame_Fora')
             ->get();
 
+        $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
+        if ($empresa && $empresa->IMAGEM) {
+            $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
+        }
+
         return Inertia::render('Hospitalar/Consultorio', [
             'aguardando' => $aguardando,
-            'catalogoExames' => $catalogoExames
+            'catalogoExames' => $catalogoExames,
+            'empresa' => $empresa
         ]);
     }
 

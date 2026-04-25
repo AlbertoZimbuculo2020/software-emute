@@ -55,12 +55,17 @@ class User extends Authenticatable
     }
 
     /**
-     * Enforce SHA-512 encryption for passwords to match legacy database.
+     * Enforce SHA-512 encryption for passwords to match legacy database and desktop system.
      */
     public function setSenhaAttribute($value)
     {
         if (!empty($value)) {
-            $this->attributes['SENHA'] = hash('sha512', $value);
+            // If it's already a SHA-512 hex (128 chars), don't re-hash
+            if (strlen($value) === 128 && ctype_xdigit($value)) {
+                $this->attributes['SENHA'] = $value;
+            } else {
+                $this->attributes['SENHA'] = hash('sha512', $value);
+            }
         }
     }
 }

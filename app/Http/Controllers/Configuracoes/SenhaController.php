@@ -25,7 +25,7 @@ class SenhaController extends Controller
         DB::table('utilizador')
             ->where('ID_UTILIZADOR', Auth::id())
             ->update([
-                'SENHA' => Hash::make($validated['password']),
+                'SENHA' => hash('sha512', $validated['password']),
             ]);
 
         return redirect()->back()->with('message', 'Senha alterada com sucesso!');

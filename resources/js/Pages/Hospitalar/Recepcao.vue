@@ -9,7 +9,7 @@ import {
     CreditCard, Users, User, ChevronDown, Check, X
 } from 'lucide-vue-next';
 import { watch } from 'vue';
-import { debounce } from 'lodash';
+import debounce from 'lodash/debounce';
 
 const props = defineProps({
     medicos: Array,

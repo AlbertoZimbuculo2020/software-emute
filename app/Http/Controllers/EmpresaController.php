@@ -55,7 +55,7 @@ class EmpresaController extends Controller
                 // Determine ID manually if the table doesn't AI correctly, but usually insertGetId assumes AI on primary key
                 $userId = DB::table('utilizador')->insertGetId([
                     'NOME_UTILIZADOR' => $data['LOGIN'],
-                    'SENHA' => \Illuminate\Support\Facades\Hash::make($data['SENHA']),
+                    'SENHA' => hash('sha512', $data['SENHA']),
                     'ESTADO' => 'Activado',
                     'ACESSO' => 'SIM',
                     'ID_PERFIL' => 1
