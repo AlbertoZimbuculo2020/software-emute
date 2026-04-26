@@ -46,30 +46,33 @@ class LoginRequest extends FormRequest
         $login = trim($this->login);
         $senha = $this->senha;
 
-        // Search for user case-insensitively
-        $user = \App\Models\User::where('NOME_UTILIZADOR', $login)
-            ->where('ESTADO', 'Activado')
+        // Search for user (Ignoring status for debug)
+        $user = \App\Models\User::where('NOME_UTILIZADOR', 'LIKE', $login)
             ->first();
 
         if (! $user) {
-            $this->fail('Usuário não encontrado ou inativo.');
+            $this->fail('Usuário não encontrado.');
         }
 
         // Check password using Hybrid Strategy (Bcrypt OR SHA-512)
         $authenticated = false;
+        
+        $hashedInput = hash('sha512', $senha);
 
-        // Try Bcrypt (Laravel default & New passwords)
+        // Try Bcrypt (Laravel default)
         if (\Illuminate\Support\Str::startsWith($user->SENHA, '$2y$')) {
             if (\Illuminate\Support\Facades\Hash::check($senha, $user->SENHA)) {
                 $authenticated = true;
             }
         } 
-        // Try Legacy SHA-512 (Hexadecimal 128 chars)
-        elseif ($user->SENHA === hash('sha512', $senha)) {
+        // Try Legacy SHA-512 (Hexadecimal 128 chars) - Case Insensitive hex check
+        elseif (strtolower($user->SENHA) === strtolower($hashedInput)) {
             $authenticated = true;
         }
 
         if (! $authenticated) {
+            // Log for debugging (remove in production)
+            \Illuminate\Support\Facades\Log::debug("Login fail for $login. Stored: " . substr($user->SENHA, 0, 10) . "... Input: " . substr($hashedInput, 0, 10) . "...");
             $this->fail('Senha incorreta.');
         }
 

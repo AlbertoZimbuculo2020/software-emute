@@ -11,7 +11,9 @@ class ConsultorioController extends Controller
 {
     public function index()
     {
-        $aguardando = DB::table('tb_agendamento')
+        $user = auth()->user();
+        
+        $query = DB::table('tb_agendamento')
             ->join('tb_tipoentidade', 'tb_agendamento.IdPaciente', '=', 'tb_tipoentidade.Codigo')
             ->leftJoin('tb_entidade', 'tb_tipoentidade.IdEntidade', '=', 'tb_entidade.Codigo')
             ->leftJoin('tb_tipoentidade as medico', 'tb_agendamento.IdMedico', '=', 'medico.Codigo')
@@ -26,8 +28,14 @@ class ConsultorioController extends Controller
                 'medico.Nome as MedicoNome'
             )
             ->whereIn('tb_agendamento.Situacao', ['Consultorio', 'Reconsulta'])
-            ->where('tb_agendamento.Estado', 'Ativo')
-            ->get();
+            ->where('tb_agendamento.Estado', 'Ativo');
+
+        // Se não for Admin, filtrar apenas pacientes enviados para este médico
+        if ($user->ACESSO !== 'SIM' && $user->ID_PESSOA) {
+            $query->where('tb_agendamento.IdMedico', $user->ID_PESSOA);
+        }
+
+        $aguardando = $query->get();
 
         $catalogoExames = DB::table('tb_exames')
             ->where('Estado', 'Ativo')
@@ -104,5 +112,48 @@ class ConsultorioController extends Controller
         // Se houver exames solicitados, salvaríamos em tb_resultado_exame com status 'Pendente'
 
         return redirect()->back()->with('message', 'Dados clínicos salvos com sucesso!');
+    }
+
+    public function solicitarExames(Request $request)
+    {
+        $request->validate([
+            'IdAgenda' => 'required',
+            'exames' => 'required|array',
+        ]);
+
+        $ids = [];
+        foreach ($request->exames as $ex) {
+            $ids[] = str_replace('cat_', '', $ex);
+        }
+
+        $exames = DB::table('tb_exames')->whereIn('Id', $ids)->get();
+
+        foreach ($exames as $ex) {
+            // Verifica se já existe para evitar duplicados na mesma agenda
+            $exists = DB::table('tb_resultado_exame')
+                ->where('IdAgenda', $request->IdAgenda)
+                ->where('CodExame', $ex->Codigo)
+                ->exists();
+
+            if (!$exists) {
+                DB::table('tb_resultado_exame')->insert([
+                    'IdAgenda' => $request->IdAgenda,
+                    'Codigo' => $request->IdAgenda, // Campo obrigatório que armazena o ID da agenda
+                    'CodExame' => $ex->Codigo,
+                    'Descricao' => $ex->Descricao,
+                    'Categoria' => $ex->Categoria,
+                    'Tipo' => $ex->Tipo,
+                    'DataExame' => now(),
+                    'Estado' => 'Ativo',
+                    'Utilizador' => auth()->user()->NOME_UTILIZADOR ?? 'Medico',
+                ]);
+            }
+        }
+
+        DB::table('tb_agendamento')
+            ->where('Codigo', $request->IdAgenda)
+            ->update(['Situacao' => 'Laboratorio']);
+
+        return redirect()->back()->with('message', 'Exames solicitados com sucesso!');
     }
 }

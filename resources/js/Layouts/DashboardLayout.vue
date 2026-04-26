@@ -51,6 +51,19 @@ const openMenus = ref({
 });
 
 const user = usePage().props.auth.user;
+const permissions = computed(() => usePage().props.auth.permissions || []);
+
+const can = (permission) => {
+    if (permissions.value.includes('*')) return true;
+    return permissions.value.includes(permission);
+};
+
+// Seção visível se qualquer item dela for visível
+const canSeeModule = (perms) => {
+    if (permissions.value.includes('*')) return true;
+    return perms.some(p => permissions.value.includes(p));
+};
+
 const flash = computed(() => usePage().props.flash);
 const showToast = ref(false);
 const toastMessage = ref('');
@@ -118,136 +131,133 @@ const toggleMenu = (menu) => {
                 <nav class="px-3 space-y-3">
                     
                     <!-- Configurações Dropdown -->
-                    <div class="space-y-1">
+                    <div v-if="canSeeModule(['btnEmpresa', 'accordionUtilizadores', 'accordionDefinicoes', 'accordionPermissoes', 'accordionBackup'])" class="space-y-1">
                         <button @click="toggleMenu('config')" class="w-full flex items-center px-3 py-2 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">
                             <Settings class="w-4 h-4 mr-3 opacity-80" />
                             <span v-if="showingSidebar" class="flex-grow text-left uppercase">Configurações</span>
                             <ChevronDown v-if="showingSidebar" :class="openMenus.config ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" />
                         </button>
                         <div v-show="openMenus.config && showingSidebar" class="pl-10 space-y-1 animate-fadeIn">
-                            <Link :href="route('configuracoes.empresa.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('btnEmpresa')" :href="route('configuracoes.empresa.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <Building2 class="w-3 h-3 mr-2" /> Alterar dados da Empresa
                             </Link>
                             <Link :href="route('configuracoes.senha.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <KeyRound class="w-3 h-3 mr-2" /> Alterar Minha Senha
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionUtilizadores')" :href="route('configuracoes.utilizadores.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <Users class="w-3 h-3 mr-2" /> Utilizadores
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionDefinicoes')" href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <Settings class="w-3 h-3 mr-2" /> Definições
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionPermissoes')" :href="route('configuracoes.permissoes.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <ShieldAlert class="w-3 h-3 mr-2" /> Permissões
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionBackup')" href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <Database class="w-3 h-3 mr-2" /> Cópia de Segurança
                             </Link>
                         </div>
                     </div>
 
                     <!-- Entidades Dropdown -->
-                    <div class="space-y-1">
+                    <div v-if="canSeeModule(['btnCliente', 'accordionPacientes', 'accordionMedicos', 'accordionSeguradora'])" class="space-y-1">
                         <button @click="toggleMenu('entidades')" class="w-full flex items-center px-3 py-2 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">
                             <UserSquare2 class="w-4 h-4 mr-3 opacity-80" />
                             <span v-if="showingSidebar" class="flex-grow text-left uppercase">Entidades</span>
                             <ChevronDown v-if="showingSidebar" :class="openMenus.entidades ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" />
                         </button>
                         <div v-show="openMenus.entidades && showingSidebar" class="pl-10 space-y-1 animate-fadeIn">
-                            <Link :href="route('clientes.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('btnCliente')" :href="route('clientes.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <UserRound class="w-3 h-3 mr-2" /> Clientes
                             </Link>
-                            <Link :href="route('pacientes.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionPacientes')" :href="route('pacientes.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <HeartPulse class="w-3 h-3 mr-2" /> Paciente
                             </Link>
-                            <Link :href="route('medicos.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionMedicos')" :href="route('medicos.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <Stethoscope class="w-3 h-3 mr-2" /> Médico
                             </Link>
-                             <Link :href="route('hospitalar.seguradoras')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                             <Link v-if="can('accordionSeguradora')" :href="route('hospitalar.seguradoras')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <ShieldCheck class="w-3 h-3 mr-2" /> Seguradora
                             </Link>
                         </div>
                     </div>
 
                     <!-- Outros Cadastros Dropdown -->
-                    <div class="space-y-1">
+                    <div v-if="canSeeModule(['accordionExames', 'accordionConsultas', 'accordionServicos'])" class="space-y-1">
                         <button @click="toggleMenu('outros')" class="w-full flex items-center px-3 py-2 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">
                             <FileText class="w-4 h-4 mr-3 opacity-80" />
                             <span v-if="showingSidebar" class="flex-grow text-left uppercase">Outros Cadastros</span>
                             <ChevronDown v-if="showingSidebar" :class="openMenus.outros ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" />
                         </button>
                         <div v-show="openMenus.outros && showingSidebar" class="pl-10 space-y-1 animate-fadeIn">
-                            <Link :href="route('hospitalar.exames')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionExames')" :href="route('hospitalar.exames')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <Microscope class="w-3 h-3 mr-2" /> Exames
                             </Link>
-                            <Link :href="route('consultas.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionConsultas')" :href="route('consultas.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <CalendarDays class="w-3 h-3 mr-2" /> Consultas Médicas
                             </Link>
-                            <Link :href="route('hospitalar.servicos')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionServicos')" :href="route('hospitalar.servicos')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <Briefcase class="w-3 h-3 mr-2" /> Serviços
                             </Link>
                         </div>
                     </div>
 
                     <!-- Hospitalar Dropdown -->
-                    <div class="space-y-1">
+                    <div v-if="canSeeModule(['btnRecepcao', 'accordionTriagem', 'accordionEnfermaria', 'accordionInternamento', 'accordionConsultorio', 'accordionLaboratorio', 'accordionRaioX'])" class="space-y-1">
                         <button @click="toggleMenu('hospitalar')" class="w-full flex items-center px-3 py-2 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">
                             <Hospital class="w-4 h-4 mr-3 opacity-80" />
                             <span v-if="showingSidebar" class="flex-grow text-left uppercase">Hospitalar</span>
                             <ChevronDown v-if="showingSidebar" :class="openMenus.hospitalar ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" />
                         </button>
                         <div v-show="openMenus.hospitalar && showingSidebar" class="pl-10 space-y-1 animate-fadeIn">
-                            <Link :href="route('hospitalar.recepcao')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('btnRecepcao')" :href="route('hospitalar.recepcao')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <ConciergeBell class="w-3 h-3 mr-2" /> RECEPÇÃO
                             </Link>
-                            <Link :href="route('hospitalar.triagem')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionTriagem')" :href="route('hospitalar.triagem')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <ClipboardList class="w-3 h-3 mr-2" /> TRIAGEM
                             </Link>
-                             <Link :href="route('hospitalar.enfermaria.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                             <Link v-if="can('accordionEnfermaria')" :href="route('hospitalar.enfermaria.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                  <Stethoscope class="w-3 h-3 mr-2" /> ENFERMARIA
                              </Link>
-                             <Link :href="route('hospitalar.internamento.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                             <Link v-if="can('accordionInternamento')" :href="route('hospitalar.internamento.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                  <BedDouble class="w-3 h-3 mr-2" /> INTERNAMENTO
                              </Link>
-                            <Link :href="route('hospitalar.consultorio')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionConsultorio')" :href="route('hospitalar.consultorio')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <MonitorSmartphone class="w-3 h-3 mr-2" /> CONSULTÓRIO
                             </Link>
-                             <Link :href="route('hospitalar.laboratorio.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                             <Link v-if="can('accordionLaboratorio')" :href="route('hospitalar.laboratorio.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                  <Beaker class="w-3 h-3 mr-2" /> LABORATÓRIO
                              </Link>
-                            <Link :href="route('hospitalar.seguradoras')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
-                                <ShieldCheck class="w-3 h-3 mr-2" /> SEGURADORAS
-                            </Link>
-                             <Link :href="route('hospitalar.raiox.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                             <Link v-if="can('accordionRaioX')" :href="route('hospitalar.raiox.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                  <ScanLine class="w-3 h-3 mr-2" /> RAIO X
                              </Link>
                         </div>
                     </div>
 
                     <!-- Gestão de Stock Dropdown -->
-                    <div class="space-y-1">
+                    <div v-if="canSeeModule(['accordionProdutos', 'accordionDepositos', 'accordionEntrada', 'accordionBaixa', 'accordionDocumentos', 'accordionRelatorios'])" class="space-y-1">
                         <button @click="toggleMenu('stock')" class="w-full flex items-center px-3 py-2 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">
                             <Boxes class="w-4 h-4 mr-3 opacity-80" />
                             <span v-if="showingSidebar" class="flex-grow text-left uppercase">Gestão de Stock</span>
                             <ChevronDown v-if="showingSidebar" :class="openMenus.stock ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" />
                         </button>
                         <div v-show="openMenus.stock && showingSidebar" class="pl-10 space-y-1 animate-fadeIn">
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionProdutos')" href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <Package class="w-3 h-3 mr-2" /> PRODUTOS
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionDepositos')" href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <Warehouse class="w-3 h-3 mr-2" /> DEPÓSITOS
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionEntrada')" href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <ArrowDownToLine class="w-3 h-3 mr-2" /> ENTRADA DE STOCK
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionBaixa')" href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <ArrowUpFromLine class="w-3 h-3 mr-2" /> BAIXA DE STOCK
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionDocumentos')" href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <FileStack class="w-3 h-3 mr-2" /> DOCUMENTOS EMITIDOS
                             </Link>
-                            <Link href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
+                            <Link v-if="can('accordionRelatorios')" href="#" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <BarChart3 class="w-3 h-3 mr-2" /> RELATÓRIO E ESTATÍSTICA
                             </Link>
                         </div>

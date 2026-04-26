@@ -29,10 +29,31 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $permissions = [];
+
+        if ($user) {
+            // Se for Admin, tem acesso a tudo
+            if ($user->ACESSO === 'SIM') {
+                $permissions = ['*'];
+            } else {
+                $permissions = \Illuminate\Support\Facades\DB::table('tb_perfil_itens')
+                    ->where('ID_PERFIL', $user->ID_PERFIL)
+                    ->where('ESTADO', 'True')
+                    ->pluck('NOME')
+                    ->toArray();
+            }
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
+                'permissions' => $permissions,
+            ],
+            'flash' => [
+                'message' => session('message'),
+                'error' => session('error'),
             ],
         ];
     }

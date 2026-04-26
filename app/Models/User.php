@@ -26,6 +26,9 @@ class User extends Authenticatable
         'NOME_UTILIZADOR',
         'SENHA',
         'ESTADO',
+        'ID_PERFIL',
+        'ACESSO',
+        'ID_PESSOA',
     ];
 
     /**

@@ -104,6 +104,7 @@ Route::post('/hospitalar/triagem', [TriagemController::class, 'store'])->middlew
 Route::get('/hospitalar/consultorio', [ConsultorioController::class, 'index'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio');
 Route::get('/hospitalar/consultorio/paciente/{id}', [ConsultorioController::class, 'getPatientData'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.paciente');
 Route::post('/hospitalar/consultorio/store', [ConsultorioController::class, 'store'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.store');
+Route::post('/hospitalar/consultorio/solicitar-exames', [ConsultorioController::class, 'solicitarExames'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.solicitar-exames');
 
 Route::get('/hospitalar/seguradoras', [SeguradoraController::class, 'index'])->middleware(['auth', 'verified'])->name('hospitalar.seguradoras');
 Route::post('/hospitalar/seguradoras', [SeguradoraController::class, 'store'])->middleware(['auth', 'verified'])->name('hospitalar.seguradoras.store');
@@ -146,6 +147,16 @@ Route::post('/configuracoes/empresa/update', [EmpresaSettingsController::class, 
 
 Route::get('/configuracoes/senha', [SenhaController::class, 'edit'])->middleware(['auth', 'verified'])->name('configuracoes.senha.index');
 Route::post('/configuracoes/senha/update', [SenhaController::class, 'update'])->middleware(['auth', 'verified'])->name('configuracoes.senha.update');
+
+Route::get('/configuracoes/utilizadores', [\App\Http\Controllers\Configuracoes\UtilizadorController::class, 'index'])->middleware(['auth', 'verified'])->name('configuracoes.utilizadores.index');
+Route::post('/configuracoes/utilizadores', [\App\Http\Controllers\Configuracoes\UtilizadorController::class, 'store'])->middleware(['auth', 'verified'])->name('configuracoes.utilizadores.store');
+Route::put('/configuracoes/utilizadores/{id}', [\App\Http\Controllers\Configuracoes\UtilizadorController::class, 'update'])->middleware(['auth', 'verified'])->name('configuracoes.utilizadores.update');
+Route::delete('/configuracoes/utilizadores/{id}', [\App\Http\Controllers\Configuracoes\UtilizadorController::class, 'destroy'])->middleware(['auth', 'verified'])->name('configuracoes.utilizadores.destroy');
+Route::get('/configuracoes/utilizadores/perfis', [\App\Http\Controllers\Configuracoes\UtilizadorController::class, 'perfis'])->middleware(['auth', 'verified'])->name('configuracoes.utilizadores.perfis');
+
+Route::get('/configuracoes/permissoes', [\App\Http\Controllers\Configuracoes\PermissaoController::class, 'index'])->middleware(['auth', 'verified'])->name('configuracoes.permissoes.index');
+Route::get('/configuracoes/permissoes/{profileId}', [\App\Http\Controllers\Configuracoes\PermissaoController::class, 'getPermissions'])->middleware(['auth', 'verified'])->name('configuracoes.permissoes.get');
+Route::post('/configuracoes/permissoes/update', [\App\Http\Controllers\Configuracoes\PermissaoController::class, 'update'])->middleware(['auth', 'verified'])->name('configuracoes.permissoes.update');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

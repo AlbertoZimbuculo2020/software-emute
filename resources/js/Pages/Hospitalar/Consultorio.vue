@@ -232,6 +232,35 @@ const isAllSelected = computed(() => {
     return examesList.value.every(e => selectedExams.value.includes(e.id));
 });
 
+const enviarExamesAoLaboratorio = () => {
+    if(!selectedPaciente.value) {
+        showNotification('Selecione um paciente primeiro!', 'error');
+        return;
+    }
+    
+    const catalogExams = selectedExams.value.filter(id => id.startsWith('cat_'));
+    
+    if (catalogExams.length === 0) {
+        showNotification('Selecione exames do catálogo para enviar ao laboratório.', 'error');
+        return;
+    }
+
+    isLoading.value = true;
+    axios.post(route('hospitalar.consultorio.solicitar-exames'), {
+        IdAgenda: selectedPaciente.value.Codigo,
+        exames: catalogExams
+    }).then(response => {
+        showNotification('Exames enviados ao laboratório com sucesso!');
+        selectedExams.value = [];
+        selecionarPaciente(selectedPaciente.value);
+    }).catch(error => {
+        console.error(error);
+        showNotification('Erro ao enviar exames.', 'error');
+    }).finally(() => {
+        isLoading.value = false;
+    });
+};
+
 </script>
 
 <template>
@@ -457,7 +486,7 @@ const isAllSelected = computed(() => {
 
                                     <!-- Middle Action Buttons -->
                                     <div class="flex gap-4 shrink-0 mb-6">
-                                        <button class="bg-[#3b82f6] text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-blue-500 transition-all shadow-md w-[280px] shrink-0">
+                                        <button @click="enviarExamesAoLaboratorio" class="bg-[#3b82f6] text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-blue-500 transition-all shadow-md w-[280px] shrink-0">
                                             <Activity class="w-4 h-4" /> Enviar no Laboratório
                                         </button>
                                         <button @click="imprimirRequisicao" class="bg-[#f59e0b] text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-amber-500 transition-all shadow-md flex-grow">
