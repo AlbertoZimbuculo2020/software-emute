@@ -79,16 +79,22 @@ class InternamentoController extends Controller
         $agendamento = DB::table('tb_agendamento')->where('Codigo', $request->IdAgenda)->first();
         $paciente = DB::table('tb_tipoentidade')->where('Codigo', $agendamento->IdPaciente)->value('Nome');
 
-        DB::table($table)->insert([
+        $data = [
             'IdAgenda' => $request->IdAgenda,
             'DataAto' => now(),
             'Descricao' => $request->descricao,
             'ID_UTILIZADOR' => Auth::id() ?? 1,
-            'Medico' => $request->tipo === 'medico' ? (Auth::user()->name ?? 'Médico') : '',
-            'Enfermeiro' => $request->tipo === 'enfermagem' ? (Auth::user()->name ?? 'Enfermeiro') : '',
             'Paciente' => $paciente ?? 'N/D',
             'Estado' => 'Ativo'
-        ]);
+        ];
+
+        if ($request->tipo === 'medico') {
+            $data['Medico'] = Auth::user()->NOME_UTILIZADOR ?? 'Médico';
+        } else {
+            $data['Enfermeiro'] = Auth::user()->NOME_UTILIZADOR ?? 'Enfermeiro';
+        }
+
+        DB::table($table)->insert($data);
 
         return redirect()->back()->with('message', 'Ato registrado com sucesso!');
     }

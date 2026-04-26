@@ -22,12 +22,18 @@ import {
     X,
     CheckCircle,
     AlertCircle,
-    FileText
+    FileText,
+    SendHorizontal,
+    BedDouble,
+    UserRoundCog,
+    ArrowRightLeft
 } from 'lucide-vue-next';
 
 const props = defineProps({
     aguardando: Array,
     catalogoExames: Array,
+    catalogoFarmacos: { type: Array, default: () => [] },
+    listaMedicos:   { type: Array, default: () => [] },
     empresa: Object
 });
 
@@ -53,38 +59,28 @@ const examesList = computed(() => {
     if (activeExamFilter.value === 'SOLICITADOS') {
         result = examesSolicitados.value.map(e => ({
             id: 'sol_' + e.Id,
+            dbId: e.Id,
             codigo: e.CodExame,
             nome: e.Descricao,
-            resultado: e.Resultado || 'Pendente',
+            resultado: e.Resultado || '',
+            obs: e.Obs || '',
             selected: false,
             isRequested: true
         }));
     } else if (activeExamFilter.value === 'LABORATORIO') {
         result = (props.catalogoExames || []).filter(e => e.Exame_Fora !== 'True' && e.Categoria !== 'IMAGEM' && e.Categoria !== 'RAIO X').map(e => ({
-            id: 'cat_' + e.Id,
-            codigo: e.Codigo,
-            nome: e.Descricao,
-            resultado: '',
-            selected: false,
-            isRequested: false
+            id: 'cat_' + e.Id, dbId: null,
+            codigo: e.Codigo, nome: e.Descricao, resultado: '', selected: false, isRequested: false
         }));
     } else if (activeExamFilter.value === 'RAIOX') {
         result = (props.catalogoExames || []).filter(e => e.Categoria === 'IMAGEM' || e.Categoria === 'RAIO X').map(e => ({
-            id: 'cat_' + e.Id,
-            codigo: e.Codigo,
-            nome: e.Descricao,
-            resultado: '',
-            selected: false,
-            isRequested: false
+            id: 'cat_' + e.Id, dbId: null,
+            codigo: e.Codigo, nome: e.Descricao, resultado: '', selected: false, isRequested: false
         }));
     } else if (activeExamFilter.value === 'FORA') {
         result = (props.catalogoExames || []).filter(e => e.Exame_Fora === 'True').map(e => ({
-            id: 'cat_' + e.Id,
-            codigo: e.Codigo,
-            nome: e.Descricao,
-            resultado: '',
-            selected: false,
-            isRequested: false
+            id: 'cat_' + e.Id, dbId: null,
+            codigo: e.Codigo, nome: e.Descricao, resultado: '', selected: false, isRequested: false
         }));
     }
     
@@ -108,6 +104,136 @@ const form = useForm({
     complementares: '',
     recomendacoes: '',
     situacao: 'Finalizado',
+});
+
+// ─── RECEITA MÉDICA ────────────────────────────────────
+const receitaItens = ref([]); // Receita gravada na BD (carregada junto com o paciente)
+const novaReceita = ref([]);  // Itens sendo adicionados na sessão atual
+const novoFarmaco = ref({ farmaco: '', dosagem: '', dias: '' });
+const showAdicionarFarmacoModal = ref(false);
+const savingReceita = ref(false);
+
+const adicionarFarmacoLocal = () => {
+    if (!novoFarmaco.value.farmaco.trim()) return;
+    novaReceita.value.push({ ...novoFarmaco.value });
+    novoFarmaco.value = { farmaco: '', dosagem: '', dias: '' };
+};
+
+const removerFarmacoLocal = (idx) => {
+    novaReceita.value.splice(idx, 1);
+};
+
+const gravarReceita = async () => {
+    if (!selectedPaciente.value) return;
+    const todosItens = [...receitaItens.value.map(r => ({ farmaco: r.Farmaco, dosagem: r.Dosagem, dias: r.Dias })), ...novaReceita.value];
+    if (todosItens.length === 0) { showNotification('Adicione pelo menos um fármaco.', 'error'); return; }
+    savingReceita.value = true;
+    try {
+        await axios.post(route('hospitalar.consultorio.receita.store'), {
+            IdAgenda: selectedPaciente.value.Codigo,
+            itens: novaReceita.value
+        });
+        novaReceita.value = [];
+        showNotification('Receita gravada com sucesso!');
+        await selecionarPaciente(selectedPaciente.value);
+    } catch (e) {
+        showNotification('Erro ao gravar receita.', 'error');
+    } finally {
+        savingReceita.value = false;
+    }
+};
+
+const removerItemReceita = async (id) => {
+    try {
+        await axios.post(route('hospitalar.consultorio.receita.destroy'), { id });
+        receitaItens.value = receitaItens.value.filter(r => r.Id !== id);
+        showNotification('Item removido!');
+    } catch (e) {
+        showNotification('Erro ao remover item.', 'error');
+    }
+};
+
+// ─── GRAVAR RESULTADO DE EXAME (modal lançar) ─────────
+const savingResultado = ref(false);
+const resultadoObs = ref('');
+
+const gravarResultadoExame = async () => {
+    if (!selectedExameToLancar.value || !selectedExameToLancar.value.resultado?.trim()) {
+        showNotification('Preencha o resultado antes de gravar.', 'error');
+        return;
+    }
+    savingResultado.value = true;
+    try {
+        await axios.post(route('hospitalar.consultorio.resultado'), {
+            exameId:   selectedExameToLancar.value.dbId,
+            resultado: selectedExameToLancar.value.resultado,
+            obs:       resultadoObs.value
+        });
+        showNotification('Resultado gravado com sucesso!');
+        await selecionarPaciente(selectedPaciente.value);
+        showLancarResultadosModal.value = false;
+    } catch (e) {
+        showNotification('Erro ao gravar resultado.', 'error');
+    } finally {
+        savingResultado.value = false;
+    }
+};
+
+// ─── ENCAMINHAR PARA OUTRO DR. ────────────────────────
+const showEncaminharModal = ref(false);
+const encaminharMedico = ref('');
+const encaminharMotivo = ref('');
+const encaminhando = ref(false);
+
+const encaminharPaciente = async () => {
+    if (!encaminharMedico.value) { showNotification('Selecione o médico de destino.', 'error'); return; }
+    encaminhando.value = true;
+    try {
+        await axios.post(route('hospitalar.consultorio.encaminhar'), {
+            IdAgenda: selectedPaciente.value.Codigo,
+            IdMedico: encaminharMedico.value,
+            motivo:   encaminharMotivo.value
+        });
+        showNotification('Paciente encaminhado com sucesso!');
+        showEncaminharModal.value = false;
+        selectedPaciente.value = null;
+        triageData.value = null;
+        form.reset();
+        router.reload({ only: ['aguardando'] });
+    } catch (e) {
+        showNotification('Erro ao encaminhar paciente.', 'error');
+    } finally {
+        encaminhando.value = false;
+    }
+};
+
+// ─── IMPRIMIR RECEITA ─────────────────────────────────
+const printMode = ref('requisicao'); // 'requisicao' | 'receita' | 'relatorio'
+
+const imprimirDadosClinico = () => {
+    if (!selectedPaciente.value) return;
+    printMode.value = 'relatorio';
+    setTimeout(() => window.print(), 100);
+};
+const imprimirReceita = () => {
+    if (!selectedPaciente.value) return;
+    const totalItens = [...receitaItens.value, ...novaReceita.value.map(n => ({Farmaco: n.farmaco, Dosagem: n.dosagem, Dias: n.dias}))];
+    if (totalItens.length === 0) { showNotification('Receita vazia! Adicione fármacos antes de imprimir.', 'error'); return; }
+    printMode.value = 'receita';
+    setTimeout(() => window.print(), 100);
+};
+const imprimirRequisicao = () => {
+    if (!selectedPaciente.value) return;
+    if (Object.keys(examesParaImprimir.value).length === 0) { showNotification('Nenhum exame para imprimir.', 'error'); return; }
+    printMode.value = 'requisicao';
+    setTimeout(() => window.print(), 100);
+};
+
+// Merge all receita itens for display
+const todosItensReceita = computed(() => {
+    const fromDB  = receitaItens.value.map(r => ({ id: r.Id, farmaco: r.Farmaco, dosagem: r.Dosagem, dias: r.Dias, fromDB: true }));
+    const fromNew = novaReceita.value.map((n, i) => ({ id: 'new_' + i, ...n, fromDB: false }));
+    return [...fromDB, ...fromNew];
 });
 
 const filteredAguardando = computed(() => {
@@ -135,13 +261,15 @@ const selecionarPaciente = async (paciente) => {
     form.complementares = paciente.COMPLEMENTARES || '';
     form.recomendacoes = paciente.RECOMENDACOES || '';
     form.situacao = 'Finalizado';
+    novaReceita.value = [];
 
     try {
         const response = await axios.get(route('hospitalar.consultorio.paciente', paciente.Codigo));
         triageData.value = response.data.triagem;
         patientHistory.value = response.data.historico;
         examesSolicitados.value = response.data.exames_solicitados || [];
-        selectedExams.value = []; // Limpar seleções ao trocar de paciente
+        receitaItens.value     = response.data.receita || [];
+        selectedExams.value = [];
     } catch (error) {
         console.error('Erro ao carregar dados do paciente:', error);
         showNotification('Erro ao carregar dados complementares.', 'error');
@@ -205,17 +333,6 @@ const examesParaImprimir = computed(() => {
     return grouped;
 });
 
-const imprimirRequisicao = () => {
-    if(!selectedPaciente.value) {
-        showNotification('Selecione um paciente primeiro!', 'error');
-        return;
-    }
-    if(Object.keys(examesParaImprimir.value).length === 0) {
-        showNotification('Nenhum exame selecionado para imprimir.', 'error');
-        return;
-    }
-    window.print();
-};
 
 const toggleSelectAll = (event) => {
     const currentIds = examesList.value.map(e => e.id);
@@ -554,8 +671,9 @@ const enviarExamesAoLaboratorio = () => {
                                 </div>
 
                                 <!-- Tab: Prescription -->
-                                <div v-if="activeTab === 'prescription'" class="space-y-8 animate-fadeIn">
-                                    <div class="flex items-center justify-between bg-slate-50 p-6 rounded-3xl border border-dashed border-slate-200">
+                                <div v-if="activeTab === 'prescription'" class="space-y-6 animate-fadeIn">
+                                    <!-- Header -->
+                                    <div class="flex items-center justify-between bg-slate-50 p-5 rounded-3xl border border-dashed border-slate-200">
                                         <div class="flex items-center gap-4">
                                             <div class="p-3 bg-white rounded-2xl shadow-sm text-amber-600">
                                                 <Pill class="w-6 h-6" />
@@ -565,63 +683,82 @@ const enviarExamesAoLaboratorio = () => {
                                                 <p class="text-[11px] text-slate-500 font-bold">Prescrição de fármacos e posologia</p>
                                             </div>
                                         </div>
-                                        <button class="bg-amber-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 transition-all flex items-center gap-2">
+                                        <button @click="showAdicionarFarmacoModal = true" class="bg-amber-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 transition-all flex items-center gap-2 shadow">
                                             <Plus class="w-4 h-4" /> Adicionar Fármaco
                                         </button>
                                     </div>
 
-                                    <table class="w-full border-separate border-spacing-y-3">
-                                        <thead>
-                                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">
-                                                <th class="px-6 pb-2">Fármaco</th>
-                                                <th class="px-6 pb-2">Dosagem / Posologia</th>
-                                                <th class="px-6 pb-2">Qtd</th>
-                                                <th class="px-6 pb-2 text-right">Ação</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="i in 2" :key="i" class="bg-slate-50/50 hover:bg-slate-50 transition-all rounded-2xl group">
-                                                <td class="px-6 py-4 rounded-l-2xl">
-                                                    <p class="text-xs font-black text-slate-700 uppercase">Paracetamol 500mg</p>
-                                                </td>
-                                                <td class="px-6 py-4">
-                                                    <p class="text-[11px] font-bold text-slate-500 italic">Tomar 1 comprimido a cada 8 horas por 3 dias</p>
-                                                </td>
-                                                <td class="px-6 py-4">
-                                                    <span class="text-xs font-black text-slate-700">1 CX</span>
-                                                </td>
-                                                <td class="px-6 py-4 text-right rounded-r-2xl">
-                                                    <button class="p-2 text-slate-300 hover:text-red-500 transition-all">
-                                                        <Trash2 class="w-4 h-4" />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                    <!-- Tabela de itens -->
+                                    <div v-if="todosItensReceita.length > 0" class="border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
+                                        <table class="w-full text-left border-collapse">
+                                            <thead class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                <tr>
+                                                    <th class="px-6 py-4">Fármaco</th>
+                                                    <th class="px-6 py-4">Dosagem / Posologia</th>
+                                                    <th class="px-6 py-4 text-center">Dias</th>
+                                                    <th class="px-6 py-4 text-right">Ação</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="item in todosItensReceita" :key="item.id" class="border-t border-slate-50 hover:bg-slate-50 transition-colors">
+                                                    <td class="px-6 py-4 text-xs font-black text-slate-700 uppercase">{{ item.farmaco }}</td>
+                                                    <td class="px-6 py-4 text-[11px] font-bold text-slate-500 italic">{{ item.dosagem }}</td>
+                                                    <td class="px-6 py-4 text-center text-xs font-black text-slate-700">{{ item.dias }} dias</td>
+                                                    <td class="px-6 py-4 text-right">
+                                                        <button v-if="item.fromDB" @click="removerItemReceita(item.id)" class="p-2 text-slate-300 hover:text-red-500 transition-all">
+                                                            <Trash2 class="w-4 h-4" />
+                                                        </button>
+                                                        <button v-else @click="removerFarmacoLocal(todosItensReceita.indexOf(item) - receitaItens.length)" class="p-2 text-amber-300 hover:text-red-500 transition-all">
+                                                            <X class="w-4 h-4" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div v-else class="text-center py-16 text-slate-300">
+                                        <Pill class="w-10 h-10 mx-auto mb-3" />
+                                        <p class="text-[11px] font-black uppercase tracking-widest">Nenhum fármaco prescrito</p>
+                                        <p class="text-[10px] mt-1 opacity-60">Clique em "Adicionar Fármaco" para começar</p>
+                                    </div>
+
+                                    <!-- Gravar Receita -->
+                                    <div v-if="novaReceita.length > 0" class="flex justify-end">
+                                        <button @click="gravarReceita" :disabled="savingReceita" class="px-8 py-4 bg-amber-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 transition-all flex items-center gap-2 disabled:opacity-50">
+                                            <span v-if="savingReceita" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                            <Save v-else class="w-4 h-4" /> Gravar Receita
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Footer Actions -->
-                            <div class="px-8 py-6 bg-transparent border-t border-slate-100 flex items-center justify-between mt-auto shrink-0">
-                                <div class="flex gap-4 items-center">
-                                    <button class="px-6 py-4 bg-white border border-slate-200 text-slate-500 rounded-[12px] text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
+                            <div class="px-8 py-5 bg-transparent border-t border-slate-100 flex items-center justify-between mt-auto shrink-0 flex-wrap gap-4">
+                                <div class="flex gap-3 items-center flex-wrap">
+                                    <button @click="imprimirDadosClinico" class="px-5 py-3 bg-white border border-slate-200 text-slate-500 rounded-[12px] text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
                                         <Printer class="w-4 h-4 text-slate-400" /> Imprimir Relatório
                                     </button>
-                                    <button class="px-6 py-4 bg-white border border-slate-200 text-slate-500 rounded-[12px] text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
+                                    <button @click="imprimirReceita" class="px-5 py-3 bg-white border border-slate-200 text-slate-500 rounded-[12px] text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
                                         <FileText class="w-4 h-4 text-slate-400" /> Imprimir Receita
                                     </button>
+                                    <button @click="showEncaminharModal = true" class="px-5 py-3 bg-violet-600 text-white rounded-[12px] text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 transition-all flex items-center gap-2 shadow-sm">
+                                        <ArrowRightLeft class="w-4 h-4" /> Encaminhar
+                                    </button>
+                                    <button @click="form.situacao = 'Internado'; salvarConsulta()" class="px-5 py-3 bg-emerald-600 text-white rounded-[12px] text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-sm">
+                                        <BedDouble class="w-4 h-4" /> Internamento
+                                    </button>
                                 </div>
-                                <div class="flex gap-4 items-center">
+                                <div class="flex gap-3 items-center">
                                     <div class="relative">
-                                        <select v-model="form.situacao" class="bg-white border border-slate-200 text-slate-700 rounded-[12px] text-xs font-bold py-4 pl-6 pr-12 appearance-none cursor-pointer shadow-sm hover:bg-slate-50 transition-all">
+                                        <select v-model="form.situacao" class="bg-white border border-slate-200 text-slate-700 rounded-[12px] text-xs font-bold py-4 pl-5 pr-10 appearance-none cursor-pointer shadow-sm hover:bg-slate-50 transition-all">
                                             <option value="Finalizado">Finalizar Consulta</option>
                                             <option value="Laboratorio">Enviar para Lab</option>
                                             <option value="Reconsulta">Agendar Reconsulta</option>
-                                            <option value="Internamento">Solicitar Internamento</option>
+                                            <option value="Internado">Solicitar Internamento</option>
                                         </select>
-                                        <ChevronDown class="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        <ChevronDown class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                                     </div>
-                                    <button @click="salvarConsulta" :disabled="form.processing" class="px-10 py-4 bg-blue-600 text-white rounded-[12px] text-[11px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30 flex items-center gap-2 disabled:opacity-50">
+                                    <button @click="salvarConsulta" :disabled="form.processing" class="px-8 py-4 bg-blue-600 text-white rounded-[12px] text-[11px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30 flex items-center gap-2 disabled:opacity-50">
                                         <Save class="w-5 h-5" /> GRAVAR DADOS
                                     </button>
                                 </div>
@@ -751,11 +888,14 @@ const enviarExamesAoLaboratorio = () => {
                                     
                                     <div class="bg-white border border-slate-300 shadow-sm flex flex-col">
                                         <div class="bg-slate-200/80 px-4 py-2 font-black text-[10px] uppercase text-slate-700 border-b border-slate-300 tracking-widest">Observação</div>
-                                        <textarea rows="3" class="w-full border-none focus:ring-0 text-sm p-4 font-bold text-slate-800 resize-y" placeholder="Anotações adicionais do médico..."></textarea>
+                                        <textarea v-model="resultadoObs" rows="3" class="w-full border-none focus:ring-0 text-sm p-4 font-bold text-slate-800 resize-y" placeholder="Anotações adicionais do médico..."></textarea>
                                     </div>
                                     
                                     <div class="flex justify-start">
-                                        <button class="bg-white border border-slate-300 px-8 py-3.5 text-[10px] uppercase tracking-widest font-black text-slate-700 hover:bg-slate-50 hover:text-blue-600 shadow-sm transition-colors">Gravar Resultado</button>
+                                        <button @click="gravarResultadoExame" :disabled="savingResultado" class="bg-[#000080] text-white border border-blue-900 px-8 py-3.5 text-[10px] uppercase tracking-widest font-black hover:bg-blue-900 shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50">
+                                            <span v-if="savingResultado" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                            <Save v-else class="w-3 h-3" /> Gravar Resultado
+                                        </button>
                                     </div>
                                 </div>
 
@@ -797,6 +937,81 @@ const enviarExamesAoLaboratorio = () => {
             </div>
         </Transition>
 
+        <!-- ===== MODAL: ADICIONAR FÁRMACO ===== -->
+        <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0 scale-95">
+            <div v-if="showAdicionarFarmacoModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" @click="showAdicionarFarmacoModal = false"></div>
+                <div class="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-lg border border-slate-100 overflow-hidden">
+                    <div class="bg-amber-600 text-white px-8 py-5 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <Pill class="w-5 h-5" />
+                            <h3 class="font-black text-sm uppercase tracking-tight">Adicionar Fármaco</h3>
+                        </div>
+                        <button @click="showAdicionarFarmacoModal = false" class="opacity-70 hover:opacity-100"><X class="w-5 h-5" /></button>
+                    </div>
+                    <div class="p-8 space-y-5">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Fármaco / Medicamento</label>
+                            <input v-model="novoFarmaco.farmaco" type="text" list="farmacos-list" placeholder="Digite ou selecione o fármaco..." class="w-full bg-slate-50 border-2 border-transparent focus:border-amber-400 focus:bg-white rounded-2xl px-4 py-3 text-sm font-bold transition-all outline-none" />
+                            <datalist id="farmacos-list">
+                                <option v-for="f in props.catalogoFarmacos" :key="f.Id" :value="f.Descricao" />
+                            </datalist>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Dosagem / Posologia</label>
+                            <input v-model="novoFarmaco.dosagem" type="text" placeholder="Ex: Tomar 1 comprimido de 8 em 8 horas" class="w-full bg-slate-50 border-2 border-transparent focus:border-amber-400 focus:bg-white rounded-2xl px-4 py-3 text-sm font-bold transition-all outline-none" />
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Duração (Dias)</label>
+                            <input v-model="novoFarmaco.dias" type="number" min="1" placeholder="Ex: 5" class="w-full bg-slate-50 border-2 border-transparent focus:border-amber-400 focus:bg-white rounded-2xl px-4 py-3 text-sm font-bold transition-all outline-none" />
+                        </div>
+                        <div class="flex gap-3 pt-2">
+                            <button @click="showAdicionarFarmacoModal = false" class="flex-1 py-4 bg-slate-50 text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all">Cancelar</button>
+                            <button @click="adicionarFarmacoLocal(); showAdicionarFarmacoModal = false" class="flex-1 py-4 bg-amber-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 transition-all shadow flex items-center justify-center gap-2">
+                                <Plus class="w-4 h-4" /> Adicionar à Lista
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Transition>
+
+        <!-- ===== MODAL: ENCAMINHAR PARA OUTRO DR. ===== -->
+        <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0 scale-95">
+            <div v-if="showEncaminharModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" @click="showEncaminharModal = false"></div>
+                <div class="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-lg border border-slate-100 overflow-hidden">
+                    <div class="bg-violet-600 text-white px-8 py-5 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <ArrowRightLeft class="w-5 h-5" />
+                            <h3 class="font-black text-sm uppercase tracking-tight">Encaminhar para outro Médico</h3>
+                        </div>
+                        <button @click="showEncaminharModal = false" class="opacity-70 hover:opacity-100"><X class="w-5 h-5" /></button>
+                    </div>
+                    <div class="p-8 space-y-5">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Médico de Destino</label>
+                            <select v-model="encaminharMedico" class="w-full bg-slate-50 border-2 border-transparent focus:border-violet-400 focus:bg-white rounded-2xl px-4 py-3 text-sm font-bold transition-all outline-none appearance-none">
+                                <option value="">Selecione um médico...</option>
+                                <option v-for="m in props.listaMedicos" :key="m.Codigo" :value="m.Codigo">{{ m.Nome }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Motivo do Encaminhamento</label>
+                            <textarea v-model="encaminharMotivo" rows="4" placeholder="Descreva o motivo e observações para o médico receptor..." class="w-full bg-slate-50 border-2 border-transparent focus:border-violet-400 focus:bg-white rounded-2xl px-4 py-3 text-sm font-bold transition-all outline-none"></textarea>
+                        </div>
+                        <div class="flex gap-3 pt-2">
+                            <button @click="showEncaminharModal = false" class="flex-1 py-4 bg-slate-50 text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all">Cancelar</button>
+                            <button @click="encaminharPaciente" :disabled="encaminhando" class="flex-1 py-4 bg-violet-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 transition-all shadow flex items-center justify-center gap-2 disabled:opacity-50">
+                                <span v-if="encaminhando" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                <ArrowRightLeft v-else class="w-4 h-4" /> Confirmar Encaminhamento
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Transition>
+
         <!-- PRINT VIEW WRAPPER (HIDDEN ON SCREEN, VISIBLE ON PRINT) -->
         <div class="hidden print-layout printable-area">
             <div v-if="selectedPaciente" class="w-full bg-white text-black font-sans print-page">
@@ -817,11 +1032,11 @@ const enviarExamesAoLaboratorio = () => {
                     </div>
                 </div>
 
+                <!-- Patient Details (common to all print modes) -->
                 <h2 style="text-align: center; font-weight: 900; font-size: 24px; margin-bottom: 20px; border-bottom: 3px solid black; padding-bottom: 10px; text-transform: uppercase;">
-                    Requisições de Exames
+                    {{ printMode === 'receita' ? 'Receita Médica' : printMode === 'relatorio' ? 'Relatório Clínico' : 'Requisição de Exames' }}
                 </h2>
 
-                <!-- Patient Details -->
                 <table style="width: 100%; font-size: 14px; margin-bottom: 30px; border-collapse: collapse;">
                     <tr>
                         <td style="padding: 4px 0;"><strong>Nome:</strong> {{ selectedPaciente.PacienteNome }}</td>
@@ -837,38 +1052,57 @@ const enviarExamesAoLaboratorio = () => {
                     </tr>
                 </table>
 
-                <!-- Exams Table Grouped -->
-                <div v-for="(exames, categoria) in examesParaImprimir" :key="categoria" style="margin-bottom: 30px;">
-                    <div style="background-color: #e2e8f0; padding: 8px; border: 1px solid #ccc; font-weight: bold; font-size: 14px;">
-                        Categoria do Exame: {{ categoria }}
-                    </div>
-                    
-                    <div v-for="exame in exames" :key="exame.Descricao" style="margin-bottom: 15px;">
-                        <div style="background-color: #94a3b8; padding: 6px 8px; border: 1px solid #666; font-weight: 900; font-size: 13px;">
-                            Exame: {{ exame.Descricao }}
+                <!-- Exams: only for requisicao -->
+                <template v-if="printMode === 'requisicao'">
+                    <div v-for="(exames, categoria) in examesParaImprimir" :key="categoria" style="margin-bottom: 30px;">
+                        <div style="background-color: #e2e8f0; padding: 8px; border: 1px solid #ccc; font-weight: bold; font-size: 14px;">Categoria: {{ categoria }}</div>
+                        <div v-for="exame in exames" :key="exame.Descricao" style="margin-bottom: 10px;">
+                            <div style="background-color: #94a3b8; padding: 6px 8px; border: 1px solid #666; font-weight: 900; font-size: 13px;">{{ exame.Descricao }}</div>
+                            <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                                <thead><tr style="border-bottom: 1px solid black;"><th style="padding: 4px; text-align: left;">Dados</th><th style="padding: 4px; text-align: center;">Resultados</th><th style="padding: 4px; text-align: center;">Referências</th></tr></thead>
+                                <tbody><tr><td style="padding: 6px 4px;">{{ exame.Descricao }}</td><td style="padding: 6px 4px; text-align: center;">{{ exame.Resultado || '' }}</td><td style="padding: 6px 4px; text-align: center;"></td></tr></tbody>
+                            </table>
                         </div>
-                        <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                    </div>
+                </template>
+
+                <!-- Receita Médica Print -->
+                <template v-if="printMode === 'receita'">
+                    <div style="margin-bottom: 30px;">
+                        <div style="background-color: #fef3c7; padding: 10px; border: 1px solid #d97706; font-weight: bold; font-size: 14px; margin-bottom: 15px;">
+                            Prescrição Médica — {{ new Date().toLocaleDateString('pt-PT') }}
+                        </div>
+                        <table style="width: 100%; font-size: 13px; border-collapse: collapse; border: 1px solid #ccc;">
                             <thead>
-                                <tr style="border-bottom: 1px solid black;">
-                                    <th style="padding: 4px; text-align: left;">Dados</th>
-                                    <th style="padding: 4px; text-align: center;">Resultados</th>
-                                    <th style="padding: 4px; text-align: center;">Referencias</th>
+                                <tr style="background: #f8fafc; border-bottom: 2px solid #ccc;">
+                                    <th style="padding: 8px; text-align: left; border-right: 1px solid #ccc;">Fármaco</th>
+                                    <th style="padding: 8px; text-align: left; border-right: 1px solid #ccc;">Dosagem</th>
+                                    <th style="padding: 8px; text-align: center;">Dias</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr style="border-bottom: 1px solid #ccc;">
-                                    <td style="padding: 6px 4px;">{{ exame.Descricao }}</td>
-                                    <td style="padding: 6px 4px; text-align: center;">{{ exame.Resultado || '' }}</td>
-                                    <td style="padding: 6px 4px; text-align: center;"></td>
+                                <tr v-for="(item, i) in todosItensReceita" :key="i" style="border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 8px; border-right: 1px solid #e2e8f0; font-weight: bold; text-transform: uppercase;">{{ item.farmaco }}</td>
+                                    <td style="padding: 8px; border-right: 1px solid #e2e8f0;">{{ item.dosagem }}</td>
+                                    <td style="padding: 8px; text-align: center;">{{ item.dias }} dias</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </template>
+
+                <!-- Relatório Clínico Print -->
+                <template v-if="printMode === 'relatorio'">
+                    <div v-if="form.qp" style="margin-bottom: 20px;"><strong style="font-size: 13px; text-transform: uppercase; display: block; margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 3px;">Queixas Principais (QP)</strong><p style="font-size: 13px; white-space: pre-wrap;">{{ form.qp }}</p></div>
+                    <div v-if="form.hda" style="margin-bottom: 20px;"><strong style="font-size: 13px; text-transform: uppercase; display: block; margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 3px;">História da Doença Actual (HDA)</strong><p style="font-size: 13px; white-space: pre-wrap;">{{ form.hda }}</p></div>
+                    <div v-if="form.obj" style="margin-bottom: 20px;"><strong style="font-size: 13px; text-transform: uppercase; display: block; margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 3px;">Exame Objectivo</strong><p style="font-size: 13px; white-space: pre-wrap;">{{ form.obj }}</p></div>
+                    <div v-if="form.complementares" style="margin-bottom: 20px;"><strong style="font-size: 13px; text-transform: uppercase; display: block; margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 3px;">Hipótese de Diagnóstico</strong><p style="font-size: 13px; white-space: pre-wrap;">{{ form.complementares }}</p></div>
+                    <div v-if="form.recomendacoes" style="margin-bottom: 20px;"><strong style="font-size: 13px; text-transform: uppercase; display: block; margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 3px;">Recomendações</strong><p style="font-size: 13px; white-space: pre-wrap;">{{ form.recomendacoes }}</p></div>
+                </template>
 
                 <!-- Signatures -->
                 <div style="margin-top: 80px; text-align: center;">
-                    <p style="font-style: italic; font-size: 14px; margin-bottom: 40px;">Assinatura do Técnico do Laboratório</p>
+                    <p style="font-style: italic; font-size: 14px; margin-bottom: 40px;">{{ printMode === 'receita' ? 'Assinatura do Médico Prescritor' : 'Assinatura do Médico Responsável' }}</p>
                     <div style="width: 300px; border-bottom: 1px solid black; margin: 0 auto 5px;"></div>
                     <p style="font-size: 14px; font-weight: bold;">Dr(a). : {{ selectedPaciente.MedicoNome || 'Médico Responsável' }}</p>
                 </div>

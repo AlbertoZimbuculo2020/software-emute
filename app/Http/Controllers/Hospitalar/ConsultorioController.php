@@ -30,7 +30,6 @@ class ConsultorioController extends Controller
             ->whereIn('tb_agendamento.Situacao', ['Consultorio', 'Reconsulta'])
             ->where('tb_agendamento.Estado', 'Ativo');
 
-        // Se não for Admin, filtrar apenas pacientes enviados para este médico
         if ($user->ACESSO !== 'SIM' && $user->ID_PESSOA) {
             $query->where('tb_agendamento.IdMedico', $user->ID_PESSOA);
         }
@@ -42,29 +41,37 @@ class ConsultorioController extends Controller
             ->select('Id', 'Codigo', 'Descricao', 'Categoria', 'Tipo', 'Exame_Fora')
             ->get();
 
+        $catalogoFarmacos = DB::table('tb_farmaco')
+            ->where('Estado', 'Ativo')
+            ->select('Id', 'Descricao')
+            ->get();
+
+        $listaMedicos = DB::table('tb_tipoentidade')
+            ->where('TipoEntidade', 'Medicos')
+            ->where('Estado', 'Ativo')
+            ->select('Codigo', 'Nome')
+            ->get();
+
         $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
         if ($empresa && $empresa->IMAGEM) {
             $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
         }
 
         return Inertia::render('Hospitalar/Consultorio', [
-            'aguardando' => $aguardando,
-            'catalogoExames' => $catalogoExames,
-            'empresa' => $empresa
+            'aguardando'      => $aguardando,
+            'catalogoExames'  => $catalogoExames,
+            'catalogoFarmacos'=> $catalogoFarmacos,
+            'listaMedicos'    => $listaMedicos,
+            'empresa'         => $empresa
         ]);
     }
 
     public function getPatientData($idAgenda)
     {
-        $agendamento = DB::table('tb_agendamento')
-            ->where('Codigo', $idAgenda)
-            ->first();
-
+        $agendamento = DB::table('tb_agendamento')->where('Codigo', $idAgenda)->first();
         if (!$agendamento) return response()->json(['error' => 'Agendamento não encontrado'], 404);
 
-        $triagem = DB::table('tb_triagem')
-            ->where('IdAgenda', $idAgenda)
-            ->first();
+        $triagem = DB::table('tb_triagem')->where('IdAgenda', $idAgenda)->first();
 
         $historico = DB::table('tb_agendamento')
             ->where('IdPaciente', $agendamento->IdPaciente)
@@ -78,58 +85,56 @@ class ConsultorioController extends Controller
             ->where('Estado', '!=', 'Removido')
             ->get();
 
+        $receita = DB::table('tb_receita')
+            ->where('IdAgenda', $idAgenda)
+            ->where('Estado', '!=', 'Removido')
+            ->get();
+
         return response()->json([
-            'triagem' => $triagem,
-            'historico' => $historico,
-            'exames_solicitados' => $exames_solicitados
+            'triagem'           => $triagem,
+            'historico'         => $historico,
+            'exames_solicitados'=> $exames_solicitados,
+            'receita'           => $receita,
         ]);
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'Codigo' => 'required',
-            'qp' => 'nullable|string',
-            'hda' => 'nullable|string',
-            'obj' => 'nullable|string',
-            'complementares' => 'nullable|string',
+            'Codigo'        => 'required',
+            'qp'            => 'nullable|string',
+            'hda'           => 'nullable|string',
+            'obj'           => 'nullable|string',
+            'complementares'=> 'nullable|string',
             'recomendacoes' => 'nullable|string',
-            'situacao' => 'required|string',
+            'situacao'      => 'required|string',
         ]);
 
         DB::table('tb_agendamento')
             ->where('Codigo', $request->Codigo)
             ->update([
-                'QP' => $request->qp,
-                'HDA' => $request->hda,
-                'OBJ' => $request->obj,
+                'QP'             => $request->qp,
+                'HDA'            => $request->hda,
+                'OBJ'            => $request->obj,
                 'COMPLEMENTARES' => $request->complementares,
-                'RECOMENDACOES' => $request->recomendacoes,
-                'Situacao' => $request->situacao,
+                'RECOMENDACOES'  => $request->recomendacoes,
+                'Situacao'       => $request->situacao,
             ]);
 
-        // Se houver receita, poderíamos salvar aqui também (em tb_receita)
-        // Se houver exames solicitados, salvaríamos em tb_resultado_exame com status 'Pendente'
-
-        return redirect()->back()->with('message', 'Dados clínicos salvos com sucesso!');
+        return redirect()->back()->with('message', 'Dados clínicos gravados com sucesso!');
     }
 
     public function solicitarExames(Request $request)
     {
         $request->validate([
             'IdAgenda' => 'required',
-            'exames' => 'required|array',
+            'exames'   => 'required|array',
         ]);
 
-        $ids = [];
-        foreach ($request->exames as $ex) {
-            $ids[] = str_replace('cat_', '', $ex);
-        }
-
+        $ids = array_map(fn($ex) => str_replace('cat_', '', $ex), $request->exames);
         $exames = DB::table('tb_exames')->whereIn('Id', $ids)->get();
 
         foreach ($exames as $ex) {
-            // Verifica se já existe para evitar duplicados na mesma agenda
             $exists = DB::table('tb_resultado_exame')
                 ->where('IdAgenda', $request->IdAgenda)
                 ->where('CodExame', $ex->Codigo)
@@ -137,23 +142,101 @@ class ConsultorioController extends Controller
 
             if (!$exists) {
                 DB::table('tb_resultado_exame')->insert([
-                    'IdAgenda' => $request->IdAgenda,
-                    'Codigo' => $request->IdAgenda, // Campo obrigatório que armazena o ID da agenda
-                    'CodExame' => $ex->Codigo,
-                    'Descricao' => $ex->Descricao,
-                    'Categoria' => $ex->Categoria,
-                    'Tipo' => $ex->Tipo,
-                    'DataExame' => now(),
-                    'Estado' => 'Ativo',
+                    'IdAgenda'   => $request->IdAgenda,
+                    'Codigo'     => $request->IdAgenda,
+                    'CodExame'   => $ex->Codigo,
+                    'Descricao'  => $ex->Descricao,
+                    'Categoria'  => $ex->Categoria,
+                    'Tipo'       => $ex->Tipo,
+                    'DataExame'  => now(),
+                    'Estado'     => 'Ativo',
                     'Utilizador' => auth()->user()->NOME_UTILIZADOR ?? 'Medico',
                 ]);
             }
         }
 
+        // Só muda para Laboratório se ainda estiver no Consultório
         DB::table('tb_agendamento')
             ->where('Codigo', $request->IdAgenda)
+            ->whereIn('Situacao', ['Consultorio', 'Reconsulta'])
             ->update(['Situacao' => 'Laboratorio']);
 
-        return redirect()->back()->with('message', 'Exames solicitados com sucesso!');
+        return response()->json(['message' => 'Exames enviados com sucesso!']);
+    }
+
+    // ─────────────────────────────────────────────
+    //  RECEITA MÉDICA
+    // ─────────────────────────────────────────────
+    public function storeReceita(Request $request)
+    {
+        $request->validate([
+            'IdAgenda' => 'required|string',
+            'itens'    => 'required|array|min:1',
+        ]);
+
+        $utilizador = auth()->user()->NOME_UTILIZADOR ?? 'Medico';
+
+        foreach ($request->itens as $item) {
+            DB::table('tb_receita')->insert([
+                'IdAgenda'  => $request->IdAgenda,
+                'Farmaco'   => $item['farmaco'] ?? '',
+                'Dosagem'   => $item['dosagem'] ?? '',
+                'Dias'      => $item['dias'] ?? '',
+                'Estado'    => 'Ativo',
+            ]);
+        }
+
+        return response()->json(['message' => 'Receita gravada com sucesso!']);
+    }
+
+    public function destroyReceitaItem(Request $request)
+    {
+        $request->validate(['id' => 'required|integer']);
+        DB::table('tb_receita')->where('Id', $request->id)->update(['Estado' => 'Removido']);
+        return response()->json(['message' => 'Item removido!']);
+    }
+
+    // ─────────────────────────────────────────────
+    //  GRAVAR RESULTADO DE EXAME (do modal)
+    // ─────────────────────────────────────────────
+    public function gravarResultadoExame(Request $request)
+    {
+        $request->validate([
+            'exameId'   => 'required|integer',
+            'resultado' => 'required|string',
+            'obs'       => 'nullable|string',
+        ]);
+
+        DB::table('tb_resultado_exame')
+            ->where('Id', $request->exameId)
+            ->update([
+                'Resultado' => $request->resultado,
+                'Obs'       => $request->obs,
+                'Estado'    => 'Concluido',
+            ]);
+
+        return response()->json(['message' => 'Resultado gravado com sucesso!']);
+    }
+
+    // ─────────────────────────────────────────────
+    //  ENCAMINHAR PARA OUTRO MÉDICO
+    // ─────────────────────────────────────────────
+    public function encaminhar(Request $request)
+    {
+        $request->validate([
+            'IdAgenda'   => 'required|string',
+            'IdMedico'   => 'required|string',
+            'motivo'     => 'nullable|string',
+        ]);
+
+        DB::table('tb_agendamento')
+            ->where('Codigo', $request->IdAgenda)
+            ->update([
+                'IdMedico'   => $request->IdMedico,
+                'Situacao'   => 'Consultorio',
+                'RECOMENDACOES' => $request->motivo,
+            ]);
+
+        return response()->json(['message' => 'Paciente encaminhado com sucesso!']);
     }
 }

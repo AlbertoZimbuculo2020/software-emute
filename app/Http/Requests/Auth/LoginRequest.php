@@ -54,25 +54,33 @@ class LoginRequest extends FormRequest
             $this->fail('Usuário não encontrado.');
         }
 
-        // Check password using Hybrid Strategy (Bcrypt OR SHA-512)
+        // Check password using Hybrid Strategy (Bcrypt OR Multi-Legacy SHA-512)
         $authenticated = false;
         
-        $hashedInput = hash('sha512', $senha);
+        $storedHash = trim((string)$user->SENHA);
 
-        // Try Bcrypt (Laravel default)
-        if (\Illuminate\Support\Str::startsWith($user->SENHA, '$2y$')) {
-            if (\Illuminate\Support\Facades\Hash::check($senha, $user->SENHA)) {
+        // 1. Try Bcrypt (Laravel default)
+        if (\Illuminate\Support\Str::startsWith($storedHash, '$2y$')) {
+            if (\Illuminate\Support\Facades\Hash::check($senha, $storedHash)) {
                 $authenticated = true;
             }
         } 
-        // Try Legacy SHA-512 (Hexadecimal 128 chars) - Case Insensitive hex check
-        elseif (strtolower($user->SENHA) === strtolower($hashedInput)) {
-            $authenticated = true;
+        
+        // 2. Try Legacy SHA-512 Strategies
+        if (!$authenticated) {
+            $hashedPlain = strtolower(hash('sha512', (string)$senha));
+            $hashedUTF16LE = strtolower(hash('sha512', mb_convert_encoding((string)$senha, 'UTF-16LE')));
+            
+            $storedHashLower = strtolower($storedHash);
+
+            if ($storedHashLower === $hashedPlain) {
+                $authenticated = true;
+            } elseif ($storedHashLower === $hashedUTF16LE) {
+                $authenticated = true;
+            }
         }
 
         if (! $authenticated) {
-            // Log for debugging (remove in production)
-            \Illuminate\Support\Facades\Log::debug("Login fail for $login. Stored: " . substr($user->SENHA, 0, 10) . "... Input: " . substr($hashedInput, 0, 10) . "...");
             $this->fail('Senha incorreta.');
         }
 

@@ -105,6 +105,10 @@ Route::get('/hospitalar/consultorio', [ConsultorioController::class, 'index'])->
 Route::get('/hospitalar/consultorio/paciente/{id}', [ConsultorioController::class, 'getPatientData'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.paciente');
 Route::post('/hospitalar/consultorio/store', [ConsultorioController::class, 'store'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.store');
 Route::post('/hospitalar/consultorio/solicitar-exames', [ConsultorioController::class, 'solicitarExames'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.solicitar-exames');
+Route::post('/hospitalar/consultorio/receita', [ConsultorioController::class, 'storeReceita'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.receita.store');
+Route::post('/hospitalar/consultorio/receita/remover', [ConsultorioController::class, 'destroyReceitaItem'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.receita.destroy');
+Route::post('/hospitalar/consultorio/resultado-exame', [ConsultorioController::class, 'gravarResultadoExame'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.resultado');
+Route::post('/hospitalar/consultorio/encaminhar', [ConsultorioController::class, 'encaminhar'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.encaminhar');
 
 Route::get('/hospitalar/seguradoras', [SeguradoraController::class, 'index'])->middleware(['auth', 'verified'])->name('hospitalar.seguradoras');
 Route::post('/hospitalar/seguradoras', [SeguradoraController::class, 'store'])->middleware(['auth', 'verified'])->name('hospitalar.seguradoras.store');

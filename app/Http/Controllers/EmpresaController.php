@@ -62,7 +62,7 @@ class EmpresaController extends Controller
                 ]);
             } else {
                 DB::table('utilizador')->where('ID_UTILIZADOR', $userExists->ID_UTILIZADOR)->update([
-                    'SENHA' => \Illuminate\Support\Facades\Hash::make($data['SENHA'])
+                    'SENHA' => hash('sha512', (string)$data['SENHA'])
                 ]);
                 $userId = $userExists->ID_UTILIZADOR;
             }
