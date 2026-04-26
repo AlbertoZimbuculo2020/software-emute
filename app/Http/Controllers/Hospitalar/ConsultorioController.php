@@ -30,8 +30,14 @@ class ConsultorioController extends Controller
             ->whereIn('tb_agendamento.Situacao', ['Consultorio', 'Reconsulta'])
             ->where('tb_agendamento.Estado', 'Ativo');
 
-        if ($user->ACESSO !== 'SIM' && $user->ID_PESSOA) {
+        // Restriction requested: Admins who are not doctors shouldn't just browse all patients.
+        // If the user has an ID_PESSOA (meaning they are a specialist/doctor),
+        // we strictly filter by their appointments.
+        if ($user->ID_PESSOA) {
             $query->where('tb_agendamento.IdMedico', $user->ID_PESSOA);
+        } else if ($user->ACESSO !== 'SIM') {
+            // If not a super-admin and has no ID_PESSOA, show nothing or only public ones (though none are public here)
+            $query->where('tb_agendamento.IdMedico', 'PROTECTED');
         }
 
         $aguardando = $query->get();

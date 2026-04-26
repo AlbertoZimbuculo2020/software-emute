@@ -459,83 +459,112 @@ const enviarExamesAoLaboratorio = () => {
                 <div class="lg:col-span-9 flex flex-col gap-6 overflow-y-auto custom-scrollbar pb-8 pr-2">
                     
                     <template v-if="selectedPaciente">
-                        <!-- Patient Header & Triage Stats -->
-                        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 shrink-0">
-                            <div class="xl:col-span-7 bg-white shadow-sm border border-slate-200/80 rounded-lg flex flex-col shrink-0">
-                                <div class="bg-slate-100 text-center py-2.5 border-b border-slate-200/80 font-bold text-slate-700 text-[13px]">
-                                    Dados do Paciente
+                        <!-- Novo Header do Paciente Moderno -->
+                        <div class="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden mb-6 group">
+                            <div class="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+                                <!-- Coluna de Identidade Principal -->
+                                <div class="lg:w-1/3 p-8 flex items-center gap-6 bg-slate-50/50">
+                                    <div class="relative">
+                                        <div class="w-20 h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-blue-200 group-hover:scale-105 transition-transform duration-500">
+                                            {{ selectedPaciente.PacienteNome?.substring(0, 2) }}
+                                        </div>
+                                        <div class="absolute -bottom-1 -right-1 w-8 h-8 bg-emerald-500 border-4 border-white rounded-full"></div>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[9px] font-black uppercase rounded-lg tracking-wider">{{ selectedPaciente.Codigo }}</span>
+                                            <span v-if="selectedPaciente.Seguradora" class="px-2 py-0.5 bg-purple-100 text-purple-700 text-[9px] font-black uppercase rounded-lg tracking-wider">ASSEGURADO</span>
+                                            <span v-else class="px-2 py-0.5 bg-orange-100 text-orange-700 text-[9px] font-black uppercase rounded-lg tracking-wider">PARTICULAR</span>
+                                        </div>
+                                        <h2 class="text-xl font-black text-slate-900 leading-tight uppercase tracking-tight">{{ selectedPaciente.PacienteNome }}</h2>
+                                        <p class="text-slate-400 text-xs font-bold mt-1 flex items-center gap-1.5">
+                                            <User class="w-3 h-3" /> {{ selectedPaciente.Genero }} • {{ calcularIdadeFormatoDesktop(selectedPaciente.DataNascimento) }}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div class="p-5 flex flex-col gap-4">
-                                    <div class="flex items-center gap-4">
-                                        <span class="w-24 text-sm font-medium text-slate-600 shrink-0">Código</span>
-                                        <input type="text" :value="selectedPaciente.IdPaciente" readonly class="w-32 bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
-                                        <span class="text-sm font-medium text-slate-600 shrink-0 ml-2">Nome</span>
-                                        <input type="text" :value="selectedPaciente.PacienteNome" readonly class="flex-grow bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
+
+                                <!-- Coluna de Detalhes Médicos -->
+                                <div class="flex-grow p-8 grid grid-cols-2 lg:grid-cols-4 gap-8">
+                                    <div class="space-y-1">
+                                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Especialidade</p>
+                                        <p class="text-sm font-black text-slate-700 truncate">{{ selectedPaciente.Consulta }}</p>
                                     </div>
-                                    <div class="flex items-center gap-4">
-                                        <span class="w-24 text-sm font-medium text-slate-600 shrink-0 leading-tight">Data de<br>Nascimento</span>
-                                        <input type="text" :value="selectedPaciente.DataNascimento ? new Date(selectedPaciente.DataNascimento).toLocaleString('pt-PT') : ''" readonly class="flex-grow bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
-                                        <span class="w-12 text-sm font-medium text-slate-600 shrink-0 ml-2 text-right">Idade</span>
-                                        <input type="text" :value="calcularIdadeFormatoDesktop(selectedPaciente.DataNascimento)" readonly class="w-32 bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
+                                    <div class="space-y-1">
+                                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Médico Responsável</p>
+                                        <p class="text-sm font-black text-slate-700 truncate">{{ selectedPaciente.MedicoNome }}</p>
                                     </div>
-                                    <div class="flex items-center gap-4">
-                                        <span class="w-24 text-sm font-medium text-slate-600 shrink-0">Telefone</span>
-                                        <input type="text" :value="selectedPaciente.Telefone" readonly class="flex-grow bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
-                                        <span class="w-12 text-sm font-medium text-slate-600 shrink-0 ml-2 text-right">Sexo</span>
-                                        <input type="text" :value="selectedPaciente.Genero" readonly class="w-32 bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
+                                    <div class="space-y-1" v-if="selectedPaciente.Seguradora">
+                                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Seguradora</p>
+                                        <p class="text-sm font-black text-purple-600 truncate uppercase">{{ selectedPaciente.Seguradora }}</p>
                                     </div>
-                                    <div class="flex items-center gap-4">
-                                        <span class="w-24 text-sm font-medium text-slate-600 shrink-0">Morada</span>
-                                        <input type="text" :value="selectedPaciente.Rua || selectedPaciente.Cidade || ''" readonly class="flex-grow bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
+                                    <div class="space-y-1" v-else>
+                                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Tipo Pagamento</p>
+                                        <p class="text-sm font-black text-slate-700">Numerário / Multicaixa</p>
                                     </div>
-                                    <hr class="border-slate-100 my-1" />
-                                    <div class="flex items-center gap-6 pl-1">
-                                        <label class="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" readonly :checked="!selectedPaciente.Seguradora" class="w-4 h-4 text-blue-600 border-slate-300 pointer-events-none focus:ring-0" />
-                                            <span class="text-sm text-slate-700">Particular</span>
-                                        </label>
-                                        <label class="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" readonly :checked="!!selectedPaciente.Seguradora" class="w-4 h-4 text-blue-600 border-slate-300 pointer-events-none focus:ring-0" />
-                                            <span class="text-sm text-slate-700">Assegurado</span>
-                                        </label>
-                                    </div>
-                                    <div class="flex items-center gap-4 mt-1">
-                                        <span class="w-24 text-sm font-medium text-slate-600 shrink-0">Asseguradora</span>
-                                        <input type="text" :value="selectedPaciente.Seguradora || ''" readonly class="flex-grow bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
-                                    </div>
-                                    <div class="flex items-center gap-4">
-                                        <span class="w-24 text-sm font-medium text-slate-600 shrink-0">Consulta</span>
-                                        <input type="text" :value="selectedPaciente.Consulta" readonly class="flex-grow bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none" />
-                                        <span class="text-sm font-medium text-slate-600 shrink-0 ml-2">Médico</span>
-                                        <input type="text" :value="selectedPaciente.MedicoNome" readonly class="flex-grow bg-white border border-slate-200 rounded text-sm text-slate-700 px-3 py-1.5 pointer-events-none focus:outline-none min-w-[200px]" />
+                                    <div class="space-y-1">
+                                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Contato</p>
+                                        <p class="text-sm font-black text-slate-700">{{ selectedPaciente.Telefone || '---' }}</p>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <div class="xl:col-span-5 grid grid-cols-3 gap-3">
-                                <div class="bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100/50 flex flex-col justify-center">
-                                    <div class="flex items-center gap-2 text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">Peso</div>
-                                    <p class="text-sm font-black text-slate-800">{{ triageData?.Peso || '--' }} <span class="text-[9px] text-slate-400">kg</span></p>
+                        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 shrink-0">
+                            <!-- Removemos a div antiga do Header que ocupava col-span-7 -->
+                            <div class="xl:col-span-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                <div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 group hover:border-emerald-200 transition-all">
+                                    <div class="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+                                        <Weight class="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Peso</p>
+                                        <p class="text-lg font-black text-slate-800">{{ triageData?.Peso || '--' }} <span class="text-[10px] text-slate-400 font-bold">Kg</span></p>
+                                    </div>
                                 </div>
-                                <div class="bg-amber-50/50 p-3 rounded-2xl border border-amber-100/50 flex flex-col justify-center">
-                                    <div class="flex items-center gap-2 text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1">Temp. (ºC)</div>
-                                    <p class="text-sm font-black text-slate-800">{{ triageData?.Temperatura || '--' }} <span class="text-[9px] text-slate-400">°C</span></p>
+                                <div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 group hover:border-amber-200 transition-all">
+                                    <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+                                        <Thermometer class="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Temperatura</p>
+                                        <p class="text-lg font-black text-slate-800">{{ triageData?.Temperatura || '--' }} <span class="text-[10px] text-slate-400 font-bold">°C</span></p>
+                                    </div>
                                 </div>
-                                <div class="bg-rose-50/50 p-3 rounded-2xl border border-rose-100/50 flex flex-col justify-center">
-                                    <div class="flex items-center gap-2 text-[9px] font-black text-rose-600 uppercase tracking-widest mb-1">Pressão</div>
-                                    <p class="text-sm font-black text-slate-800">{{ triageData?.PressaoArterial || '--' }}</p>
+                                <div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 group hover:border-rose-200 transition-all">
+                                    <div class="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 group-hover:scale-110 transition-transform">
+                                        <HeartPulse class="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Pressão</p>
+                                        <p class="text-lg font-black text-slate-800">{{ triageData?.PressaoArterial || '--' }}</p>
+                                    </div>
                                 </div>
-                                <div class="bg-blue-50/50 p-3 rounded-2xl border border-blue-100/50 flex flex-col justify-center">
-                                    <div class="flex items-center gap-2 text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">Freq. Cardíaca</div>
-                                    <p class="text-sm font-black text-slate-800">{{ triageData?.FrequenciaCardiaca || '--' }}</p>
+                                <div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 group hover:border-blue-200 transition-all">
+                                    <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                                        <Activity class="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">F. Cardíaca</p>
+                                        <p class="text-lg font-black text-slate-800">{{ triageData?.FrequenciaCardiaca || '--' }}</p>
+                                    </div>
                                 </div>
-                                <div class="bg-purple-50/50 p-3 rounded-2xl border border-purple-100/50 flex flex-col justify-center">
-                                    <div class="flex items-center gap-2 text-[9px] font-black text-purple-600 uppercase tracking-widest mb-1">Freq. Resp.</div>
-                                    <p class="text-sm font-black text-slate-800">{{ triageData?.FrequenciaRespiratoria || '--' }}</p>
+                                <div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 group hover:border-purple-200 transition-all">
+                                    <div class="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
+                                        <Activity class="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">F. Resp.</p>
+                                        <p class="text-lg font-black text-slate-800">{{ triageData?.FrequenciaRespiratoria || '--' }}</p>
+                                    </div>
                                 </div>
-                                <div class="bg-cyan-50/50 p-3 rounded-2xl border border-cyan-100/50 flex flex-col justify-center">
-                                    <div class="flex items-center gap-2 text-[9px] font-black text-cyan-600 uppercase tracking-widest mb-1">Sat. Oxigénio</div>
-                                    <p class="text-sm font-black text-slate-800">{{ triageData?.SaturacaoOxigenio || '--' }}</p>
+                                <div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 group hover:border-cyan-200 transition-all">
+                                    <div class="w-12 h-12 bg-cyan-50 rounded-2xl flex items-center justify-center text-cyan-600 group-hover:scale-110 transition-transform">
+                                        <Activity class="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sat. O2</p>
+                                        <p class="text-lg font-black text-slate-800">{{ triageData?.SaturacaoOxigenio || '--' }}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

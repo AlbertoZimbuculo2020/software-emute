@@ -33,6 +33,7 @@ const form = useForm({
     IdConsulta: '',
     IdMedico: '',
     DataAgendamento: new Date().toISOString().split('T')[0],
+    situacao: 'Agendada',
 });
 
 const searchLoading = ref(false);
@@ -315,6 +316,17 @@ const limparForm = () => {
                                             </div>
                                         </div>
 
+                                        <!-- Data Agendamento -->
+                                        <div class="space-y-1.5">
+                                            <label class="text-[11px] font-black text-slate-500 uppercase tracking-wider ml-1">Data do Agendamento</label>
+                                            <div class="relative group">
+                                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <Calendar class="h-4 w-4 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
+                                                </div>
+                                                <input type="date" v-model="form.DataAgendamento" class="w-full pl-10 bg-white border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm font-black transition-all shadow-sm" />
+                                            </div>
+                                        </div>
+
                                         <!-- Consulta -->
                                         <div class="space-y-1.5">
                                             <label class="text-[11px] font-black text-slate-500 uppercase tracking-wider ml-1">Especialidade / Consulta</label>
@@ -346,26 +358,20 @@ const limparForm = () => {
                         <!-- Modern Tile Options -->
                         <div class="bg-white p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-200/60">
                             <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <MousePointer2 class="w-4 h-4 text-blue-600" /> Ações Rápidas
+                                <MousePointer2 class="w-4 h-4 text-blue-600" /> Confirmar Atendimento
                             </h3>
                             <div class="grid grid-cols-2 gap-5">
-                                <button class="group bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white p-6 rounded-3xl transition-all duration-300 flex flex-col items-center gap-3 border border-blue-100 hover:border-blue-600 hover:shadow-xl hover:shadow-blue-200">
+                                <button @click="() => { form.situacao = 'Agendada'; agendarConsulta(); }" class="group bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white p-6 rounded-3xl transition-all duration-300 flex flex-col items-center gap-3 border border-blue-100 hover:border-blue-600 hover:shadow-xl hover:shadow-blue-200">
                                     <div class="p-3 bg-white group-hover:bg-blue-500 rounded-2xl shadow-sm transition-colors">
-                                        <ClipboardList class="w-6 h-6" />
-                                    </div>
-                                    <span class="text-[11px] font-black uppercase tracking-wider">Solicitar Serviços</span>
-                                </button>
-                                <button class="group bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white p-6 rounded-3xl transition-all duration-300 flex flex-col items-center gap-3 border border-blue-100 hover:border-blue-600 hover:shadow-xl hover:shadow-blue-200">
-                                    <div class="p-3 bg-white group-hover:bg-blue-500 rounded-2xl shadow-sm transition-colors">
-                                        <Stethoscope class="w-6 h-6" />
-                                    </div>
-                                    <span class="text-[11px] font-black uppercase tracking-wider">Exame Externo</span>
-                                </button>
-                                <button @click="agendarConsulta" class="group bg-blue-600 hover:bg-blue-700 text-white p-6 rounded-3xl transition-all duration-300 flex flex-col items-center gap-3 shadow-lg shadow-blue-200 hover:shadow-blue-300 active:scale-95">
-                                    <div class="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
                                         <Calendar class="w-6 h-6" />
                                     </div>
                                     <span class="text-[11px] font-black uppercase tracking-wider">Agendar Consulta</span>
+                                </button>
+                                <button @click="() => { form.DataAgendamento = new Date().toISOString().split('T')[0]; form.situacao = 'Triagem'; agendarConsulta(); }" class="group bg-blue-600 hover:bg-blue-700 text-white p-6 rounded-3xl transition-all duration-300 flex flex-col items-center gap-3 shadow-lg shadow-blue-200 hover:shadow-blue-300 active:scale-95">
+                                    <div class="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                                        <Activity class="w-6 h-6" />
+                                    </div>
+                                    <span class="text-[11px] font-black uppercase tracking-wider">Enviar para Triagem</span>
                                 </button>
                                 <!-- Tile: Triagem -->
                                 <div @click="enviarParaTriagem(agendamentos.length > 0 ? agendamentos[agendamentos.length - 1] : null)" class="group bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40 hover:shadow-emerald-200/40 hover:border-emerald-200 transition-all cursor-pointer overflow-hidden relative active:scale-95">
