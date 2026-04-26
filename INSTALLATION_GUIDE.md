@@ -4,13 +4,13 @@ Este documento fornece as instruções necessárias para clonar, instalar e exec
 
 ## Pró-requisitos
 
-Antes de começar, certifique-se de que tem as seguintes ferramentas instaladas:
+Antes de começar, certifique-se de que tem as seguintes ferramentas instaladas. Pode descarregá-las através dos links oficiais:
 
-1.  **PHP 8.2 ou superior**
-2.  **Composer** (Gestor de dependências PHP)
-3.  **Node.js & NPM** (Gestor de dependências JavaScript)
-4.  **Servidor SQL Server** (MS SQL Server)
-5.  **Drivers SQLSRV** instalados no PHP (necessário para conexão com a base de dados).
+1.  **[PHP 8.2 ou superior](https://www.php.net/downloads)**
+2.  **[Composer](https://getcomposer.org/download/)** (Gestor de dependências PHP)
+3.  **[Node.js & NPM](https://nodejs.org/)** (Gestor de dependências JavaScript)
+4.  **[MS SQL Server Express](https://www.microsoft.com/en-us/sql-server/sql-server-downloads)** (Servidor de Base de Dados)
+5.  **[Drivers Microsoft PHP para SQL Server](https://learn.microsoft.com/en-us/sql/connect/php/download-drivers-php-sql-server)** (Obrigatório para conexão .env)
 
 ---
 
@@ -19,8 +19,8 @@ Antes de começar, certifique-se de que tem as seguintes ferramentas instaladas:
 ### 1. Clonar o Projecto
 Abra o seu terminal e execute:
 ```bash
-git clone <url-do-repositorio>
-cd emute
+git clone https://github.com/AlbertoZimbuculo2020/software-emute.git
+cd software-emute
 ```
 
 ### 2. Instalar Dependências PHP
@@ -89,7 +89,15 @@ A aplicação estará disponível em `http://127.0.0.1:8000`.
 ## Observações Adicionais
 
 ### Erros de Driver SQL Server
-Se encontrar o erro `could not find driver`, certifique-se de que as extensões `pdo_sqlsrv` e `sqlsrv` estão habilitadas no seu `php.ini`.
+Se encontrar o erro `could not find driver`, siga estes passos:
+1. Descarregue os drivers (Link no topo).
+2. Extraia os ficheiros `.dll` para a pasta `ext` do seu PHP.
+3. No ficheiro `php.ini`, adicione ou retire o comentário das linhas:
+   ```ini
+   extension=php_pdo_sqlsrv_8x_nts_x64.dll
+   extension=php_sqlsrv_8x_nts_x64.dll
+   ```
+4. Reinicie o servidor Apache/Nginx.
 
 ### Permissões de Pasta
 Em ambientes Linux, pode ser necessário dar permissão às pastas `storage` e `bootstrap/cache`:
