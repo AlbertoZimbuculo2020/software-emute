@@ -1,7 +1,8 @@
 <script setup>
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref, watch, onMounted } from 'vue';
-import { User, Lock, Eye, EyeOff, Search, CheckCircle, X } from 'lucide-vue-next';
+import { User, Lock, Eye, EyeOff, Search, CheckCircle, X, Server, Database, Settings, Loader2 } from 'lucide-vue-next';
+import axios from 'axios';
 
 const props = defineProps({
     canResetPassword: {
@@ -17,13 +18,22 @@ const flashSuccess = ref(page.props.flash?.success || null);
 
 // Show Toast
 const showToast = ref(!!flashSuccess.value);
+const toastMessage = ref(flashSuccess.value);
+const toastType = ref('success');
+
+const triggerToast = (message, type = 'success') => {
+    toastMessage.value = message;
+    toastType.value = type;
+    showToast.value = true;
+    setTimeout(() => { showToast.value = false }, 5000);
+};
+
 watch(() => page.props.flash?.success, (newVal) => {
     if (newVal) {
-        flashSuccess.value = newVal;
-        showToast.value = true;
-        setTimeout(() => { showToast.value = false }, 5000);
+        triggerToast(newVal, 'success');
     }
 });
+
 onMounted(() => {
     if (showToast.value) {
         setTimeout(() => { showToast.value = false }, 5000);
@@ -34,9 +44,41 @@ const form = useForm({
     login: '',
     senha: '',
     remember: false,
+    db_host: '',
+    db_port: '',
+    db_database: '',
+    db_username: '',
+    db_password: '',
 });
 
 const showPassword = ref(false);
+const showServerSettings = ref(false);
+const testingConnection = ref(false);
+
+const testConnection = async () => {
+    if (!form.db_host || !form.db_database || !form.db_username) {
+        triggerToast('Por favor, preencha os dados do servidor.', 'error');
+        return;
+    }
+
+    testingConnection.value = true;
+    try {
+        const response = await axios.post(route('db.test'), {
+            db_host: form.db_host,
+            db_port: form.db_port,
+            db_database: form.db_database,
+            db_username: form.db_username,
+            db_password: form.db_password,
+        });
+
+        triggerToast(response.data.message, 'success');
+    } catch (error) {
+        const message = error.response?.data?.message || 'Erro ao testar conexão.';
+        triggerToast(message, 'error');
+    } finally {
+        testingConnection.value = false;
+    }
+};
 
 const submit = () => {
     form.post(route('login'), {
@@ -55,12 +97,16 @@ const submit = () => {
     <!-- Elegant Toast Notification -->
     <transition enter-active-class="transform transition ease-out duration-300" enter-from-class="translate-y-[-100%] opacity-0" enter-to-class="translate-y-0 opacity-100" leave-active-class="transform transition ease-in duration-200" leave-from-class="translate-y-0 opacity-100" leave-to-class="translate-y-[-100%] opacity-0">
         <div v-if="showToast" class="fixed top-6 right-6 z-50 flex items-center bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 p-4 rounded-2xl min-w-[300px]">
-            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mr-3">
-                <CheckCircle class="w-5 h-5 text-green-500" />
+            <div :class="[
+                'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-3',
+                toastType === 'success' ? 'bg-green-50' : 'bg-red-50'
+            ]">
+                <CheckCircle v-if="toastType === 'success'" class="w-5 h-5 text-green-500" />
+                <X v-else class="w-5 h-5 text-red-500" />
             </div>
             <div class="flex-grow">
-                <p class="text-sm font-bold text-gray-800">Sucesso</p>
-                <p class="text-xs text-gray-500 mt-0.5">{{ flashSuccess }}</p>
+                <p class="text-sm font-bold text-gray-800">{{ toastType === 'success' ? 'Sucesso' : 'Erro' }}</p>
+                <p class="text-xs text-gray-500 mt-0.5">{{ toastMessage }}</p>
             </div>
             <button @click="showToast = false" class="text-gray-400 hover:text-gray-600 transition-colors ml-3"><X class="w-4 h-4"/></button>
         </div>
@@ -135,6 +181,80 @@ const submit = () => {
                             </button>
                         </div>
                     </div>
+
+                    <!-- Server Settings Toggle -->
+                    <div class="pt-2">
+                        <button 
+                            type="button" 
+                            @click="showServerSettings = !showServerSettings"
+                            class="flex items-center text-[11px] font-bold text-gray-400 hover:text-blue-500 transition-colors uppercase tracking-wider space-x-2"
+                        >
+                            <Settings class="w-3.5 h-3.5" :class="{'rotate-90': showServerSettings}" />
+                            <span>{{ showServerSettings ? 'Ocultar Servidor' : 'Configurar Servidor' }}</span>
+                        </button>
+                    </div>
+
+                    <!-- Server Settings Fields -->
+                    <transition 
+                        enter-active-class="transition duration-300 ease-out"
+                        enter-from-class="transform scale-95 opacity-0"
+                        enter-to-class="transform scale-100 opacity-100"
+                        leave-active-class="transition duration-200 ease-in"
+                        leave-from-class="transform scale-100 opacity-100"
+                        leave-to-class="transform scale-95 opacity-0"
+                    >
+                        <div v-if="showServerSettings" class="space-y-4 p-4 rounded-xl bg-gray-50/80 border border-gray-100">
+                            <!-- Host & Port -->
+                            <div class="grid grid-cols-3 gap-3">
+                                <div class="col-span-2 space-y-1.5">
+                                    <label class="text-[10px] font-bold text-gray-500 uppercase">Servidor</label>
+                                    <div class="relative group">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Server class="h-3.5 w-3.5 text-gray-400" />
+                                        </div>
+                                        <input v-model="form.db_host" type="text" placeholder="127.0.0.1" class="w-full pl-8 pr-3 py-2 bg-white border border-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                                    </div>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="text-[10px] font-bold text-gray-500 uppercase">Porta</label>
+                                    <input v-model="form.db_port" type="text" placeholder="3306" class="w-full px-3 py-2 bg-white border border-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                                </div>
+                            </div>
+
+                            <!-- Database Name -->
+                            <div class="space-y-1.5">
+                                <label class="text-[10px] font-bold text-gray-500 uppercase">Banco de Dados</label>
+                                <div class="relative group">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Database class="h-3.5 w-3.5 text-gray-400" />
+                                    </div>
+                                    <input v-model="form.db_database" type="text" placeholder="emute_db" class="w-full pl-8 pr-3 py-2 bg-white border border-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                                </div>
+                            </div>
+
+                            <!-- DB Credentials -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="space-y-1.5">
+                                    <label class="text-[10px] font-bold text-gray-500 uppercase">Utilizador DB</label>
+                                    <input v-model="form.db_username" type="text" placeholder="root" class="w-full px-3 py-2 bg-white border border-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="text-[10px] font-bold text-gray-500 uppercase">Senha DB</label>
+                                    <input v-model="form.db_password" type="password" placeholder="••••" class="w-full px-3 py-2 bg-white border border-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                @click="testConnection"
+                                :disabled="testingConnection"
+                                class="w-full flex items-center justify-center space-x-2 py-2 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold hover:bg-blue-100 transition-all border border-blue-100 disabled:opacity-50"
+                            >
+                                <Loader2 v-if="testingConnection" class="w-3 h-3 animate-spin" />
+                                <span>{{ testingConnection ? 'A Testar...' : 'Testar Conexão' }}</span>
+                            </button>
+                        </div>
+                    </transition>
 
                     <!-- Buttons -->
                     <div class="pt-4">

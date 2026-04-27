@@ -22,6 +22,7 @@ use App\Http\Controllers\Hospitalar\LaboratorioController;
 use App\Http\Controllers\Hospitalar\RaioXController;
 use App\Http\Controllers\Configuracoes\EmpresaSettingsController;
 use App\Http\Controllers\Configuracoes\SenhaController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -167,5 +168,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+Route::post('/test-database-connection', [AuthenticatedSessionController::class, 'testConnection'])->name('db.test');
 
 require __DIR__.'/auth.php';

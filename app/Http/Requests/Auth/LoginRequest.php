@@ -31,6 +31,11 @@ class LoginRequest extends FormRequest
         return [
             'login' => ['required', 'string'],
             'senha' => ['required', 'string'],
+            'db_host' => ['nullable', 'string'],
+            'db_port' => ['nullable', 'string'],
+            'db_database' => ['nullable', 'string'],
+            'db_username' => ['nullable', 'string'],
+            'db_password' => ['nullable', 'string'],
         ];
     }
 
@@ -42,6 +47,37 @@ class LoginRequest extends FormRequest
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
+
+        // Dynamic Database Configuration
+        if ($this->db_host) {
+            $default = config('database.default');
+            $config = [
+                "database.connections.{$default}.host" => $this->db_host,
+                "database.connections.{$default}.port" => $this->db_port ?? config("database.connections.{$default}.port"),
+                "database.connections.{$default}.database" => $this->db_database ?? config("database.connections.{$default}.database"),
+                "database.connections.{$default}.username" => $this->db_username ?? config("database.connections.{$default}.username"),
+                "database.connections.{$default}.password" => $this->db_password ?? '',
+            ];
+
+            config($config);
+            \Illuminate\Support\Facades\DB::purge($default);
+
+            try {
+                \Illuminate\Support\Facades\DB::connection($default)->getPdo();
+                // Persist settings in session for middleware
+                session([
+                    'db_host' => $config["database.connections.{$default}.host"],
+                    'db_port' => $config["database.connections.{$default}.port"],
+                    'db_database' => $config["database.connections.{$default}.database"],
+                    'db_username' => $config["database.connections.{$default}.username"],
+                    'db_password' => $config["database.connections.{$default}.password"],
+                ]);
+            } catch (\Exception $e) {
+                throw ValidationException::withMessages([
+                    'login' => 'Falha ao conectar à base de dados: ' . $e->getMessage(),
+                ]);
+            }
+        }
 
         $login = trim($this->login);
         $senha = $this->senha;
