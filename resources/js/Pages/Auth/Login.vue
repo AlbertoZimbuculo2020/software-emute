@@ -1,7 +1,7 @@
 <script setup>
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref, watch, onMounted } from 'vue';
-import { User, Lock, Eye, EyeOff, Search, CheckCircle, X, Server, Database, Settings, Loader2 } from 'lucide-vue-next';
+import { User, Lock, Eye, EyeOff, Search, CheckCircle, X, Server, Database, Settings, Loader2, Save } from 'lucide-vue-next';
 import axios from 'axios';
 
 const props = defineProps({
@@ -34,12 +34,6 @@ watch(() => page.props.flash?.success, (newVal) => {
     }
 });
 
-onMounted(() => {
-    if (showToast.value) {
-        setTimeout(() => { showToast.value = false }, 5000);
-    }
-})
-
 const form = useForm({
     login: '',
     senha: '',
@@ -51,9 +45,44 @@ const form = useForm({
     db_password: '',
 });
 
+onMounted(() => {
+    if (showToast.value) {
+        setTimeout(() => { showToast.value = false }, 5000);
+    }
+    
+    // Load saved settings from localStorage
+    const savedSettings = localStorage.getItem('emute_server_settings');
+    if (savedSettings) {
+        try {
+            const settings = JSON.parse(savedSettings);
+            form.db_host = settings.db_host || '';
+            form.db_port = settings.db_port || '';
+            form.db_database = settings.db_database || '';
+            form.db_username = settings.db_username || '';
+            form.db_password = settings.db_password || '';
+            // If settings were found, show the panel by default
+            showServerSettings.value = true;
+        } catch (e) {
+            console.error('Falha ao carregar definições:', e);
+        }
+    }
+})
+
 const showPassword = ref(false);
 const showServerSettings = ref(false);
 const testingConnection = ref(false);
+
+const saveSettings = () => {
+    const settings = {
+        db_host: form.db_host,
+        db_port: form.db_port,
+        db_database: form.db_database,
+        db_username: form.db_username,
+        db_password: form.db_password,
+    };
+    localStorage.setItem('emute_server_settings', JSON.stringify(settings));
+    triggerToast('Configurações gravadas localmente!', 'success');
+};
 
 const testConnection = async () => {
     if (!form.db_host || !form.db_database || !form.db_username) {
@@ -244,15 +273,26 @@ const submit = () => {
                                 </div>
                             </div>
 
-                            <button
-                                type="button"
-                                @click="testConnection"
-                                :disabled="testingConnection"
-                                class="w-full flex items-center justify-center space-x-2 py-2 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold hover:bg-blue-100 transition-all border border-blue-100 disabled:opacity-50"
-                            >
-                                <Loader2 v-if="testingConnection" class="w-3 h-3 animate-spin" />
-                                <span>{{ testingConnection ? 'A Testar...' : 'Testar Conexão' }}</span>
-                            </button>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    @click="testConnection"
+                                    :disabled="testingConnection"
+                                    class="w-full flex items-center justify-center space-x-2 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-bold hover:bg-blue-100 transition-all border border-blue-100 disabled:opacity-50"
+                                >
+                                    <Loader2 v-if="testingConnection" class="w-3 h-3 animate-spin" />
+                                    <span>{{ testingConnection ? 'A Testar...' : 'Testar Conexão' }}</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    @click="saveSettings"
+                                    class="w-full flex items-center justify-center space-x-2 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-bold hover:bg-emerald-100 transition-all border border-emerald-100"
+                                >
+                                    <Save class="w-3 h-3" />
+                                    <span>Gravar</span>
+                                </button>
+                            </div>
                         </div>
                     </transition>
 
