@@ -53,7 +53,7 @@ class ConsultorioController extends Controller
             ->get();
 
         $listaMedicos = DB::table('tb_tipoentidade')
-            ->where('TipoEntidade', 'Medicos')
+            ->where('TipoEntidade', 'Medico')
             ->where('Estado', 'Ativo')
             ->select('Codigo', 'Nome')
             ->get();
@@ -81,7 +81,6 @@ class ConsultorioController extends Controller
 
         $historico = DB::table('tb_agendamento')
             ->where('IdPaciente', $agendamento->IdPaciente)
-            ->where('Codigo', '!=', $idAgenda)
             ->orderBy('DataAgendamento', 'desc')
             ->limit(10)
             ->get();

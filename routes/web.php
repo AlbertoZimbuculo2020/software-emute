@@ -28,11 +28,15 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::get('/dashboard', function () {
+Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
+    $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+    $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
+
     // Top 10 Consultas
     $topConsultas = DB::table('tb_agendamento')
         ->select('Consulta as label', DB::raw('count(*) as count'))
         ->whereNotNull('Consulta')
+        ->whereBetween('DataAgendamento', [$startDate, $endDate])
         ->groupBy('Consulta')
         ->orderBy('count', 'desc')
         ->take(10)
@@ -42,6 +46,7 @@ Route::get('/dashboard', function () {
     $topExames = DB::table('tb_resultado_exame')
         ->select('Descricao as label', DB::raw('count(*) as count'))
         ->whereNotNull('Descricao')
+        ->whereBetween('DataExame', [$startDate, $endDate])
         ->groupBy('Descricao')
         ->orderBy('count', 'desc')
         ->take(10)
@@ -51,21 +56,82 @@ Route::get('/dashboard', function () {
     $statusStats = DB::table('tb_agendamento')
         ->select('Situacao as label', DB::raw('count(*) as count'))
         ->whereNotNull('Situacao')
+        ->whereBetween('DataAgendamento', [$startDate, $endDate])
         ->groupBy('Situacao')
         ->get();
 
     // Resumo
     $summary = [
-        'totalConsultas' => DB::table('tb_agendamento')->whereMonth('DataAgendamento', now()->month)->count(),
-        'totalExames' => DB::table('tb_resultado_exame')->whereMonth('DataExame', now()->month)->count(),
-        'totalPacientes' => DB::table('tb_paciente')->count(),
+        'totalConsultas' => DB::table('tb_agendamento')->whereBetween('DataAgendamento', [$startDate, $endDate])->count(),
+        'totalExames' => DB::table('tb_resultado_exame')->whereBetween('DataExame', [$startDate, $endDate])->count(),
+        'totalPacientes' => DB::table('tb_paciente')->count(), // Usually all time
     ];
+
+    // Atividade da Semana (últimos 7 dias em relação à end_date, por exemplo, ou só últimos 7 dias globais)
+    // Para simplificar, mantemos os últimos 7 dias a partir de hoje
+    $activityLabels = [];
+    $activityData = [];
+    for ($i = 6; $i >= 0; $i--) {
+        $date = now()->subDays($i);
+        $activityLabels[] = ucfirst($date->locale('pt')->minDayName);
+        $activityData[] = DB::table('tb_agendamento')->whereDate('DataAgendamento', $date->format('Y-m-d'))->count();
+    }
+
+    // --- NOVOS DADOS PARA O CARD DINÂMICO ---
+    
+    // Lista de Consultas em Andamento
+    $emAndamentoLista = DB::table('tb_agendamento')
+        ->join('tb_tipoentidade as p', 'tb_agendamento.IdPaciente', '=', 'p.Codigo')
+        ->leftJoin('tb_tipoentidade as m', 'tb_agendamento.IdMedico', '=', 'm.Codigo')
+        ->select('p.Nome as Paciente', 'tb_agendamento.Situacao', 'm.Nome as Medico')
+        ->whereBetween('tb_agendamento.DataAgendamento', [$startDate, $endDate])
+        ->whereNotIn('tb_agendamento.Situacao', ['Finalizado', 'Removido', 'Alta', 'Transferido'])
+        ->orderBy('tb_agendamento.Id', 'desc')
+        ->get();
+
+    $emAndamentoCount = $emAndamentoLista->count();
+
+    // Consultas Realizadas agrupadas por Médico (Sumário)
+    $realizadasPorMedico = DB::table('tb_agendamento')
+        ->join('tb_tipoentidade', 'tb_agendamento.IdMedico', '=', 'tb_tipoentidade.Codigo')
+        ->select('tb_tipoentidade.Nome as MedicoNome', DB::raw('count(*) as count'))
+        ->whereBetween('tb_agendamento.DataAgendamento', [$startDate, $endDate])
+        ->where('tb_agendamento.Situacao', 'Finalizado')
+        ->groupBy('tb_tipoentidade.Nome')
+        ->orderBy('count', 'desc')
+        ->get();
+
+    // Lista Detalhada de Consultas Realizadas
+    $realizadasLista = DB::table('tb_agendamento')
+        ->join('tb_tipoentidade as p', 'tb_agendamento.IdPaciente', '=', 'p.Codigo')
+        ->leftJoin('tb_tipoentidade as m', 'tb_agendamento.IdMedico', '=', 'm.Codigo')
+        ->select(
+            'p.Nome as Paciente', 
+            'm.Nome as Medico', 
+            'tb_agendamento.DataAgendamento', 
+            'tb_agendamento.CREATED_AT as Hora', 
+            'tb_agendamento.RECOMENDACOES as Resultado'
+        )
+        ->whereBetween('tb_agendamento.DataAgendamento', [$startDate, $endDate])
+        ->where('tb_agendamento.Situacao', 'Finalizado')
+        ->orderBy('tb_agendamento.Id', 'desc')
+        ->get();
 
     return Inertia::render('Dashboard', [
         'topConsultas' => $topConsultas,
         'topExames' => $topExames,
         'statusStats' => $statusStats,
-        'summary' => $summary
+        'summary' => $summary,
+        'activityLabels' => $activityLabels,
+        'activityData' => $activityData,
+        'emAndamentoLista' => $emAndamentoLista,
+        'emAndamentoCount' => $emAndamentoCount,
+        'realizadasPorMedico' => $realizadasPorMedico,
+        'realizadasLista' => $realizadasLista,
+        'filtros' => [
+            'start_date' => $startDate,
+            'end_date' => $endDate
+        ]
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 

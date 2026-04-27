@@ -20,7 +20,7 @@ class UtilizadorController extends Controller
         $perfis = DB::table('tb_perfil')->get();
         
         $medicos = DB::table('tb_tipoentidade')
-            ->where('TipoEntidade', 'Medicos')
+            ->where('TipoEntidade', 'Medico')
             ->where('Estado', 'Ativo')
             ->select('Codigo', 'Nome')
             ->get();
