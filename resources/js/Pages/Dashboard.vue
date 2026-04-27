@@ -13,10 +13,24 @@ import {
   LinearScale,
   BarElement
 } from 'chart.js';
-import { Users, CalendarCheck, Microscope, Wallet, Filter, ActivitySquare, UserCheck, Clock, CheckCircle2 } from 'lucide-vue-next';
+import { 
+    Users, 
+    CalendarCheck, 
+    Microscope, 
+    Filter, 
+    ActivitySquare, 
+    UserCheck, 
+    Clock, 
+    CheckCircle2,
+    Stethoscope,
+    FileText,
+    TrendingUp
+} from 'lucide-vue-next';
+import { usePage } from '@inertiajs/vue3';
 
 ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement);
 
+const page = usePage();
 const props = defineProps({
     topConsultas: { type: Array, default: () => [] },
     topExames: { type: Array, default: () => [] },
@@ -31,9 +45,14 @@ const props = defineProps({
     filtros: { type: Object, default: () => ({ start_date: '', end_date: '' }) }
 });
 
+const can = (permission) => {
+    const permissions = page.props.auth.permissions;
+    return permissions.includes('*') || permissions.includes(permission);
+};
+
 const startDate = ref(props.filtros.start_date);
 const endDate = ref(props.filtros.end_date);
-const activeTab = ref('em_andamento'); // Tabs: 'em_andamento', 'realizadas'
+const activeTab = ref(can('dashConsultasAndamento') ? 'em_andamento' : 'realizadas'); // Tabs: 'em_andamento', 'realizadas'
 
 const applyFilters = () => {
     router.get(route('dashboard'), {
@@ -120,7 +139,7 @@ const getStatusColor = (status) => {
     <DashboardLayout>
         
         <!-- Filtros de Data -->
-        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div v-if="can('dashConsultasAndamento') || can('dashProdutividadeMedica') || can('dashVerResumo') || can('dashVerGraficos') || can('dashVerTopListas')" class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4 mb-6">
             <div class="flex items-center space-x-2 text-gray-500">
                 <Filter class="w-5 h-5 text-blue-500" />
                 <span class="text-xs font-black uppercase tracking-widest">Filtros Dinâmicos</span>
@@ -134,8 +153,8 @@ const getStatusColor = (status) => {
         </div>
 
         <!-- ROW 1: Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
+        <div v-if="can('dashVerResumo') || can('dashConsultasAndamento')" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div v-if="can('dashVerResumo')" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
                 <div>
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Consultas Período</p>
                     <p class="text-2xl font-black text-gray-800 mt-1">{{ props.summary.totalConsultas }}</p>
@@ -144,7 +163,7 @@ const getStatusColor = (status) => {
                     <CalendarCheck class="w-6 h-6" />
                 </div>
             </div>
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
+            <div v-if="can('dashVerResumo')" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
                 <div>
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Exames Período</p>
                     <p class="text-2xl font-black text-gray-800 mt-1">{{ props.summary.totalExames }}</p>
@@ -153,7 +172,7 @@ const getStatusColor = (status) => {
                     <Microscope class="w-6 h-6" />
                 </div>
             </div>
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
+            <div v-if="can('dashVerResumo')" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
                 <div>
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pacientes Registados</p>
                     <p class="text-2xl font-black text-gray-800 mt-1">{{ props.summary.totalPacientes }}</p>
@@ -162,7 +181,7 @@ const getStatusColor = (status) => {
                     <Users class="w-6 h-6" />
                 </div>
             </div>
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
+            <div v-if="can('dashConsultasAndamento')" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
                 <div>
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Consultas Em Andamento</p>
                     <p class="text-2xl font-black text-orange-500 mt-1">{{ props.emAndamentoCount }}</p>
@@ -174,7 +193,7 @@ const getStatusColor = (status) => {
         </div>
 
         <!-- ROW 2: Charts -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div v-if="can('dashVerGraficos')" class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <!-- Pie Chart -->
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 lg:col-span-1 h-[320px] flex flex-col">
                 <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-gray-800 mb-4">Situação das Consultas</h3>
@@ -196,10 +215,10 @@ const getStatusColor = (status) => {
         </div>
 
         <!-- ROW 3: Top 10 Lists & Combined Dynamic Card -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-6">
+        <div v-if="can('dashVerTopListas') || can('dashConsultasAndamento') || can('dashProdutividadeMedica')" class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-6">
             
             <!-- TOP 10 Consultas -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
+            <div v-if="can('dashVerTopListas')" class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
                 <div class="p-5 border-b border-gray-50 flex items-center justify-between">
                     <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-gray-800">TOP 10 Consultas Mais Marcadas</h3>
                 </div>
@@ -222,7 +241,7 @@ const getStatusColor = (status) => {
             </div>
 
             <!-- TOP 10 Exames -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
+            <div v-if="can('dashVerTopListas')" class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
                 <div class="p-5 border-b border-gray-50 flex items-center justify-between">
                     <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-gray-800">TOP 10 Exames Mais Solicitados</h3>
                 </div>
@@ -243,11 +262,12 @@ const getStatusColor = (status) => {
             </div>
 
             <!-- NEW COMBINED DYNAMIC CARD: Em Andamento & Realizadas -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[400px] overflow-hidden relative">
+            <div v-if="can('dashConsultasAndamento') || can('dashProdutividadeMedica')" class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[400px] overflow-hidden relative">
                 
                 <!-- TABS HEADER -->
                 <div class="flex border-b border-gray-100 relative z-10 bg-gray-50/50">
                     <button 
+                        v-if="can('dashConsultasAndamento')"
                         @click="activeTab = 'em_andamento'"
                         :class="['flex-1 py-4 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all', activeTab === 'em_andamento' ? 'bg-white text-orange-600 border-b-2 border-orange-500 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.1)]' : 'text-gray-400 hover:bg-white hover:text-orange-500']">
                         <Clock class="w-4 h-4" />
@@ -255,11 +275,12 @@ const getStatusColor = (status) => {
                         <span class="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full text-[9px]">{{ props.emAndamentoCount }}</span>
                     </button>
                     <button 
+                        v-if="can('dashProdutividadeMedica')"
                         @click="activeTab = 'realizadas'"
                         :class="['flex-1 py-4 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all', activeTab === 'realizadas' ? 'bg-white text-emerald-600 border-b-2 border-emerald-500 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.1)]' : 'text-gray-400 hover:bg-white hover:text-emerald-500']">
                         <CheckCircle2 class="w-4 h-4" />
                         Realizadas
-                        <span class="bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full text-[9px]">{{ props.realizadasPorMedico.reduce((a, b) => a + b.count, 0) }}</span>
+                        <span class="bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full text-[9px]">{{ props.realizadasLista.length }}</span>
                     </button>
                 </div>
 
@@ -267,7 +288,7 @@ const getStatusColor = (status) => {
                 <div class="flex-grow p-5 overflow-y-auto custom-scrollbar relative z-10 bg-white">
                      
                      <!-- TAB: EM ANDAMENTO -->
-                     <div v-show="activeTab === 'em_andamento'">
+                     <div v-if="can('dashConsultasAndamento')" v-show="activeTab === 'em_andamento'">
                          <div v-if="props.emAndamentoLista.length > 0" class="space-y-3">
                              <div v-for="(consulta, index) in props.emAndamentoLista" :key="index" class="p-3 border border-orange-100/60 rounded-xl hover:shadow-md hover:border-orange-200 transition-all bg-orange-50/20">
                                   <div class="flex justify-between items-start mb-2">
@@ -288,7 +309,7 @@ const getStatusColor = (status) => {
                      </div>
 
                      <!-- TAB: REALIZADAS (Lista Detalhada) -->
-                     <div v-show="activeTab === 'realizadas'">
+                     <div v-if="can('dashProdutividadeMedica')" v-show="activeTab === 'realizadas'">
                          <div v-if="props.realizadasLista.length > 0" class="space-y-4">
                              <div v-for="(consulta, index) in props.realizadasLista" :key="index" class="p-4 border border-emerald-100 shadow-sm rounded-2xl hover:shadow-md hover:border-emerald-300 transition-all bg-emerald-50/10">
                                   <div class="flex justify-between items-start mb-3">

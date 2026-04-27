@@ -29,6 +29,11 @@ class PermissaoController extends Controller
             ['form' => 'Consultório', 'nome' => 'accordionConsultorio', 'descricao' => 'Consultório'],
             ['form' => 'Laboratório', 'nome' => 'accordionLaboratorio', 'descricao' => 'Laboratório'],
             ['form' => 'Raio X', 'nome' => 'accordionRaioX', 'descricao' => 'Raio X'],
+            ['form' => 'Módulo Clínico', 'nome' => 'dashProdutividadeMedica', 'descricao' => 'Dashboard: Ver Produtividade Médica'],
+            ['form' => 'Módulo Clínico', 'nome' => 'dashConsultasAndamento', 'descricao' => 'Dashboard: Ver Consultas em Andamento'],
+            ['form' => 'Módulo Clínico', 'nome' => 'dashVerResumo', 'descricao' => 'Dashboard: Ver Resumo Geral (Topo)'],
+            ['form' => 'Módulo Clínico', 'nome' => 'dashVerGraficos', 'descricao' => 'Dashboard: Ver Gráficos de Análise'],
+            ['form' => 'Módulo Clínico', 'nome' => 'dashVerTopListas', 'descricao' => 'Dashboard: Ver Top 10 (Listas)'],
         ],
         'Stock' => [
             ['form' => 'Depósitos', 'nome' => 'accordionDepositos', 'descricao' => 'Depósitos'],
@@ -43,7 +48,7 @@ class PermissaoController extends Controller
     public function index()
     {
         $perfis = DB::table('tb_perfil')->get();
-        
+
         return Inertia::render('Configuracoes/Permissoes', [
             'perfis' => $perfis,
             'availablePermissions' => $availablePermissions ?? $this->availablePermissions
@@ -55,7 +60,7 @@ class PermissaoController extends Controller
         $permissions = DB::table('tb_perfil_itens')
             ->where('ID_PERFIL', $profileId)
             ->get();
-            
+
         return response()->json($permissions);
     }
 
