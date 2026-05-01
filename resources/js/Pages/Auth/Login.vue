@@ -156,17 +156,17 @@ const submit = () => {
         </div>
     </transition>
 
-    <div class="min-h-screen relative flex flex-col items-center justify-center font-sans overflow-hidden bg-[#F8FAFC]">
+    <div class="min-h-screen relative flex flex-col items-center justify-center font-sans overflow-hidden bg-[#F8FAFC] p-4 sm:p-8">
         
         <!-- Abstract Background Orbs -->
         <div class="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-blue-400/20 rounded-full blur-[100px] mix-blend-multiply pointer-events-none"></div>
         <div class="absolute bottom-[-10%] left-[-5%] w-[600px] h-[600px] bg-[#006BB3]/10 rounded-full blur-[120px] mix-blend-multiply pointer-events-none"></div>
 
         <!-- Main Card -->
-        <div class="w-full max-w-[900px] flex bg-white/80 backdrop-blur-3xl shadow-[0_20px_60px_rgba(0,107,179,0.08)] border border-white overflow-hidden rounded-[2rem] z-10 transition-all duration-500 hover:shadow-[0_20px_60px_rgba(0,107,179,0.12)] relative">
+        <div class="w-full max-w-[450px] lg:max-w-[900px] flex flex-col lg:flex-row bg-white/80 backdrop-blur-3xl shadow-[0_20px_60px_rgba(0,107,179,0.08)] border border-white overflow-hidden rounded-[2rem] z-10 transition-all duration-500 hover:shadow-[0_20px_60px_rgba(0,107,179,0.12)] relative">
             
             <!-- Left Side: Login Form -->
-            <div class="w-1/2 p-14 flex flex-col items-center justify-center relative bg-white/50">
+            <div class="w-full lg:w-1/2 p-8 sm:p-14 flex flex-col items-center justify-center relative bg-white/50">
                 <!-- Logo and TITLE -->
                 <div class="flex flex-col items-center mb-10 w-full relative">
                     <div class="bg-white p-3 rounded-2xl shadow-sm mb-4 border border-gray-50">
@@ -335,7 +335,7 @@ const submit = () => {
             </div>
 
             <!-- Right Side: Brand Banner -->
-            <div class="w-1/2 bg-gradient-to-br from-[#006BB3] via-[#004d80] to-[#002b4d] relative overflow-hidden flex flex-col justify-center items-center p-12">
+            <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#006BB3] via-[#004d80] to-[#002b4d] relative overflow-hidden flex-col justify-center items-center p-12">
                 <!-- Inner Graphic Elements -->
                 <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
                 <div class="absolute bottom-0 left-0 w-64 h-64 bg-[#12F2FF]/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3"></div>
@@ -355,7 +355,7 @@ const submit = () => {
         </div>
 
         <!-- External Footer Controls -->
-        <div class="absolute bottom-6 left-8 flex flex-col items-start z-10">
+        <div class="hidden sm:flex absolute bottom-6 left-8 flex-col items-start z-10">
             <div class="flex items-center space-x-2 mb-2">
                 <span class="relative flex h-2.5 w-2.5">
                   <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>

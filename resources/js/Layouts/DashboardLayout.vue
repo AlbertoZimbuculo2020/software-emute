@@ -113,10 +113,19 @@ const toggleMenu = (menu) => {
             </div>
         </Transition>
         
+        <!-- Sidebar Backdrop (Mobile) -->
+        <div 
+            v-if="showingSidebar" 
+            @click="showingSidebar = false" 
+            class="fixed inset-0 bg-black/50 z-40 lg:hidden"
+        ></div>
+
         <!-- Sidebar Moderna -->
         <aside 
-            :class="showingSidebar ? 'w-64' : 'w-20'" 
-            class="bg-[#2D82E3] text-white flex flex-col transition-all duration-300 shadow-2xl z-30 fixed inset-y-0"
+            :class="[
+                showingSidebar ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0 lg:w-20',
+                'bg-[#2D82E3] text-white flex flex-col transition-all duration-300 shadow-2xl z-50 fixed inset-y-0 lg:static'
+            ]"
         >
             <!-- Logo area -->
             <Link :href="route('dashboard')" class="h-16 flex items-center px-4 bg-blue-700/30 border-b border-white/10 overflow-hidden hover:bg-blue-800/40 transition-colors">
@@ -276,15 +285,21 @@ const toggleMenu = (menu) => {
 
         <!-- Main Content Wrapper -->
         <main 
-            :class="showingSidebar ? 'pl-64' : 'pl-20'" 
-            class="flex-grow flex flex-col transition-all duration-300"
+            :class="showingSidebar ? 'lg:pl-0' : 'lg:pl-0'" 
+            class="flex-grow flex flex-col transition-all duration-300 w-full"
         >
             
             <!-- Barra Superior Principal -->
-            <header class="h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-20 shadow-sm">
+            <header class="h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 shadow-sm">
                 <!-- Esquerda: Info e Links -->
-                <div class="flex items-center space-x-6 text-xs font-medium text-gray-500">
-                    <div class="flex items-center space-x-2 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full border border-blue-100 shadow-sm">
+                <div class="flex items-center space-x-2 sm:space-x-6 text-xs font-medium text-gray-500">
+                    <!-- Mobile Menu Toggle -->
+                    <button @click="showingSidebar = !showingSidebar" class="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-all mr-1">
+                        <ChevronRight v-if="!showingSidebar" class="w-5 h-5 text-gray-600" />
+                        <X v-else class="w-5 h-5 text-gray-600" />
+                    </button>
+
+                    <div class="hidden xs:flex items-center space-x-2 bg-blue-50 text-blue-600 px-2 sm:px-3 py-1.5 rounded-full border border-blue-100 shadow-sm">
                         <span class="relative flex h-2.5 w-2.5">
                           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                           <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
