@@ -37,11 +37,15 @@ class HandleInertiaRequests extends Middleware
             if ($user->ACESSO === 'SIM') {
                 $permissions = ['*'];
             } else {
-                $permissions = \Illuminate\Support\Facades\DB::table('tb_perfil_itens')
-                    ->where('ID_PERFIL', $user->ID_PERFIL)
-                    ->where('ESTADO', 'True')
-                    ->pluck('NOME')
-                    ->toArray();
+                try {
+                    $permissions = \Illuminate\Support\Facades\DB::table('tb_perfil_itens')
+                        ->where('ID_PERFIL', $user->ID_PERFIL)
+                        ->where('ESTADO', 'True')
+                        ->pluck('NOME')
+                        ->toArray();
+                } catch (\Exception $e) {
+                    $permissions = [];
+                }
             }
         }
 

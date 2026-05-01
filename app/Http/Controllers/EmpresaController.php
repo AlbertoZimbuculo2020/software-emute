@@ -10,7 +10,14 @@ class EmpresaController extends Controller
 {
     public function create()
     {
-        $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
+        try {
+            $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
+        } catch (\Illuminate\Database\QueryException $e) {
+            return Inertia::render('Error/DatabaseConnection', [
+                'message' => 'A conexão não foi feita ao banco de dados.'
+            ]);
+        }
+
         if ($empresa && $empresa->IMAGEM) {
             $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
         }
