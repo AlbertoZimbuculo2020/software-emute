@@ -91,4 +91,49 @@ class AuthenticatedSessionController extends Controller
             ], 400);
         }
     }
+
+    /**
+     * Save the database connection details to the session.
+     */
+    public function saveConnection(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'db_host' => 'required|string',
+            'db_port' => 'nullable|string',
+            'db_database' => 'required|string',
+            'db_username' => 'required|string',
+            'db_password' => 'nullable|string',
+        ]);
+
+        $request->session()->put('db_host', $request->db_host);
+        $request->session()->put('db_port', $request->db_port);
+        $request->session()->put('db_database', $request->db_database);
+        $request->session()->put('db_username', $request->db_username);
+        $request->session()->put('db_password', $request->db_password);
+
+        // Run migrations automatically to ensure database is ready
+        try {
+            // Apply the config temporarily to run migrations
+            $default = config('database.default');
+            config([
+                "database.connections.{$default}.host" => $request->db_host,
+                "database.connections.{$default}.port" => $request->db_port,
+                "database.connections.{$default}.database" => $request->db_database,
+                "database.connections.{$default}.username" => $request->db_username,
+                "database.connections.{$default}.password" => $request->db_password,
+            ]);
+            \Illuminate\Support\Facades\DB::purge($default);
+            
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            
+            $message = 'Configurações guardadas e Base de Dados actualizada com sucesso!';
+        } catch (\Exception $e) {
+            $message = 'Configurações guardadas, mas falha ao migrar base de dados: ' . $e->getMessage();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $message
+        ]);
+    }
 }

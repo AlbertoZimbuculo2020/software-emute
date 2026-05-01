@@ -72,16 +72,31 @@ const showPassword = ref(false);
 const showServerSettings = ref(false);
 const testingConnection = ref(false);
 
-const saveSettings = () => {
-    const settings = {
-        db_host: form.db_host,
-        db_port: form.db_port,
-        db_database: form.db_database,
-        db_username: form.db_username,
-        db_password: form.db_password,
-    };
-    localStorage.setItem('emute_server_settings', JSON.stringify(settings));
-    triggerToast('Configurações gravadas localmente!', 'success');
+const saveSettings = async () => {
+    if (!form.db_host || !form.db_database || !form.db_username) {
+        triggerToast('Por favor, preencha os dados do servidor.', 'error');
+        return;
+    }
+
+    try {
+        const settings = {
+            db_host: form.db_host,
+            db_port: form.db_port,
+            db_database: form.db_database,
+            db_username: form.db_username,
+            db_password: form.db_password,
+        };
+        
+        // Save to backend session
+        await axios.post(route('db.save'), settings);
+        
+        // Save to local storage for persistence across app restarts
+        localStorage.setItem('emute_server_settings', JSON.stringify(settings));
+        
+        triggerToast('Configurações de rede sincronizadas com o sistema!', 'success');
+    } catch (error) {
+        triggerToast('Erro ao gravar configurações no sistema.', 'error');
+    }
 };
 
 const testConnection = async () => {

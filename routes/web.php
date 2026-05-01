@@ -236,5 +236,6 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::post('/test-database-connection', [AuthenticatedSessionController::class, 'testConnection'])->name('db.test');
+Route::post('/save-database-connection', [AuthenticatedSessionController::class, 'saveConnection'])->name('db.save');
 
 require __DIR__.'/auth.php';
