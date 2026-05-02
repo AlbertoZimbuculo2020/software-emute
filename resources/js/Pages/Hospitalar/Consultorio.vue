@@ -301,12 +301,12 @@ const encaminharPaciente = async () => {
     <Head title="Consultório Médico" />
 
     <DashboardLayout>
-        <div class="p-1 bg-slate-100 min-h-screen text-[10px] font-sans">
+        <div class="p-1 lg:p-2 bg-slate-100 min-h-screen text-[10px] font-sans">
             <!-- Main Grid: Exact order as Photo 1 -->
-            <div class="grid grid-cols-12 gap-1 h-[calc(100vh-100px)] overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-1 lg:h-[calc(100vh-100px)] lg:overflow-hidden h-auto overflow-visible">
                 
                 <!-- LEFT COLUMN: Waitlist & History -->
-                <div class="col-span-3 flex flex-col gap-1 overflow-hidden">
+                <div class="col-span-1 lg:col-span-3 flex flex-col gap-1 overflow-hidden h-[500px] lg:h-full">
                     <!-- Waitlist -->
                     <div class="flex-grow bg-white border border-slate-300 flex flex-col shadow-sm">
                         <div class="bg-blue-600 text-white text-center py-1 font-black uppercase tracking-widest text-[9px]">Lista de Espera</div>
@@ -363,7 +363,7 @@ const encaminharPaciente = async () => {
                 </div>
 
                 <!-- CENTER COLUMN: Patient Data & Triage & Exams -->
-                <div class="col-span-5 flex flex-col gap-1 overflow-hidden">
+                <div class="col-span-1 lg:col-span-5 flex flex-col gap-1 overflow-hidden h-auto lg:h-full">
                     <!-- Patient Data -->
                     <div class="bg-white border border-slate-300 flex flex-col shadow-sm shrink-0">
                         <div class="bg-blue-900 text-white text-center py-1 font-black uppercase tracking-[0.2em] text-[10px]">{{ selectedPaciente?.PacienteNome || 'Selecione um Paciente' }}</div>
@@ -500,7 +500,7 @@ const encaminharPaciente = async () => {
                 </div>
 
                 <!-- RIGHT COLUMN: Clinical Data & Prescription & Final Actions -->
-                <div class="col-span-4 flex flex-col gap-1 overflow-hidden">
+                <div class="col-span-1 lg:col-span-4 flex flex-col gap-1 overflow-hidden h-auto lg:h-full">
                     <!-- Clinical Data -->
                     <div class="bg-white border border-slate-300 flex flex-col flex-grow shadow-sm overflow-hidden">
                         <div class="bg-blue-600 text-white text-center py-1 font-black uppercase tracking-widest text-[9px]">Dados Clínicos</div>
