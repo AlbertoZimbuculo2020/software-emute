@@ -265,10 +265,10 @@ const formatCurrency = (value) => {
 
     <DashboardLayout>
         <!-- Main Application Wrapper: Exact layout matching WinForms with clean styles -->
-        <div class="h-[calc(100vh-64px)] flex bg-[#f0f0f0] font-sans text-xs text-slate-800 overflow-hidden">
+        <div class="lg:h-[calc(100vh-64px)] h-auto flex flex-col lg:flex-row bg-[#f0f0f0] font-sans text-xs text-slate-800 overflow-visible lg:overflow-hidden">
             
             <!-- LEFT SIDEBAR -->
-            <div class="w-[350px] flex flex-col border-r border-slate-300 bg-white shrink-0">
+            <div class="w-full lg:w-[350px] flex flex-col border-b lg:border-b-0 lg:border-r border-slate-300 bg-white shrink-0 h-[500px] lg:h-full">
                 
                 <!-- Lista de Espera Header -->
                 <div class="bg-[#000080] text-white text-center py-1.5 font-bold text-sm tracking-wide shadow-sm z-10">
@@ -381,7 +381,7 @@ const formatCurrency = (value) => {
 
                     <!-- Patient Details Grid -->
                     <div class="bg-[#e8e8e8] mx-2 p-2 border border-slate-300 shadow-sm print:bg-white print:border-black print:mb-8 print:mx-0">
-                        <div class="grid grid-cols-[auto_1fr_auto_1fr] gap-x-4 gap-y-1 items-center">
+                        <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto_1fr] gap-x-4 gap-y-1 items-center">
                             
                             <label class="text-right pr-2 text-slate-700">Código</label>
                             <input type="text" :value="details.paciente.Codigo" disabled class="w-full border border-slate-300 px-2 py-1 bg-white text-slate-800 focus:outline-none" />
@@ -510,14 +510,14 @@ const formatCurrency = (value) => {
                     </div>
 
                     <!-- Bottom Action Bar -->
-                    <div class="p-4 flex justify-center gap-4 bg-[#f8f8f8] border-t border-slate-300 shadow-[0_-4px_6px_-6px_rgba(0,0,0,0.1)]">
-                        <button @click="gravarTodosDados" class="bg-[#2196F3] hover:bg-[#1976d2] text-white px-6 py-2.5 font-bold shadow-md flex items-center gap-2 transition-colors">
+                    <div class="p-4 flex flex-wrap justify-center gap-2 lg:gap-4 bg-[#f8f8f8] border-t border-slate-300 shadow-[0_-4px_6px_-6px_rgba(0,0,0,0.1)]">
+                        <button @click="gravarTodosDados" class="flex-1 lg:flex-none bg-[#2196F3] hover:bg-[#1976d2] text-white px-4 lg:px-6 py-2 lg:py-2.5 font-bold shadow-md flex items-center justify-center gap-2 transition-colors">
                             <Save class="w-4 h-4" /> GRAVAR DADOS
                         </button>
-                        <button @click="imprimirResultados" class="bg-[#FF9800] hover:bg-[#F57C00] text-white px-6 py-2.5 font-bold shadow-md flex items-center gap-2 transition-colors">
-                            <Printer class="w-4 h-4" /> IMPRIMIR RESULTADOS
+                        <button @click="imprimirResultados" class="flex-1 lg:flex-none bg-[#FF9800] hover:bg-[#F57C00] text-white px-4 lg:px-6 py-2 lg:py-2.5 font-bold shadow-md flex items-center justify-center gap-2 transition-colors">
+                            <Printer class="w-4 h-4" /> IMPRIMIR
                         </button>
-                        <button @click="finalizarLaboratorio" class="bg-[#4CAF50] hover:bg-[#388E3C] text-white px-8 py-2.5 font-bold shadow-md flex items-center gap-2 transition-colors">
+                        <button @click="finalizarLaboratorio" class="w-full lg:w-auto bg-[#4CAF50] hover:bg-[#388E3C] text-white px-8 py-2 lg:py-2.5 font-bold shadow-md flex items-center justify-center gap-2 transition-colors">
                             <CheckCircle class="w-4 h-4" /> FINALIZAR
                         </button>
                     </div>
