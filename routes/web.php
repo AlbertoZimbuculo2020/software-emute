@@ -178,6 +178,7 @@ Route::post('/hospitalar/consultorio/resultado-exame', [ConsultorioController::c
 Route::post('/hospitalar/consultorio/encaminhar', [ConsultorioController::class, 'encaminhar'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.encaminhar');
 Route::get('/hospitalar/consultorio/imprimir-ficha/{id}', [ConsultorioController::class, 'imprimirFicha'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.imprimir.ficha');
 Route::get('/hospitalar/consultorio/imprimir-receita/{id}', [ConsultorioController::class, 'imprimirReceita'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.imprimir.receita');
+Route::get('/hospitalar/consultorio/imprimir-requisicao/{id}', [ConsultorioController::class, 'imprimirRequisicao'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.imprimir.requisicao');
 
 Route::get('/hospitalar/seguradoras', [SeguradoraController::class, 'index'])->middleware(['auth', 'verified'])->name('hospitalar.seguradoras');
 Route::post('/hospitalar/seguradoras', [SeguradoraController::class, 'store'])->middleware(['auth', 'verified'])->name('hospitalar.seguradoras.store');

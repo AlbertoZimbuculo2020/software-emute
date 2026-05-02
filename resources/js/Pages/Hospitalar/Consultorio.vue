@@ -166,7 +166,7 @@ const imprimirReceita = () => {
 };
 const imprimirRequisicao = () => {
     if (!selectedPaciente.value) return;
-    window.print();
+    window.open(route('hospitalar.consultorio.imprimir.requisicao', selectedPaciente.value.Codigo), '_blank');
 };
 const imprimirResultadosLab = () => {
     if (!selectedPaciente.value) return;

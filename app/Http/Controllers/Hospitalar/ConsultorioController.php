@@ -28,7 +28,7 @@ class ConsultorioController extends Controller
                 'tb_entidade.Genero',
                 'medico.Nome as MedicoNome'
             )
-            ->whereIn('tb_agendamento.Situacao', ['Consultorio', 'Reconsulta'])
+            ->whereIn('tb_agendamento.Situacao', ['Consultorio', 'Reconsulta', 'Laboratorio'])
             ->where('tb_agendamento.Estado', 'Ativo');
 
         // Restriction requested: Admins who are not doctors shouldn't just browse all patients.
@@ -333,6 +333,37 @@ class ConsultorioController extends Controller
 
         $pdf = Pdf::loadView('pdf.receita_medica', compact('paciente', 'itens', 'empresa', 'dataExtenso'));
         return $pdf->stream("receita_{$idAgenda}.pdf");
+    }
+
+    public function imprimirRequisicao($idAgenda)
+    {
+        $paciente = DB::table('tb_agendamento')
+            ->join('tb_tipoentidade', 'tb_agendamento.IdPaciente', '=', 'tb_tipoentidade.Codigo')
+            ->leftJoin('tb_entidade', 'tb_tipoentidade.IdEntidade', '=', 'tb_entidade.Codigo')
+            ->leftJoin('tb_tipoentidade as medico', 'tb_agendamento.IdMedico', '=', 'medico.Codigo')
+            ->select(
+                'tb_agendamento.*', 
+                'tb_tipoentidade.Nome as PacienteNome', 
+                'tb_entidade.DataNascimento',
+                'tb_entidade.Genero',
+                'medico.Nome as MedicoNome'
+            )
+            ->where('tb_agendamento.Codigo', $idAgenda)
+            ->first();
+
+        if (!$paciente) return abort(404);
+
+        $agendamento = $paciente; // Reusing for template compatibility if needed
+
+        $exames = DB::table('tb_resultado_exame')
+            ->where('IdAgenda', $idAgenda)
+            ->where('Estado', '!=', 'Removido')
+            ->get();
+
+        $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
+
+        $pdf = Pdf::loadView('pdf.requisicao_exames', compact('paciente', 'exames', 'empresa', 'agendamento'));
+        return $pdf->stream("requisicao_{$idAgenda}.pdf");
     }
 
     private function mesExtenso($m) {
