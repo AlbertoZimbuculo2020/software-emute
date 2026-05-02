@@ -15,7 +15,8 @@ const props = defineProps({
     medicos: Array,
     consultas: Array,
     seguradoras: Array,
-    agendamentos: Array
+    agendamentos: Array,
+    filters: Object
 });
 
 const form = useForm({
@@ -42,6 +43,20 @@ const searchResults = ref([]);
 const showResults = ref(false);
 const patientNameInput = ref(null);
 const notification = ref({ show: false, message: '', type: 'success' });
+
+// Filtros de Data
+const startDate = ref(props.filters?.startDate || new Date().toISOString().split('T')[0]);
+const endDate = ref(props.filters?.endDate || new Date().toISOString().split('T')[0]);
+
+const filtrarPorData = () => {
+    router.get(route('hospitalar.recepcao'), {
+        startDate: startDate.value,
+        endDate: endDate.value
+    }, {
+        preserveState: true,
+        replace: true
+    });
+};
 
 const showNotification = (message, type = 'success') => {
     notification.value = { show: true, message, type };
@@ -406,11 +421,11 @@ const limparForm = () => {
                                 <div class="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-200/60">
                                     <div class="flex items-center gap-2 px-3 border-r border-slate-100">
                                         <span class="text-[10px] font-black text-slate-400 uppercase">Período:</span>
-                                        <input type="date" class="border-none focus:ring-0 text-xs font-bold text-slate-600 p-0" />
+                                        <input type="date" v-model="startDate" class="border-none focus:ring-0 text-xs font-bold text-slate-600 p-0" />
                                         <span class="text-slate-300 font-bold">-</span>
-                                        <input type="date" class="border-none focus:ring-0 text-xs font-bold text-slate-600 p-0" />
+                                        <input type="date" v-model="endDate" class="border-none focus:ring-0 text-xs font-bold text-slate-600 p-0" />
                                     </div>
-                                    <button class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-xl shadow-md shadow-blue-100 transition-all active:scale-95">
+                                    <button @click="filtrarPorData" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-xl shadow-md shadow-blue-100 transition-all active:scale-95">
                                         <RotateCcw class="w-4 h-4" />
                                     </button>
                                 </div>

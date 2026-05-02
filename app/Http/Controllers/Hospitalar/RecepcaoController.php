@@ -9,8 +9,11 @@ use Inertia\Inertia;
 
 class RecepcaoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $startDate = $request->get('startDate', date('Y-m-d'));
+        $endDate = $request->get('endDate', date('Y-m-d'));
+
         $medicos = DB::table('tb_medico')
             ->join('tb_tipoentidade', 'tb_medico.IdTipoEntidade', '=', 'tb_tipoentidade.Codigo')
             ->select('tb_medico.IdTipoEntidade as Id', 'tb_tipoentidade.Nome')
@@ -29,8 +32,9 @@ class RecepcaoController extends Controller
 
         $agendamentos = DB::table('tb_agendamento')
             ->join('tb_tipoentidade', 'tb_agendamento.IdPaciente', '=', 'tb_tipoentidade.Codigo')
-            ->select('tb_agendamento.*', 'tb_tipoentidade.Nome as PacienteNome')
-            ->where('tb_agendamento.DataAgendamento', date('Y-m-d'))
+            ->leftJoin('tb_tipoentidade as medico', 'tb_agendamento.IdMedico', '=', 'medico.Codigo')
+            ->select('tb_agendamento.*', 'tb_tipoentidade.Nome as PacienteNome', 'medico.Nome as MedicoNome')
+            ->whereBetween('tb_agendamento.DataAgendamento', [$startDate, $endDate])
             ->where('tb_agendamento.Estado', 'Ativo')
             ->get();
 
@@ -38,7 +42,11 @@ class RecepcaoController extends Controller
             'medicos' => $medicos,
             'consultas' => $consultas,
             'seguradoras' => $seguradoras,
-            'agendamentos' => $agendamentos
+            'agendamentos' => $agendamentos,
+            'filters' => [
+                'startDate' => $startDate,
+                'endDate' => $endDate
+            ]
         ]);
     }
 
