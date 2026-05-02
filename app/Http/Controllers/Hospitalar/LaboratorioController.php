@@ -44,9 +44,9 @@ class LaboratorioController extends Controller
                 'tb_agendamento.*', 
                 'paciente.Nome as PacienteNome',
                 'paciente.Telefone',
+                'paciente.Rua as Morada',
                 'ent.DataNascimento',
-                'ent.Genero',
-                'ent.Morada'
+                'ent.Genero'
             )
             ->where('tb_agendamento.Codigo', $idAgenda)
             ->first();
@@ -63,10 +63,16 @@ class LaboratorioController extends Controller
             ->orderBy('tb_agendamento.DataAgendamento', 'desc')
             ->get();
 
+        $materiaisUsados = DB::table('tb_carrinho_hospitalar')
+            ->where('ID_AGENDA', $idAgenda)
+            ->where('Tipo', 'Laboratorio')
+            ->get();
+
         return response()->json([
             'paciente' => $agendamento,
             'exames' => $exames,
-            'historico' => $historico
+            'historico' => $historico,
+            'materiaisUsados' => $materiaisUsados
         ]);
     }
 
@@ -90,12 +96,108 @@ class LaboratorioController extends Controller
         return redirect()->back()->with('message', 'Resultado do exame registrado com sucesso!');
     }
 
-    public function finalizarAtendimento($idAgenda)
+    public function storeMaterial(Request $request)
     {
+        $request->validate([
+            'idAgenda' => 'required',
+            'produto' => 'required',
+            'descricao' => 'required',
+            'quantidade' => 'required|integer|min:1',
+            'preco' => 'required|numeric'
+        ]);
+
+        $idEntidade = DB::table('tb_agendamento')->where('Codigo', $request->idAgenda)->value('IdPaciente');
+
+        DB::table('tb_carrinho_hospitalar')->insert([
+            'Produto' => $request->produto,
+            'Descricao' => $request->descricao,
+            'Quantidade' => $request->quantidade,
+            'Preco' => $request->preco,
+            'Total' => $request->quantidade * $request->preco,
+            'Iva' => 0,
+            'Desconto' => 0,
+            'ID_AGENDA' => $request->idAgenda,
+            'ID_ENTIDADE' => $idEntidade,
+            'Data_' => now(),
+            'Tipo' => 'Laboratorio',
+            'ESTADO' => 'Ativo'
+        ]);
+
+        return redirect()->back()->with('message', 'Material adicionado com sucesso!');
+    }
+
+    public function destroyMaterial($id)
+    {
+        DB::table('tb_carrinho_hospitalar')->where('Id', $id)->delete();
+        return redirect()->back()->with('message', 'Material removido!');
+    }
+
+    public function finalizarAtendimento(Request $request, $idAgenda)
+    {
+        $agendamento = DB::table('tb_agendamento')->where('Codigo', $idAgenda)->first();
+
+        if (!$agendamento) {
+            return redirect()->back()->with('error', 'Agendamento não encontrado.');
+        }
+
+        // Passo 5: Validação - Verificar se todos os exames foram preenchidos
+        $examesPendentes = DB::table('tb_resultado_exame')
+            ->where('Codigo', $idAgenda)
+            ->where('Estado', '<>', 'Finalizado')
+            ->count();
+
+        if ($examesPendentes > 0) {
+            return redirect()->back()->with('error', 'Não é possível finalizar. Existem ' . $examesPendentes . ' exame(s) pendente(s) de resultado.');
+        }
+
+        // Passo 5: Mudança de Estado do Paciente
+        $novaSituacao = 'Consultorio';
+        if ($agendamento->Situacao == 'Internado') {
+            $novaSituacao = 'Internado';
+        }
+
         DB::table('tb_agendamento')
             ->where('Codigo', $idAgenda)
-            ->update(['Situacao' => 'Finalizado']);
+            ->update(['Situacao' => $novaSituacao]);
 
-        return redirect()->back()->with('message', 'Processo laboratorial finalizado!');
+        // Passo 4: Consumo de Material Hospitalar (Saída de Stock)
+        $materiais = DB::table('tb_carrinho_hospitalar')
+            ->where('ID_AGENDA', $idAgenda)
+            ->where('Tipo', 'Laboratorio')
+            ->where('ESTADO', 'Ativo')
+            ->get();
+
+        if ($materiais->count() > 0) {
+            $total = $materiais->sum('Total');
+            
+            // Criar Documento de Saída (Fatura SD)
+            $faturaId = DB::table('tb_fatura')->insertGetId([
+                'IdCliente' => $agendamento->IdPaciente,
+                'Total' => $total,
+                'Data' => now(),
+                'Tipo' => 'SD', // Saída de Produto
+                'Estado' => 'Fechado',
+                'NOME_DOCUMENTO' => 'SAIDA DE PRODUTO',
+                'DESCRICAO' => 'Saída de material laboratorial',
+                'Utilizador' => Auth::user()->name ?? 'Laboratório'
+            ]);
+
+            foreach ($materiais as $item) {
+                // Passo 4: Baixar Estoque real das quantidades
+                $deposito = $request->input('deposito', '1');
+
+                DB::table('tb_armazem')
+                    ->where('CodigoProduto', $item->Produto)
+                    ->where('CodigoDeposito', $deposito)
+                    ->decrement('Existencia', $item->Quantidade);
+
+                // Marcar carrinho como processado
+                DB::table('tb_carrinho_hospitalar')
+                    ->where('Id', $item->Id)
+                    ->update(['ESTADO' => 'Finalizado']);
+            }
+        }
+
+        return redirect()->back()->with('message', 'Processo laboratorial finalizado e paciente encaminhado!');
     }
 }

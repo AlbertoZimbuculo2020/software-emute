@@ -206,6 +206,8 @@ Route::post('/hospitalar/internamento/alta/{id}', [InternamentoController::class
 Route::get('/hospitalar/laboratorio', [LaboratorioController::class, 'index'])->middleware(['auth', 'verified'])->name('hospitalar.laboratorio.index');
 Route::get('/hospitalar/laboratorio/details/{id}', [LaboratorioController::class, 'getDetails'])->middleware(['auth', 'verified'])->name('hospitalar.laboratorio.details');
 Route::post('/hospitalar/laboratorio/resultado', [LaboratorioController::class, 'salvarResultado'])->middleware(['auth', 'verified'])->name('hospitalar.laboratorio.resultado');
+Route::post('/hospitalar/laboratorio/material', [LaboratorioController::class, 'storeMaterial'])->middleware(['auth', 'verified'])->name('hospitalar.laboratorio.material.store');
+Route::delete('/hospitalar/laboratorio/material/{id}', [LaboratorioController::class, 'destroyMaterial'])->middleware(['auth', 'verified'])->name('hospitalar.laboratorio.material.destroy');
 Route::post('/hospitalar/laboratorio/finalizar/{id}', [LaboratorioController::class, 'finalizarAtendimento'])->middleware(['auth', 'verified'])->name('hospitalar.laboratorio.finalizar');
 
 Route::get('/hospitalar/raiox', [RaioXController::class, 'index'])->middleware(['auth', 'verified'])->name('hospitalar.raiox.index');
