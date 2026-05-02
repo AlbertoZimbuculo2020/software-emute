@@ -139,16 +139,18 @@ const getStatusColor = (status) => {
     <DashboardLayout>
         
         <!-- Filtros de Data -->
-        <div v-if="can('dashConsultasAndamento') || can('dashProdutividadeMedica') || can('dashVerResumo') || can('dashVerGraficos') || can('dashVerTopListas')" class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div v-if="can('dashConsultasAndamento') || can('dashProdutividadeMedica') || can('dashVerResumo') || can('dashVerGraficos') || can('dashVerTopListas')" class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div class="flex items-center space-x-2 text-gray-500">
                 <Filter class="w-5 h-5 text-blue-500" />
                 <span class="text-xs font-black uppercase tracking-widest">Filtros Dinâmicos</span>
             </div>
-            <div class="flex items-center space-x-3">
-                <input type="date" v-model="startDate" class="px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" />
-                <span class="text-gray-300 font-black">-</span>
-                <input type="date" v-model="endDate" class="px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" />
-                <button @click="applyFilters" class="px-6 py-2 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all hover:scale-105 active:scale-95">Filtrar</button>
+            <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <input type="date" v-model="startDate" class="flex-grow sm:flex-none px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" />
+                    <span class="text-gray-300 font-black">-</span>
+                    <input type="date" v-model="endDate" class="flex-grow sm:flex-none px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" />
+                </div>
+                <button @click="applyFilters" class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all hover:scale-105 active:scale-95">Filtrar</button>
             </div>
         </div>
 
