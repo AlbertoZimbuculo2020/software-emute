@@ -24,6 +24,22 @@ const details = ref({ exames: [], historico: [], paciente: {}, materiaisUsados: 
 const isLoading = ref(false);
 const selectedDeposito = ref('');
 
+// Custom Confirm Modal State
+const confirmModal = ref({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null
+});
+
+const openConfirm = (title, message, onConfirm) => {
+    confirmModal.value = { isOpen: true, title, message, onConfirm };
+};
+
+const closeConfirm = () => {
+    confirmModal.value.isOpen = false;
+};
+
 let pollingInterval = null;
 
 onMounted(() => {
@@ -126,41 +142,64 @@ const selecionarPaciente = async (paciente) => {
     }
 };
 
-const gravarResultadoExame = (exam) => {
+const gravarResultadoExame = (exam, soSugestoes = false) => {
     let finalResult = '';
     
     if (exam.isSingle) {
-        finalResult = exam.singleResultado;
+        finalResult = exam.singleResultado || '';
     } else {
-        // Concatenate all rows
-        finalResult = exam.rows.map(r => {
-            return `${r.resultado} ${r.unidade}`.trim();
-        }).join('|');
+        finalResult = exam.rows.map(r => `${r.resultado || ''} ${r.unidade || ''}`.trim()).join('|');
     }
 
     router.post(route('hospitalar.laboratorio.resultado'), {
         idExame: exam.Id,
         resultado: finalResult,
-        nrAmostra: exam.nrAmostra || exam.Referencia || '' // Mapping to nrAmostra based on C# logic
+        nrAmostra: exam.nrAmostra || exam.Referencia || '',
+        obs: exam.singleObs || ''
     }, {
+        preserveScroll: true,
         onSuccess: () => {
-            selecionarPaciente(selectedPaciente.value); // refresh data
+            selecionarPaciente(selectedPaciente.value);
         }
     });
 };
 
+const gravarTodosDados = () => {
+    if (!parsedExames.value || parsedExames.value.length === 0) return;
+    openConfirm(
+        'Gravar Todos os Dados', 
+        'Deseja gravar simultaneamente os resultados de todos os exames preenchidos deste paciente?',
+        () => {
+            parsedExames.value.forEach(exam => {
+                gravarResultadoExame(exam);
+            });
+            closeConfirm();
+        }
+    );
+};
+
+const imprimirResultados = () => {
+    if (!selectedPaciente.value) return;
+    window.open(route('hospitalar.laboratorio.imprimir', selectedPaciente.value.Codigo), '_blank');
+};
+
 const finalizarLaboratorio = () => {
     if (!selectedPaciente.value) return;
-    if (confirm('Deseja finalizar o atendimento laboratorial para este paciente? O material gasto será abatido do armazém selecionado.')) {
-        router.post(route('hospitalar.laboratorio.finalizar', selectedPaciente.value.Codigo), {
-            deposito: selectedDeposito.value
-        }, {
-            onSuccess: () => {
-                selectedPaciente.value = null;
-                details.value = { exames: [], historico: [], paciente: {}, materiaisUsados: [] };
-            }
-        });
-    }
+    openConfirm(
+        'Finalizar Atendimento',
+        'Deseja finalizar o atendimento laboratorial para este paciente? O material gasto será abatido do armazém selecionado.',
+        () => {
+            router.post(route('hospitalar.laboratorio.finalizar', selectedPaciente.value.Codigo), {
+                deposito: selectedDeposito.value
+            }, {
+                onSuccess: () => {
+                    selectedPaciente.value = null;
+                    details.value = { exames: [], historico: [], paciente: {}, materiaisUsados: [] };
+                    closeConfirm();
+                }
+            });
+        }
+    );
 };
 
 const calcularIdade = (nascimento) => {
@@ -326,15 +365,22 @@ const formatCurrency = (value) => {
                     LABORATÓRIO DE EXAMES NORMAIS
                 </div>
 
-                <div v-if="selectedPaciente" class="flex-1 flex flex-col overflow-hidden">
+                <div v-if="selectedPaciente" class="flex-1 flex flex-col overflow-hidden print-report-container">
                     
+                    <!-- Print Only Header -->
+                    <div class="hidden print:block text-center mb-8 border-b-2 border-black pb-4">
+                        <h1 class="text-2xl font-bold uppercase tracking-widest">Relatório de Análises Clínicas</h1>
+                        <p class="text-sm">Emute ERP Hospitalar - Departamento de Laboratório</p>
+                        <p class="text-xs mt-1">Data de Emissão: {{ new Date().toLocaleDateString('pt-PT') }}</p>
+                    </div>
+
                     <!-- Patient Name Banner -->
-                    <div class="bg-[#000080] text-white text-center py-1.5 font-bold text-sm tracking-widest mx-2 mt-2 shadow-sm">
+                    <div class="bg-[#000080] text-white text-center py-1.5 font-bold text-sm tracking-widest mx-2 mt-2 shadow-sm print:hidden">
                         {{ details.paciente.PacienteNome }}
                     </div>
 
                     <!-- Patient Details Grid -->
-                    <div class="bg-[#e8e8e8] mx-2 p-2 border border-slate-300 shadow-sm">
+                    <div class="bg-[#e8e8e8] mx-2 p-2 border border-slate-300 shadow-sm print:bg-white print:border-black print:mb-8 print:mx-0">
                         <div class="grid grid-cols-[auto_1fr_auto_1fr] gap-x-4 gap-y-1 items-center">
                             
                             <label class="text-right pr-2 text-slate-700">Código</label>
@@ -453,7 +499,7 @@ const formatCurrency = (value) => {
                                         <button @click="gravarResultadoExame(exam)" class="flex-1 bg-white border border-slate-300 hover:bg-slate-100 py-1.5 text-slate-800 font-bold shadow-sm transition-colors">
                                             Gravar Resultado
                                         </button>
-                                        <button class="flex-1 bg-white border border-slate-300 hover:bg-slate-100 py-1.5 text-slate-800 font-bold shadow-sm transition-colors">
+                                        <button @click="gravarResultadoExame(exam, true)" class="flex-1 bg-white border border-slate-300 hover:bg-slate-100 py-1.5 text-slate-800 font-bold shadow-sm transition-colors">
                                             Gravar Sugestões
                                         </button>
                                     </div>
@@ -465,10 +511,10 @@ const formatCurrency = (value) => {
 
                     <!-- Bottom Action Bar -->
                     <div class="p-4 flex justify-center gap-4 bg-[#f8f8f8] border-t border-slate-300 shadow-[0_-4px_6px_-6px_rgba(0,0,0,0.1)]">
-                        <button class="bg-[#2196F3] hover:bg-[#1976d2] text-white px-6 py-2.5 font-bold shadow-md flex items-center gap-2 transition-colors">
+                        <button @click="gravarTodosDados" class="bg-[#2196F3] hover:bg-[#1976d2] text-white px-6 py-2.5 font-bold shadow-md flex items-center gap-2 transition-colors">
                             <Save class="w-4 h-4" /> GRAVAR DADOS
                         </button>
-                        <button class="bg-[#FF9800] hover:bg-[#F57C00] text-white px-6 py-2.5 font-bold shadow-md flex items-center gap-2 transition-colors">
+                        <button @click="imprimirResultados" class="bg-[#FF9800] hover:bg-[#F57C00] text-white px-6 py-2.5 font-bold shadow-md flex items-center gap-2 transition-colors">
                             <Printer class="w-4 h-4" /> IMPRIMIR RESULTADOS
                         </button>
                         <button @click="finalizarLaboratorio" class="bg-[#4CAF50] hover:bg-[#388E3C] text-white px-8 py-2.5 font-bold shadow-md flex items-center gap-2 transition-colors">
@@ -560,9 +606,45 @@ const formatCurrency = (value) => {
             </div>
         </div>
 
+        <!-- Elegant Confirm Modal -->
+        <div v-if="confirmModal.isOpen" class="fixed inset-0 z-[150] flex items-center justify-center">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="closeConfirm"></div>
+            <div class="relative bg-white shadow-2xl w-full max-w-sm rounded-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div class="p-5">
+                    <div class="flex items-center gap-3 mb-3 text-[#000080]">
+                        <AlertCircle class="w-6 h-6" />
+                        <h3 class="font-bold text-lg">{{ confirmModal.title }}</h3>
+                    </div>
+                    <p class="text-slate-600 text-sm leading-relaxed mb-6">{{ confirmModal.message }}</p>
+                    <div class="flex justify-end gap-3">
+                        <button @click="closeConfirm" class="px-4 py-2 border border-slate-300 text-slate-700 font-bold rounded hover:bg-slate-50 transition-colors text-sm">
+                            Cancelar
+                        </button>
+                        <button @click="confirmModal.onConfirm" class="px-5 py-2 bg-[#000080] hover:bg-blue-900 text-white font-bold rounded shadow transition-colors text-sm">
+                            Confirmar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </DashboardLayout>
 </template>
 
 <style scoped>
-/* Scoped styles omitted to keep simple and inline tailwind logic */
+/* Scoped styles for scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9; 
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1; 
+    border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; 
+}
 </style>

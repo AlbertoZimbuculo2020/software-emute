@@ -80,20 +80,22 @@ class LaboratorioController extends Controller
     {
         $request->validate([
             'idExame' => 'required',
-            'resultado' => 'required|string',
-            'nrAmostra' => 'nullable|string'
+            'resultado' => 'nullable|string',
+            'nrAmostra' => 'nullable|string',
+            'obs' => 'nullable|string'
         ]);
 
         DB::table('tb_resultado_exame')
             ->where('Id', $request->idExame)
             ->update([
-                'Resultado' => $request->resultado,
-                'Referencia' => $request->nrAmostra, // Usando Referencia para Nº Amostra
+                'Resultado' => $request->resultado ?? '',
+                'Referencia' => $request->nrAmostra, 
+                'Obs' => $request->obs,
                 'Utilizador' => Auth::user()->name ?? 'Laboratório',
                 'Estado' => 'Finalizado'
             ]);
 
-        return redirect()->back()->with('message', 'Resultado do exame registrado com sucesso!');
+        return redirect()->back()->with('message', 'Resultado do exame gravado com sucesso!');
     }
 
     public function storeMaterial(Request $request)
@@ -199,5 +201,38 @@ class LaboratorioController extends Controller
         }
 
         return redirect()->back()->with('message', 'Processo laboratorial finalizado e paciente encaminhado!');
+    }
+
+    public function imprimirPDF($idAgenda)
+    {
+        $agendamento = DB::table('tb_agendamento')
+            ->join('tb_tipoentidade as paciente', 'tb_agendamento.IdPaciente', '=', 'paciente.Codigo')
+            ->leftJoin('tb_tipoentidade as medico', 'tb_agendamento.IdMedico', '=', 'medico.Codigo')
+            ->leftJoin('tb_entidade as ent', 'paciente.IdEntidade', '=', 'ent.Codigo')
+            ->select(
+                'tb_agendamento.*', 
+                'paciente.Nome as PacienteNome',
+                'paciente.Codigo as CodigoPaciente',
+                'medico.Nome as MedicoNome',
+                'ent.DataNascimento',
+                'ent.Genero'
+            )
+            ->where('tb_agendamento.Codigo', $idAgenda)
+            ->first();
+
+        if (!$agendamento) {
+            abort(404, 'Paciente não encontrado');
+        }
+
+        $exames = DB::table('tb_resultado_exame')
+            ->where('Codigo', $idAgenda)
+            ->get();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.laboratorio_resultado', [
+            'paciente' => $agendamento,
+            'exames' => $exames
+        ]);
+
+        return $pdf->stream('resultado_laboratorio_'.$idAgenda.'.pdf');
     }
 }

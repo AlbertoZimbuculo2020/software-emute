@@ -209,7 +209,7 @@ Route::post('/hospitalar/laboratorio/resultado', [LaboratorioController::class, 
 Route::post('/hospitalar/laboratorio/material', [LaboratorioController::class, 'storeMaterial'])->middleware(['auth', 'verified'])->name('hospitalar.laboratorio.material.store');
 Route::delete('/hospitalar/laboratorio/material/{id}', [LaboratorioController::class, 'destroyMaterial'])->middleware(['auth', 'verified'])->name('hospitalar.laboratorio.material.destroy');
 Route::post('/hospitalar/laboratorio/finalizar/{id}', [LaboratorioController::class, 'finalizarAtendimento'])->middleware(['auth', 'verified'])->name('hospitalar.laboratorio.finalizar');
-
+Route::get('/hospitalar/laboratorio/imprimir/{id}', [LaboratorioController::class, 'imprimirPDF'])->middleware(['auth', 'verified'])->name('hospitalar.laboratorio.imprimir');
 Route::get('/hospitalar/raiox', [RaioXController::class, 'index'])->middleware(['auth', 'verified'])->name('hospitalar.raiox.index');
 Route::get('/hospitalar/raiox/details/{id}', [RaioXController::class, 'getDetails'])->middleware(['auth', 'verified'])->name('hospitalar.raiox.details');
 Route::post('/hospitalar/raiox/resultado', [RaioXController::class, 'salvarResultado'])->middleware(['auth', 'verified'])->name('hospitalar.raiox.resultado');
