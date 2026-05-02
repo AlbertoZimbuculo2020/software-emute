@@ -246,7 +246,11 @@ const salvarConsulta = () => {
 const enviarExamesAoLaboratorio = () => {
     if(!selectedPaciente.value) return;
     const catalogExams = selectedExams.value.filter(id => id.startsWith('cat_'));
-    if (catalogExams.length === 0) return;
+    
+    if (catalogExams.length === 0) {
+        showNotification('Selecione pelo menos um novo exame para enviar.', 'error');
+        return;
+    }
 
     isLoading.value = true;
     axios.post(route('hospitalar.consultorio.solicitar-exames'), {
@@ -256,6 +260,9 @@ const enviarExamesAoLaboratorio = () => {
         showNotification('Exames enviados com sucesso!');
         selectedExams.value = [];
         selecionarPaciente(selectedPaciente.value);
+    }).catch(err => {
+        console.error(err);
+        showNotification('Erro ao enviar exames ao laboratório.', 'error');
     }).finally(() => isLoading.value = false);
 };
 

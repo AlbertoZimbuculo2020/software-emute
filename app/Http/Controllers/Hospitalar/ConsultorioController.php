@@ -173,16 +173,20 @@ class ConsultorioController extends Controller
 
                 // Billing: Add to Carrinho Hospitalar
                 DB::table('tb_carrinho_hospitalar')->insert([
-                    'ID_PACIENTE'    => $agenda->IdPaciente,
-                    'ID_AGENDAMENTO' => $request->IdAgenda,
-                    'ID_PRODUTO'     => $ex->IdProduto,
+                    'ID_ENTIDADE'    => $agenda->IdPaciente,
+                    'ID_AGENDA'      => $request->IdAgenda,
+                    'PRODUTO'        => $ex->IdProduto,
+                    'CODIGO'         => $ex->Codigo,
                     'DESCRICAO'      => $ex->Descricao,
                     'QUANTIDADE'     => 1,
-                    'PRECO'          => 0, // In some systems, this is updated later or fetched from products
-                    'TOTAL'          => 0,
+                    'PRECO'          => $ex->Valor ?? 0,
+                    'TOTAL'          => $ex->Valor ?? 0,
+                    'IVA'            => 0,
+                    'DESCONTO'       => 0,
                     'ESTADO'         => 'N_PAGO',
                     'TIPO'           => 'Exame',
                     'ID_UTILIZADOR'  => $userId,
+                    'DATA_'          => now(),
                 ]);
             }
         }
