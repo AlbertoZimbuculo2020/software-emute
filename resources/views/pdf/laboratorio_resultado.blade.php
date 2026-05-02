@@ -2,122 +2,315 @@
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
-    <title>Resultado de Laboratório</title>
+    <title>Relatório de Resultados de Exames</title>
     <style>
-        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 12px; color: #333; }
-        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000080; padding-bottom: 10px; }
-        .header h1 { color: #000080; margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
-        .header p { margin: 3px 0; color: #555; }
-        .patient-info { width: 100%; border-collapse: collapse; margin-bottom: 20px; background-color: #f8f9fa; }
-        .patient-info th, .patient-info td { padding: 8px; border: 1px solid #dee2e6; text-align: left; }
-        .patient-info th { background-color: #e9ecef; width: 20%; color: #495057; }
-        .exam-section { margin-bottom: 30px; page-break-inside: avoid; }
-        .exam-title { background-color: #000080; color: white; padding: 8px; margin: 0 0 10px 0; font-size: 14px; font-weight: bold; }
-        .exam-table { width: 100%; border-collapse: collapse; }
-        .exam-table th, .exam-table td { padding: 6px; border-bottom: 1px dashed #ccc; text-align: left; }
-        .exam-table th { font-weight: bold; color: #555; text-transform: uppercase; font-size: 11px; }
-        .exam-obs { margin-top: 10px; font-style: italic; color: #666; font-size: 11px; padding: 10px; background-color: #fcfcfc; border-left: 3px solid #000080; }
-        .footer { text-align: center; margin-top: 50px; font-size: 10px; color: #777; border-top: 1px solid #ccc; padding-top: 10px; }
-        .signature-line { width: 250px; border-top: 1px solid #000; margin: 40px auto 10px auto; }
+        body { 
+            font-family: 'Helvetica', 'Arial', sans-serif; 
+            font-size: 11px; 
+            color: #000; 
+            margin: 0; 
+            padding: 20px;
+        }
+        
+        /* HEADER */
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5px;
+        }
+        .header-table td {
+            vertical-align: top;
+        }
+        .logo-cell {
+            width: 80px;
+            text-align: left;
+        }
+        .logo-placeholder {
+            width: 60px;
+            height: 60px;
+            background-color: #eee;
+            border: 1px solid #ccc;
+            text-align: center;
+            line-height: 60px;
+            font-size: 10px;
+            color: #999;
+        }
+        .clinic-info {
+            padding-left: 10px;
+        }
+        .clinic-name {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 0 0 5px 0;
+            text-transform: uppercase;
+        }
+        .clinic-details {
+            font-size: 10px;
+            margin: 2px 0;
+            font-weight: bold;
+        }
+
+        /* TITLE */
+        .report-title {
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-top: 1px solid #000;
+            border-bottom: 2px solid #000;
+            padding: 8px 0;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        /* PATIENT INFO */
+        .patient-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 11px;
+        }
+        .patient-table td {
+            padding: 3px 0;
+            width: 50%;
+        }
+
+        /* EXAM CATEGORY */
+        .category-title {
+            background-color: #d9d9d9;
+            font-weight: bold;
+            padding: 4px;
+            font-size: 12px;
+            margin-top: 10px;
+            border: 1px solid #999;
+        }
+
+        /* EXAM ITEM FULL WIDTH */
+        .exam-full {
+            width: 100%;
+            margin-bottom: 15px;
+            border-collapse: collapse;
+        }
+        
+        .exam-header {
+            background-color: #8c8c8c;
+            color: #000;
+            font-weight: bold;
+            padding: 4px;
+            font-size: 11px;
+            border: 1px solid #000;
+        }
+
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-left: 1px solid #000;
+            border-right: 1px solid #000;
+            border-bottom: 1px solid #000;
+        }
+        .result-table th {
+            text-align: left;
+            padding: 3px;
+            border-bottom: 1px solid #000;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .result-table td {
+            padding: 3px;
+            border-bottom: 1px solid #ccc;
+            font-size: 10px;
+        }
+
+        /* EXAM HALF WIDTH (GRID) */
+        .grid-container {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .grid-item {
+            width: 48%;
+            float: left;
+            margin-bottom: 15px;
+        }
+        .grid-item:nth-child(even) {
+            float: right;
+        }
+        .clear {
+            clear: both;
+        }
+
+        /* SIGNATURE */
+        .signature-section {
+            text-align: center;
+            margin-top: 60px;
+            font-size: 12px;
+            font-style: italic;
+        }
+        .signature-line {
+            width: 300px;
+            border-top: 1px solid #000;
+            margin: 30px auto 5px auto;
+        }
     </style>
 </head>
 <body>
+    @php
+        $empresa = \Illuminate\Support\Facades\DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
+    @endphp
 
-    <div class="header">
-        <h1>Análises Clínicas</h1>
-        <p>Departamento de Laboratório - Emute ERP Hospitalar</p>
-        <p>Data de Emissão: {{ date('d/m/Y H:i') }}</p>
-    </div>
-
-    <table class="patient-info">
+    <!-- HEADER -->
+    <table class="header-table">
         <tr>
-            <th>Paciente</th>
-            <td>{{ $paciente->PacienteNome }} (Cod: {{ $paciente->Codigo }})</td>
-            <th>Data Nasc. / Idade</th>
-            <td>{{ $paciente->DataNascimento ?? 'N/D' }}</td>
-        </tr>
-        <tr>
-            <th>Médico Solicitante</th>
-            <td>{{ $paciente->MedicoNome ?? 'N/A' }}</td>
-            <th>Sexo</th>
-            <td>{{ $paciente->Genero ?? 'N/D' }}</td>
-        </tr>
-        <tr>
-            <th>Consulta</th>
-            <td>{{ $paciente->DescricaoConsulta ?? 'Geral' }}</td>
-            <th>Asseguradora</th>
-            <td>{{ $paciente->Asseguradora ?? 'Particular' }}</td>
+            <td class="logo-cell">
+                <div class="logo-placeholder">LOGO</div>
+            </td>
+            <td class="clinic-info">
+                <p class="clinic-name">{{ $empresa->Nome ?? 'LUDAL, DESENVOLVIMENTO E PROGRESSO - CLÍNICA TUAMAMICO' }}</p>
+                <p class="clinic-details">Contribuinte nº {{ $empresa->NIF ?? '5401150954' }}</p>
+                <p class="clinic-details">Contacto: {{ $empresa->Telefone ?? '924358803/' }}</p>
+                <p class="clinic-details">{{ $empresa->Endereco ?? 'CACUACO, ECOCAMPO, 4 DE FEVEREIRO' }}</p>
+            </td>
         </tr>
     </table>
 
-    @foreach($exames as $exame)
-        @if($exame->Estado === 'Finalizado' || !empty($exame->Resultado))
-            <div class="exam-section">
-                <div class="exam-title">{{ $exame->Descricao }}</div>
-                
-                @if(!empty($exame->Filhos))
-                    @php
-                        $filhos = array_filter(array_map('trim', explode('|', $exame->Filhos)));
-                        $resultados = array_filter(array_map('trim', explode('|', $exame->Resultado ?? '')));
-                        $referencias = array_filter(array_map('trim', explode('|', $exame->Referencia ?? '')));
-                    @endphp
-                    
-                    <table class="exam-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 40%;">Parâmetro</th>
-                                <th style="width: 30%;">Resultado</th>
-                                <th style="width: 30%;">Referência</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($filhos as $idx => $filho)
-                                @php
-                                    $res = rtrim($resultados[$idx] ?? '', ' ');
-                                    $ref = rtrim($referencias[$idx] ?? '', ' ');
-                                @endphp
-                                <tr>
-                                    <td>{{ $filho }}</td>
-                                    <td><strong>{{ $res }}</strong></td>
-                                    <td>{{ $ref }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                @else
-                    <table class="exam-table">
-                        <thead>
-                            <tr>
-                                <th>Resultado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>{{ $exame->Resultado ?? 'Sem Resultado Registrado' }}</strong></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                @endif
-
-                @if(!empty($exame->Obs))
-                    <div class="exam-obs">
-                        <strong>Observações / Sugestões:</strong><br>
-                        {{ $exame->Obs }}
-                    </div>
-                @endif
-            </div>
-        @endif
-    @endforeach
-
-    <div style="text-align: center; margin-top: 60px;">
-        <div class="signature-line"></div>
-        <strong>O Técnico de Laboratório</strong><br>
-        <span style="font-size: 11px;">{{ auth()->user()->name ?? 'Emute Lab' }}</span>
+    <!-- TITLE -->
+    <div class="report-title">
+        RELATÓRIO DE RESULTADOS DE EXAMES / SERVIÇOS
     </div>
 
-    <div class="footer">
-        Este documento foi gerado digitalmente e é válido sem assinatura física.<br>
-        Processado por Zimbuia Emute ERP
+    <!-- PATIENT INFO -->
+    <table class="patient-table">
+        <tr>
+            <td><strong>Nome:</strong> {{ $paciente->PacienteNome ?? '' }}</td>
+            <td><strong>Idade:</strong> {{ $paciente->Idade ?? (\Carbon\Carbon::hasMacro('age') ? \Carbon\Carbon::parse($paciente->DataNascimento)->age : '') }}</td>
+        </tr>
+        <tr>
+            <td><strong>Sexo:</strong> {{ $paciente->Genero ?? 'MASCULINO' }}</td>
+            <td><strong>Nº Processo:</strong> {{ $paciente->CodigoPaciente ?? $paciente->Codigo ?? '' }}</td>
+        </tr>
+        <tr>
+            <td><strong>Data do Exame:</strong> {{ date('d/m/Y H:i:s') }}</td>
+            <td><strong>Empresa:</strong> {{ $paciente->Asseguradora ?? 'PARTICULAR' }}</td>
+        </tr>
+    </table>
+
+    @php
+        // Separate exams into complex (full width) and simple (half width)
+        $complexExams = [];
+        $simpleExams = [];
+
+        foreach($exames as $exame) {
+            $filhosCount = !empty($exame->Filhos) ? count(explode('|', $exame->Filhos)) : 0;
+            if ($filhosCount > 3 || strpos(strtolower($exame->Descricao), 'hemograma') !== false) {
+                $complexExams[] = $exame;
+            } else {
+                $simpleExams[] = $exame;
+            }
+        }
+    @endphp
+
+    <!-- COMPLEX EXAMS (FULL WIDTH) -->
+    @foreach($complexExams as $exame)
+        <div class="category-title">
+            Categoria do Exame: {{ $exame->Categoria ?? 'LABORATÓRIO GERAL' }}
+        </div>
+        <div class="exam-header">
+            Exame: {{ $exame->Descricao }}
+        </div>
+        <table class="result-table">
+            <thead>
+                <tr>
+                    <th style="width: 40%">Dados</th>
+                    <th style="width: 30%">Resultados</th>
+                    <th style="width: 30%">Referencias</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if(!empty($exame->Filhos))
+                    @php
+                        $filhos = array_map('trim', explode('|', $exame->Filhos));
+                        $resultados = !empty($exame->Resultado) ? array_map('trim', explode('|', $exame->Resultado)) : [];
+                        $referencias = !empty($exame->Referencia) ? array_map('trim', explode('|', $exame->Referencia)) : [];
+                    @endphp
+                    @foreach($filhos as $idx => $filho)
+                        @if($filho !== '')
+                            <tr>
+                                <td>{{ $filho }}</td>
+                                <td>{{ $resultados[$idx] ?? '' }}</td>
+                                <td>{{ $referencias[$idx] ?? '' }}</td>
+                            </tr>
+                        @endif
+                    @endforeach
+                @else
+                    <tr>
+                        <td>{{ $exame->Descricao }}</td>
+                        <td>{{ $exame->Resultado ?? '' }}</td>
+                        <td>{{ $exame->Referencia ?? '' }}</td>
+                    </tr>
+                @endif
+            </tbody>
+        </table>
+    @endforeach
+
+    <!-- SIMPLE EXAMS (HALF WIDTH - SIDE BY SIDE) -->
+    @if(count($simpleExams) > 0)
+        <div class="category-title" style="margin-bottom: 10px;">
+            Categoria do Exame:
+        </div>
+        
+        <div class="grid-container">
+            @foreach($simpleExams as $idx => $exame)
+                <div class="grid-item">
+                    <div class="exam-header" style="font-size: 10px; padding: 3px;">
+                        Exame: {{ $exame->Descricao }}
+                    </div>
+                    <table class="result-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 33%; font-size: 9px;">Dados</th>
+                                <th style="width: 33%; font-size: 9px;">Resultados</th>
+                                <th style="width: 33%; font-size: 9px;">Referencias</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if(!empty($exame->Filhos))
+                                @php
+                                    $filhos = array_map('trim', explode('|', $exame->Filhos));
+                                    $resultados = !empty($exame->Resultado) ? array_map('trim', explode('|', $exame->Resultado)) : [];
+                                    $referencias = !empty($exame->Referencia) ? array_map('trim', explode('|', $exame->Referencia)) : [];
+                                @endphp
+                                @foreach($filhos as $fidx => $filho)
+                                    @if($filho !== '')
+                                        <tr>
+                                            <td>{{ $filho }}</td>
+                                            <td>{{ $resultados[$fidx] ?? '' }}</td>
+                                            <td>{{ $referencias[$fidx] ?? '' }}</td>
+                                        </tr>
+                                    @endif
+                                @endforeach
+                            @else
+                                <tr>
+                                    <td>{{ $exame->Descricao }}</td>
+                                    <td>{{ $exame->Resultado ?? '' }}</td>
+                                    <td>{{ $exame->Referencia ?? '' }}</td>
+                                </tr>
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
+                
+                @if(($idx + 1) % 2 == 0)
+                    <div class="clear"></div>
+                @endif
+            @endforeach
+            <div class="clear"></div>
+        </div>
+    @endif
+
+    <!-- SIGNATURE -->
+    <div class="signature-section">
+        Assinatura do Técnico do Laboratório
+        <div class="signature-line"></div>
+        Dr(a).: {{ auth()->user()->name ?? '' }}
     </div>
 
 </body>

@@ -225,7 +225,8 @@ class LaboratorioController extends Controller
         }
 
         $exames = DB::table('tb_resultado_exame')
-            ->where('Codigo', $idAgenda)
+            ->where('IdAgenda', $idAgenda)
+            ->where('Estado', '!=', 'Removido')
             ->get();
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.laboratorio_resultado', [

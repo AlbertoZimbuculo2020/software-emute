@@ -166,7 +166,12 @@ const imprimirReceita = () => {
 };
 const imprimirRequisicao = () => {
     if (!selectedPaciente.value) return;
-    window.open(route('hospitalar.consultorio.imprimir.requisicao', selectedPaciente.value.Codigo), '_blank');
+    const ids = selectedExams.value.join(',');
+    let url = route('hospitalar.consultorio.imprimir.requisicao', selectedPaciente.value.Codigo);
+    if (ids) {
+        url += '?exames=' + ids;
+    }
+    window.open(url, '_blank');
 };
 const imprimirResultadosLab = () => {
     if (!selectedPaciente.value) return;

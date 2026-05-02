@@ -359,10 +359,33 @@ class ConsultorioController extends Controller
 
         $agendamento = $paciente; // Reusing for template compatibility if needed
 
-        $exames = DB::table('tb_resultado_exame')
-            ->where('IdAgenda', $idAgenda)
-            ->where('Estado', '!=', 'Removido')
-            ->get();
+        $requestedExams = request('exames');
+        if (!empty($requestedExams)) {
+            $ids = array_map('trim', explode(',', $requestedExams));
+            // Os IDs vindos do frontend têm o prefixo 'cat_', precisamos limpar
+            $cleanIds = array_map(function($id) {
+                return str_replace('cat_', '', $id);
+            }, $ids);
+            
+            $exames = DB::table('tb_exames')
+                ->whereIn('Id', $cleanIds)
+                ->get()
+                ->map(function ($ex) {
+                    return (object)[
+                        'Descricao' => $ex->Descricao,
+                        'Categoria' => $ex->Categoria ?? 'LABORATÓRIO GERAL',
+                        'Filhos' => $ex->Filhos ?? '',
+                        'Resultado' => '',
+                        'Referencia' => $ex->Referencia ?? '',
+                        'Estado' => 'Pendente'
+                    ];
+                });
+        } else {
+            $exames = DB::table('tb_resultado_exame')
+                ->where('IdAgenda', $idAgenda)
+                ->where('Estado', '!=', 'Removido')
+                ->get();
+        }
 
         $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
 
