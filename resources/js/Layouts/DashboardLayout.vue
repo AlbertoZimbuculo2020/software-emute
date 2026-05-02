@@ -324,11 +324,11 @@ const toggleMenu = (menu) => {
                         <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white shadow-inner mr-3 group-hover:scale-105 transition-transform">
                             <span class="text-xs font-bold">{{ (user.NOME_UTILIZADOR || user.name || 'E').charAt(0).toUpperCase() }}</span>
                         </div>
-                        <div class="flex flex-col justify-center">
-                            <span class="text-xs font-bold text-gray-700 leading-tight">{{ user.NOME_UTILIZADOR || user.name || 'EMUTE' }}</span>
+                        <div class="hidden sm:flex flex-col justify-center">
+                            <span class="text-xs font-bold text-gray-700 leading-tight truncate max-w-[100px]">{{ user.NOME_UTILIZADOR || user.name || 'EMUTE' }}</span>
                             <span class="text-[10px] text-gray-400 font-medium leading-tight">Administrador</span>
                         </div>
-                        <div class="ml-4 pl-4 border-l border-gray-100 flex items-center">
+                        <div class="ml-2 sm:ml-4 pl-2 sm:pl-4 border-l border-gray-100 flex items-center">
                             <Link :href="route('logout')" method="post" as="button" class="text-gray-400 hover:text-red-500 transition-colors flex items-center justify-center w-6 h-6 rounded-full hover:bg-red-50" title="Terminar Sessão">
                                 <LogOut class="w-4 h-4" />
                             </Link>

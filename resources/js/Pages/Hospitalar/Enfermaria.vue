@@ -124,11 +124,11 @@ const finalizarAtendimento = () => {
     <Head title="Enfermaria - Serviços Solicitados" />
 
     <DashboardLayout>
-        <div class="min-h-screen bg-[#f8fafc] p-4 lg:p-6">
-            <div class="max-w-[1800px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-120px)]">
+        <div class="min-h-screen bg-[#f8fafc] p-3 lg:p-6">
+            <div class="max-w-[1800px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-[calc(100vh-120px)]">
                 
                 <!-- Left Sidebar: Requests List -->
-                <div class="lg:col-span-4 flex flex-col gap-6 overflow-hidden">
+                <div class="lg:col-span-4 flex flex-col gap-6 overflow-hidden h-[500px] lg:h-full">
                     <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200/60 flex flex-col h-full overflow-hidden">
                         <div class="p-6 border-b border-slate-100 bg-slate-50/50">
                             <div class="flex items-center justify-between mb-6">
@@ -187,13 +187,13 @@ const finalizarAtendimento = () => {
                         <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 shrink-0">
                             <!-- Patient Info -->
                             <div class="xl:col-span-12 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200/60 flex items-center justify-between">
-                                <div class="flex items-center gap-6">
-                                    <div class="w-16 h-16 bg-slate-900 rounded-3xl text-white flex items-center justify-center text-2xl font-black">
+                                <div class="flex flex-col sm:flex-row sm:items-center gap-6">
+                                    <div class="w-16 h-16 bg-slate-900 rounded-3xl text-white flex items-center justify-center text-2xl font-black shrink-0">
                                         {{ selectedSolicitacao.PacienteNome.substring(0, 2).toUpperCase() }}
                                     </div>
-                                    <div>
+                                    <div class="flex-grow">
                                         <h1 class="text-lg font-black text-slate-900 uppercase tracking-tight">{{ selectedSolicitacao.PacienteNome }}</h1>
-                                        <div class="flex items-center gap-4 mt-1">
+                                        <div class="flex flex-wrap items-center gap-4 mt-1">
                                             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
                                                 <Calendar class="w-3.5 h-3.5" /> {{ selectedSolicitacao.DataAgendamento }}
                                             </span>
@@ -203,9 +203,9 @@ const finalizarAtendimento = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-3">
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Depósito:</label>
-                                    <select v-model="selectedDeposito" class="bg-slate-50 border-transparent focus:ring-4 focus:ring-blue-500/10 rounded-2xl text-[10px] font-black uppercase tracking-widest py-3 px-6 pr-10 appearance-none cursor-pointer min-w-[180px]">
+                                    <select v-model="selectedDeposito" class="w-full sm:w-auto bg-slate-50 border-transparent focus:ring-4 focus:ring-blue-500/10 rounded-2xl text-[10px] font-black uppercase tracking-widest py-3 px-6 pr-10 appearance-none cursor-pointer min-w-[180px]">
                                         <option v-for="d in depositos" :key="d.CODIGO" :value="d.CODIGO">{{ d.DEPOSITO }}</option>
                                     </select>
                                 </div>
@@ -213,9 +213,9 @@ const finalizarAtendimento = () => {
                         </div>
 
                         <!-- Main Workflow Bento -->
-                        <div class="flex-grow grid grid-cols-1 xl:grid-cols-12 gap-6 overflow-hidden">
+                        <div class="flex-grow grid grid-cols-1 xl:grid-cols-12 gap-6 overflow-hidden h-auto lg:overflow-hidden">
                             <!-- Left Section: Services List -->
-                            <div class="xl:col-span-5 bg-white rounded-[2.5rem] shadow-sm border border-slate-200/60 flex flex-col overflow-hidden">
+                            <div class="xl:col-span-5 bg-white rounded-[2.5rem] shadow-sm border border-slate-200/60 flex flex-col overflow-hidden min-h-[400px] lg:min-h-0">
                                 <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                                     <h3 class="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em] flex items-center gap-2">
                                         <FlaskConical class="w-4 h-4 text-blue-600" /> Itens Solicitados
@@ -268,7 +268,7 @@ const finalizarAtendimento = () => {
                                 </div>
 
                                 <!-- Results Entry -->
-                                <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200/60 p-8 flex flex-col flex-grow">
+                                <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200/60 p-6 lg:p-8 flex flex-col flex-grow min-h-[300px]">
                                     <div class="flex items-center justify-between mb-6">
                                         <h3 class="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em] flex items-center gap-2">
                                             <History class="w-4 h-4 text-emerald-600" /> Registro de Resultado
