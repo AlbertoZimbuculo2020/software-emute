@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ConsultorioController extends Controller
 {
@@ -63,10 +64,16 @@ class ConsultorioController extends Controller
             $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
         }
 
+        $catalogoCid = DB::table('tb_ciddez')
+            ->where('ESTADO', 'Activado')
+            ->select('codigo', 'Indicador', 'Descricao')
+            ->get();
+
         return Inertia::render('Hospitalar/Consultorio', [
             'aguardando'      => $aguardando,
             'catalogoExames'  => $catalogoExames,
             'catalogoFarmacos'=> $catalogoFarmacos,
+            'catalogoCid'     => $catalogoCid,
             'listaMedicos'    => $listaMedicos,
             'empresa'         => $empresa
         ]);
@@ -136,8 +143,14 @@ class ConsultorioController extends Controller
             'exames'   => 'required|array',
         ]);
 
+        $agenda = DB::table('tb_agendamento')->where('Codigo', $request->IdAgenda)->first();
+        if (!$agenda) return response()->json(['error' => 'Agendamento não encontrado'], 404);
+
         $ids = array_map(fn($ex) => str_replace('cat_', '', $ex), $request->exames);
         $exames = DB::table('tb_exames')->whereIn('Id', $ids)->get();
+
+        $utilizador = auth()->user()->NOME_UTILIZADOR ?? 'Medico';
+        $userId     = auth()->user()->id ?? 0;
 
         foreach ($exames as $ex) {
             $exists = DB::table('tb_resultado_exame')
@@ -155,7 +168,21 @@ class ConsultorioController extends Controller
                     'Tipo'       => $ex->Tipo,
                     'DataExame'  => now(),
                     'Estado'     => 'Ativo',
-                    'Utilizador' => auth()->user()->NOME_UTILIZADOR ?? 'Medico',
+                    'Utilizador' => $utilizador,
+                ]);
+
+                // Billing: Add to Carrinho Hospitalar
+                DB::table('tb_carrinho_hospitalar')->insert([
+                    'ID_PACIENTE'    => $agenda->IdPaciente,
+                    'ID_AGENDAMENTO' => $request->IdAgenda,
+                    'ID_PRODUTO'     => $ex->IdProduto,
+                    'DESCRICAO'      => $ex->Descricao,
+                    'QUANTIDADE'     => 1,
+                    'PRECO'          => 0, // In some systems, this is updated later or fetched from products
+                    'TOTAL'          => 0,
+                    'ESTADO'         => 'N_PAGO',
+                    'TIPO'           => 'Exame',
+                    'ID_UTILIZADOR'  => $userId,
                 ]);
             }
         }
@@ -243,5 +270,77 @@ class ConsultorioController extends Controller
             ]);
 
         return response()->json(['message' => 'Paciente encaminhado com sucesso!']);
+    }
+
+    public function imprimirFicha($idAgenda)
+    {
+        $paciente = DB::table('tb_agendamento')
+            ->join('tb_tipoentidade', 'tb_agendamento.IdPaciente', '=', 'tb_tipoentidade.Codigo')
+            ->leftJoin('tb_entidade', 'tb_tipoentidade.IdEntidade', '=', 'tb_entidade.Codigo')
+            ->leftJoin('tb_tipoentidade as medico', 'tb_agendamento.IdMedico', '=', 'medico.Codigo')
+            ->select(
+                'tb_agendamento.*', 
+                'tb_tipoentidade.Nome as PacienteNome',
+                'tb_entidade.DataNascimento',
+                'tb_entidade.Genero',
+                'medico.Nome as MedicoNome'
+            )
+            ->where('tb_agendamento.Codigo', $idAgenda)
+            ->first();
+
+        if (!$paciente) return abort(404);
+
+        $triagem = DB::table('tb_triagem')->where('IdAgenda', $idAgenda)->first();
+        $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
+        
+        if ($empresa && $empresa->IMAGEM) {
+            $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
+        }
+
+        $idade = 'N/D';
+        if ($paciente->DataNascimento) {
+            $birthDate = new \DateTime($paciente->DataNascimento);
+            $today = new \DateTime();
+            $idade = $today->diff($birthDate)->y . ' Anos';
+        }
+
+        $pdf = Pdf::loadView('pdf.ficha_medica', compact('paciente', 'triagem', 'empresa', 'idade'));
+        return $pdf->stream("ficha_medica_{$idAgenda}.pdf");
+    }
+
+    public function imprimirReceita($idAgenda)
+    {
+        $paciente = DB::table('tb_agendamento')
+            ->join('tb_tipoentidade', 'tb_agendamento.IdPaciente', '=', 'tb_tipoentidade.Codigo')
+            ->leftJoin('tb_tipoentidade as medico', 'tb_agendamento.IdMedico', '=', 'medico.Codigo')
+            ->select('tb_agendamento.*', 'tb_tipoentidade.Nome as PacienteNome', 'medico.Nome as MedicoNome')
+            ->where('tb_agendamento.Codigo', $idAgenda)
+            ->first();
+
+        if (!$paciente) return abort(404);
+
+        $itens = DB::table('tb_receita')
+            ->where('IdAgenda', $idAgenda)
+            ->where('Estado', '!=', 'Removido')
+            ->get();
+
+        $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
+        if ($empresa && $empresa->IMAGEM) {
+            $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
+        }
+
+        $dataExtenso = "Luanda, " . date('d') . " de " . $this->mesExtenso(date('m')) . " de " . date('Y');
+
+        $pdf = Pdf::loadView('pdf.receita_medica', compact('paciente', 'itens', 'empresa', 'dataExtenso'));
+        return $pdf->stream("receita_{$idAgenda}.pdf");
+    }
+
+    private function mesExtenso($m) {
+        $meses = [
+            '01' => 'Janeiro', '02' => 'Fevereiro', '03' => 'Março', '04' => 'Abril',
+            '05' => 'Maio', '06' => 'Junho', '07' => 'Julho', '08' => 'Agosto',
+            '09' => 'Setembro', '10' => 'Outubro', '11' => 'Novembro', '12' => 'Dezembro'
+        ];
+        return $meses[$m] ?? '';
     }
 }
