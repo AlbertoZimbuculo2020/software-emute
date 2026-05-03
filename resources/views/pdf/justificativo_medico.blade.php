@@ -1,15 +1,14 @@
-@if(!isset($is_economico))
+@if(!isset($only_content) && !isset($only_styles) && !isset($is_economico))
 <!DOCTYPE html>
 <html>
 <head>
-@endif
     <meta charset="utf-8">
     <title>Justificativo Médico</title>
-@if(!isset($is_economico))
-    <style>
-@else
-    <style>
 @endif
+@if(!isset($only_content))
+    @if(!isset($is_economico))
+    <style>
+    @endif
         body { font-family: 'Helvetica', sans-serif; font-size: 14px; color: #000; margin: 40px; }
         .header { text-align: center; margin-bottom: 40px; }
         .logo { max-width: 120px; max-height: 120px; margin-bottom: 10px; }
@@ -20,8 +19,12 @@
         .signature { text-align: center; margin-top: 80px; }
         .signature-line { border-bottom: 1px solid #000; width: 300px; margin: 0 auto 10px; }
         .footer { position: fixed; bottom: -20px; left: 0; right: 0; text-align: center; font-size: 10px; color: #555; }
-    </style>
 @if(!isset($is_economico))
+    </style>
+@endif
+@endif
+@if(!isset($only_styles))
+@if(!isset($only_content) && !isset($is_economico))
 </head>
 <body>
 @endif
@@ -60,7 +63,8 @@
         Tel: {{ $empresa->Telefone ?? '924358803' }} | 
         NIF: {{ $empresa->NIF ?? '5401150954' }}
     </div>
-@if(!isset($is_economico))
+@if(!isset($only_content) && !isset($is_economico))
 </body>
 </html>
+@endif
 @endif

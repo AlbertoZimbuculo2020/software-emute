@@ -42,7 +42,6 @@
         .col-report .clinic-name { font-size: 9px !important; }
         .col-report p, .col-report div, .col-report td { line-height: 1.1 !important; margin-bottom: 1px !important; }
 
-        /* Neutralizar cabeçalhos e rodapés fixos */
         header, footer { 
             position: static !important; 
             display: block !important;
@@ -51,13 +50,16 @@
             height: auto !important;
             width: 100% !important;
         }
+
+        /* Include styles from the sub-template */
+        @include($original_view, array_merge($data, ['only_styles' => true]))
     </style>
 </head>
 <body>
     <table class="wrapper-table">
         <tr>
             <td class="col-report" style="vertical-align: top;">
-                @include($original_view, array_merge($data, ['column_index' => 1]))
+                @include($original_view, array_merge($data, ['column_index' => 1, 'only_content' => true]))
             </td>
             
             @php
@@ -74,9 +76,9 @@
 
             <td class="col-report" style="vertical-align: top;">
                 @if($data['is_duplicate'] ?? true)
-                    @include($original_view, array_merge($data, ['column_index' => 1]))
+                    @include($original_view, array_merge($data, ['column_index' => 1, 'only_content' => true]))
                 @elseif($original_view === 'pdf.ficha_medica')
-                    @include($original_view, array_merge($data, ['column_index' => 2]))
+                    @include($original_view, array_merge($data, ['column_index' => 2, 'only_content' => true]))
                 @else
                     <!-- Lado livre para reuso do papel -->
                 @endif

@@ -1,15 +1,14 @@
-@if(!isset($is_economico))
+@if(!isset($only_content) && !isset($only_styles) && !isset($is_economico))
 <!DOCTYPE html>
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
     <title>Relatório de Resultados de Exames</title>
 @endif
-@if(!isset($is_economico))
+@if(!isset($only_content))
+    @if(!isset($is_economico))
     <style>
-@else
-    <style>
-@endif
+    @endif
         body { 
             font-family: 'Helvetica', 'Arial', sans-serif; 
             font-size: 11px; 
@@ -156,8 +155,12 @@
             border-top: 1px solid #000;
             margin: 30px auto 5px auto;
         }
-    </style>
 @if(!isset($is_economico))
+    </style>
+@endif
+@endif
+@if(!isset($only_styles))
+@if(!isset($only_content) && !isset($is_economico))
 </head>
 <body>
 @endif
@@ -322,7 +325,8 @@
         Dr(a).: {{ auth()->user()->name ?? '' }}
     </div>
 
-@if(!isset($is_economico))
+@if(!isset($only_content) && !isset($is_economico))
 </body>
 </html>
+@endif
 @endif

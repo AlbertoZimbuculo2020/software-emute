@@ -1,18 +1,17 @@
-@if(!isset($is_economico))
+@if(!isset($only_content) && !isset($only_styles) && !isset($is_economico))
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <title>Relatório Geral da Consulta</title>
 @endif
-@if(!isset($is_economico))
+@if(!isset($only_content))
+    @if(!isset($is_economico))
     <style>
         @page {
             margin: 120px 40px 60px 40px; /* Top margin for fixed header */
         }
-@else
-    <style>
-@endif
+    @endif
         body { 
             font-family: 'Helvetica', sans-serif; 
             font-size: 11px; 
@@ -105,11 +104,16 @@
         .signature-section { text-align: center; margin-top: 40px; font-size: 10px; font-weight: bold; }
         .signature-line { width: 250px; border-bottom: 1px solid #000; margin: 30px auto 5px; }
 
-    </style>
 @if(!isset($is_economico))
-</head>
-<body>
+    </style>
 @endif
+@endif
+
+@if(!isset($only_styles))
+    @if(!isset($only_content) && !isset($is_economico))
+    </head>
+    <body>
+    @endif
 
 @if(!isset($is_economico) || (isset($column_index) && $column_index == 1))
     @if(!isset($is_economico))
@@ -363,7 +367,8 @@
     </div>
 @endif
 
-@if(!isset($is_economico))
+@if(!isset($only_content) && !isset($is_economico))
 </body>
 </html>
+@endif
 @endif

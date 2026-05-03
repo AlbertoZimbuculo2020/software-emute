@@ -1,15 +1,14 @@
-@if(!isset($is_economico))
+@if(!isset($only_content) && !isset($only_styles) && !isset($is_economico))
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <title>Receita Médica</title>
 @endif
-@if(!isset($is_economico))
+@if(!isset($only_content))
+    @if(!isset($is_economico))
     <style>
-@else
-    <style>
-@endif
+    @endif
         body { font-family: 'Helvetica', sans-serif; font-size: 13px; color: #333; margin: 0; padding: 0; }
         .header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
         .logo { width: 100px; height: 100px; float: left; margin-right: 20px; }
@@ -38,8 +37,12 @@
         .items-table th { padding: 5px; font-size: 9px; }
         .items-table td { padding: 5px; }
         @endif
-    </style>
 @if(!isset($is_economico))
+    </style>
+@endif
+@endif
+@if(!isset($only_styles))
+@if(!isset($only_content) && !isset($is_economico))
 </head>
 <body>
 @endif
@@ -93,7 +96,8 @@
         <p><strong>Dr(a). {{ $paciente->MedicoNome }}</strong></p>
         <p style="font-size: 11px;">Médico(a) Responsável</p>
     </div>
-@if(!isset($is_economico))
+@if(!isset($only_content) && !isset($is_economico))
 </body>
 </html>
+@endif
 @endif
