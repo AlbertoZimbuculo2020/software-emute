@@ -191,30 +191,36 @@
         </tr>
     </table>
 
-    <div class="page-break"></div>
-
-    <!-- PAGE 2: DADOS CLINICOS -->
     <div class="section-separator"></div>
     <div class="section-title">DADOS CLINICOS</div>
 
     <div class="clinical-box-title">Queixas Principais</div>
-    <div class="clinical-box">{{ $paciente->QP ?? '' }}</div>
+    <div class="clinical-box">{{ $paciente->QP ?? '—' }}</div>
 
     <div class="clinical-box-title">Histórico da Doença Atual</div>
-    <div class="clinical-box">{{ $paciente->HDA ?? '' }}</div>
+    @php
+        $hdaRaw = $paciente->HDA ?? '';
+        $hdaDisplay = str_contains($hdaRaw, '|') ? trim(explode('|', $hdaRaw)[0]) : $hdaRaw;
+    @endphp
+    <div class="clinical-box">{{ $hdaDisplay ?: '—' }}</div>
+
+    <div class="clinical-box-title">Hipótese de Diagnóstico (CID-10)</div>
+    @php
+        $cidsDisplay = '';
+        if (str_contains($hdaRaw, '|')) {
+            $cidPart = trim(explode('|', $hdaRaw)[1] ?? '');
+            $cidsDisplay = $cidPart;
+        }
+        if (!$cidsDisplay) $cidsDisplay = $paciente->COMPLEMENTARES ?? '—';
+    @endphp
+    <div class="clinical-box">{{ $cidsDisplay }}</div>
 
     <div class="clinical-box-title">Exames Objectivos</div>
-    <div class="clinical-box">{{ $paciente->OBJ ?? '' }}</div>
+    <div class="clinical-box">{{ $paciente->OBJ ?? '—' }}</div>
 
-    <div class="clinical-box-title">Hipótese de Diagnostico</div>
-    <div class="clinical-box">{{ $paciente->COMPLEMENTARES ?? '' }}</div>
+    <div class="clinical-box-title">Observações / Recomendações</div>
+    <div class="clinical-box">{{ $paciente->RECOMENDACOES ?? '—' }}</div>
 
-    <div class="clinical-box-title">Observações</div>
-    <div class="clinical-box">{{ $paciente->RECOMENDACOES ?? '' }}</div>
-
-    <div class="page-break"></div>
-
-    <!-- PAGE 3: EXAMES E RECEITA -->
     @if($exames && count($exames) > 0)
         <div class="section-separator"></div>
         <div class="section-title">EXAMES E RESULTADOS SOLICITADOS</div>

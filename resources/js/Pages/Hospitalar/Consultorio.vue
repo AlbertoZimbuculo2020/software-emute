@@ -1,11 +1,11 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import axios from 'axios';
 import { 
     Users, Search, Activity, History, 
-    Weight, Thermometer, HeartPulse, ClipboardList, Stethoscope, Pill, Printer, User, 
+    Weight, Thermometer, HeartPulse, ClipboardList, Stethoscope, Pill, Printer, User, Camera,
     ChevronDown, Save, Info, ChevronRight, Plus, Trash2, X, CheckCircle, AlertCircle, FileText, 
     SendHorizontal, BedDouble, UserRoundCog, ArrowRightLeft, Database
 } from 'lucide-vue-next';
@@ -30,6 +30,26 @@ const showLancarResultadosModal = ref(false);
 const showDocumentosModal = ref(false);
 const searchExameTerm = ref('');
 const selectedExameToLancar = ref(null);
+const lancarModo = ref('manual');
+const lancarSubDadosList = ref([]);
+
+watch(selectedExameToLancar, (newVal) => {
+    if (newVal) {
+        lancarModo.value = 'manual';
+        lancarSubDadosList.value = [];
+        if (newVal.filhos) {
+            const parts = newVal.filhos.split('|');
+            lancarSubDadosList.value = parts.map(p => {
+                const sp = p.split('=');
+                return { 
+                    dado: sp[0], 
+                    unidade: sp[1] || '', 
+                    resultado: '' 
+                };
+            });
+        }
+    }
+});
 
 const examesSolicitados = ref([]); 
 const selectedExams = ref([]); 
@@ -74,7 +94,8 @@ const examesList = computed(() => {
     if (activeExamFilter.value === 'SOLICITADOS') {
         result = examesSolicitados.value.map(e => ({
             id: 'sol_' + e.Id, dbId: e.Id, codigo: e.CodExame, nome: e.Descricao,
-            resultado: e.Resultado || '', obs: e.Obs || '', selected: false, isRequested: true
+            resultado: e.Resultado || '', obs: e.Obs || '', selected: false, isRequested: true,
+            categoria: e.Categoria || '', filhos: e.Filhos || ''
         }));
     } else if (activeExamFilter.value === 'LABORATORIO') {
         result = (props.catalogoExames || []).filter(e => e.Exame_Fora !== 'True' && e.Categoria !== 'IMAGEM' && e.Categoria !== 'RAIO X').map(e => ({
@@ -262,6 +283,14 @@ const salvarConsulta = () => {
             showNotification('Dados gravados com sucesso!');
         }
     });
+};
+
+const adicionarCidDaPesquisa = () => {
+    const termo = searchCidTerm.value.trim();
+    if (termo && !selectedCids.value.includes(termo)) {
+        selectedCids.value.push(termo);
+    }
+    searchCidTerm.value = '';
 };
 
 const enviarExamesAoLaboratorio = () => {
@@ -563,7 +592,7 @@ const encaminharPaciente = async () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <button class="bg-blue-600 text-white py-1 font-black flex items-center justify-center gap-1 text-[8px] uppercase rounded shadow-sm">
+                                    <button @click="adicionarCidDaPesquisa" class="bg-blue-600 text-white py-1 font-black flex items-center justify-center gap-1 text-[8px] uppercase rounded shadow-sm hover:bg-blue-700">
                                         <Plus class="w-3 h-3" /> Adicionar
                                     </button>
                                     <button class="bg-blue-500 text-white py-1 font-black text-[8px] uppercase rounded shadow-sm">Cadastrar Novo</button>
@@ -664,7 +693,8 @@ const encaminharPaciente = async () => {
                     <button @click="showLancarResultadosModal = false">×</button>
                 </div>
                 <div class="flex-grow flex overflow-hidden">
-                    <div class="w-1/3 border-r border-slate-200 overflow-y-auto bg-slate-50">
+                    <div class="w-1/3 border-r border-slate-200 flex flex-col bg-slate-50">
+                        <div class="flex-grow overflow-y-auto">
                         <table class="w-full border-collapse">
                             <thead class="bg-slate-100 border-b border-slate-200">
                                 <tr class="text-left font-black text-[8px] text-slate-400 uppercase">
@@ -679,12 +709,104 @@ const encaminharPaciente = async () => {
                                 </tr>
                             </tbody>
                         </table>
+                        </div>
+                        <div class="shrink-0 p-2 border-t border-slate-200 bg-white">
+                            <button @click="imprimirDadosClinico" class="w-full bg-orange-500 text-white py-2 rounded font-black uppercase text-[9px] hover:bg-orange-600 shadow flex items-center justify-center gap-2">
+                                <Printer class="w-3.5 h-3.5" /> Imprimir Resultados
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex-grow p-8 bg-white flex flex-col">
+                    <div class="flex-grow p-6 bg-white flex flex-col overflow-hidden">
                         <template v-if="selectedExameToLancar">
-                            <h4 class="text-xl font-black text-blue-900 mb-4 uppercase">{{ selectedExameToLancar.nome }}</h4>
-                            <textarea v-model="selectedExameToLancar.resultado" class="flex-grow w-full border border-slate-200 rounded p-4 text-sm font-bold bg-slate-50 focus:bg-white outline-none resize-none" placeholder="Digite o resultado..."></textarea>
-                            <button @click="showLancarResultadosModal = false" class="mt-4 bg-blue-600 text-white py-3 rounded font-black uppercase text-[10px] hover:bg-blue-700">GRAVAR RESULTADO</button>
+                            <h4 class="text-lg font-black text-blue-900 mb-4 uppercase flex justify-between items-center">
+                                <span>{{ selectedExameToLancar.nome }}</span>
+                                <span v-if="selectedExameToLancar.categoria === 'RAIO X'" class="text-[10px] bg-red-100 text-red-700 px-2 py-1 rounded">RAIO X</span>
+                                <span v-else class="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded">LABORATÓRIO</span>
+                            </h4>
+                            
+                            <!-- Panel for RAIO X -->
+                            <div v-if="selectedExameToLancar.categoria === 'RAIO X' || selectedExameToLancar.categoria === 'IMAGEM'" class="flex-grow flex flex-col justify-center items-center gap-6 border-2 border-dashed border-slate-200 rounded-lg p-6 bg-slate-50">
+                                <div class="text-center">
+                                    <Camera class="w-16 h-16 text-slate-300 mx-auto mb-2" />
+                                    <p class="font-bold text-slate-500 text-[10px] uppercase">Este exame requer anexo de imagem</p>
+                                </div>
+                                <div class="flex gap-4">
+                                    <button class="bg-blue-600 text-white px-6 py-3 rounded font-black uppercase text-[10px] hover:bg-blue-700 shadow-md">Anexar Imagem</button>
+                                    <button class="bg-emerald-600 text-white px-6 py-3 rounded font-black uppercase text-[10px] hover:bg-emerald-700 shadow-md">Gravar Anexos</button>
+                                </div>
+                            </div>
+
+                            <!-- Panel for NORMAL -->
+                            <div v-else class="flex-grow flex flex-col overflow-hidden">
+                                <div class="flex gap-4 mb-4 border-b border-slate-200 pb-4 shrink-0">
+                                    <label class="flex items-center gap-2 font-bold text-[10px] text-slate-700 cursor-pointer">
+                                        <input type="radio" v-model="lancarModo" value="manual" class="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                                        PREENCHER RESULTADO MANUALMENTE
+                                    </label>
+                                    <label class="flex items-center gap-2 font-bold text-[10px] text-slate-700 cursor-pointer">
+                                        <input type="radio" v-model="lancarModo" value="anexo" class="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                                        ANEXAR RESULTADO (PDF, IMAGEM)
+                                    </label>
+                                </div>
+
+                                <!-- MANUAL MODE -->
+                                <div v-if="lancarModo === 'manual'" class="flex-grow flex flex-col overflow-hidden gap-4">
+                                    <!-- Exame COM sub-dados (Hemograma, etc.) -->
+                                    <div v-if="lancarSubDadosList.length > 0" class="flex-grow overflow-y-auto border border-slate-200 rounded">
+                                        <table class="w-full text-left border-collapse">
+                                            <thead class="bg-slate-100 sticky top-0">
+                                                <tr class="font-black text-[9px] text-slate-500 uppercase">
+                                                    <th class="p-2 border-b border-slate-200 w-1/3">Dado</th>
+                                                    <th class="p-2 border-b border-slate-200 w-1/3 border-l border-slate-200">Resultado</th>
+                                                    <th class="p-2 border-b border-slate-200 w-1/3 border-l border-slate-200">Unidade/Referência</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="(sub, i) in lancarSubDadosList" :key="i" class="border-b border-slate-100 hover:bg-slate-50">
+                                                    <td class="p-2 text-[10px] font-bold border-r border-slate-100">{{ sub.dado }}</td>
+                                                    <td class="p-1 border-r border-slate-100"><input v-model="sub.resultado" class="w-full border border-slate-300 rounded px-2 py-1 text-[10px] font-bold outline-none focus:border-blue-500" /></td>
+                                                    <td class="p-2 text-[10px] text-slate-500">{{ sub.unidade }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <!-- Exame SEM sub-dados (Simples) -->
+                                    <div v-else class="flex flex-col gap-4 h-full">
+                                        <div class="flex flex-col gap-1">
+                                            <label class="font-black text-[9px] text-slate-500 uppercase">Resultado</label>
+                                            <select v-model="selectedExameToLancar.resultado" class="border border-slate-300 rounded p-2 text-xs font-bold focus:border-blue-500 outline-none">
+                                                <option value="">Selecione...</option>
+                                                <option value="Positivo">Positivo</option>
+                                                <option value="Negativo">Negativo</option>
+                                                <option value="Outro">Outro (Descrever na observação)</option>
+                                            </select>
+                                        </div>
+                                        <div class="flex flex-col gap-1 flex-grow">
+                                            <label class="font-black text-[9px] text-slate-500 uppercase">Observação</label>
+                                            <textarea v-model="selectedExameToLancar.obs" class="w-full h-full border border-slate-300 rounded p-2 text-xs font-bold focus:border-blue-500 outline-none resize-none" placeholder="Detalhes adicionais..."></textarea>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex justify-end mt-auto pt-4 border-t border-slate-100">
+                                        <button class="bg-blue-600 text-white px-6 py-2 rounded font-black uppercase text-[10px] hover:bg-blue-700 shadow-md">Gravar Resultado</button>
+                                    </div>
+                                </div>
+
+                                <!-- ANEXO MODE -->
+                                <div v-if="lancarModo === 'anexo'" class="flex-grow flex flex-col gap-4 h-full">
+                                    <div class="flex gap-2">
+                                        <button class="bg-slate-800 text-white px-4 py-2 rounded font-black uppercase text-[9px] hover:bg-slate-900 shadow flex items-center gap-2"><FileText class="w-3 h-3"/> Anexar PDF</button>
+                                        <button class="bg-slate-800 text-white px-4 py-2 rounded font-black uppercase text-[9px] hover:bg-slate-900 shadow flex items-center gap-2"><Camera class="w-3 h-3"/> Anexar Imagem</button>
+                                    </div>
+                                    <div class="flex-grow border-2 border-dashed border-slate-200 rounded flex flex-col items-center justify-center bg-slate-50">
+                                        <FileText class="w-12 h-12 text-slate-300 mb-2" />
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase">Nenhum anexo encontrado</span>
+                                    </div>
+                                    <div class="flex justify-end mt-auto pt-4 border-t border-slate-100">
+                                        <button class="bg-emerald-600 text-white px-6 py-2 rounded font-black uppercase text-[10px] hover:bg-emerald-700 shadow-md">Gravar Anexos</button>
+                                    </div>
+                                </div>
+                            </div>
                         </template>
                         <div v-else class="flex-grow flex flex-col items-center justify-center opacity-10">
                             <ClipboardList class="w-20 h-20" />

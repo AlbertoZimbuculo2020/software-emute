@@ -93,8 +93,20 @@ class ConsultorioController extends Controller
             ->get();
 
         $exames_solicitados = DB::table('tb_resultado_exame')
-            ->where('IdAgenda', $idAgenda)
-            ->where('Estado', '!=', 'Removido')
+            ->where('tb_resultado_exame.IdAgenda', $idAgenda)
+            ->where('tb_resultado_exame.Estado', '!=', 'Removido')
+            ->leftJoin('tb_exames', 'tb_resultado_exame.CodExame', '=', 'tb_exames.Codigo')
+            ->select(
+                'tb_resultado_exame.Id',
+                'tb_resultado_exame.IdAgenda',
+                'tb_resultado_exame.CodExame',
+                'tb_resultado_exame.Descricao',
+                'tb_resultado_exame.Resultado',
+                'tb_resultado_exame.Obs',
+                'tb_resultado_exame.Estado',
+                'tb_exames.Categoria',
+                'tb_exames.Filhos'
+            )
             ->get();
 
         $receita = DB::table('tb_receita')
