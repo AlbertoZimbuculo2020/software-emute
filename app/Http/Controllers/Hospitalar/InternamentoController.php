@@ -44,26 +44,84 @@ class InternamentoController extends Controller
     {
         $prescricoes = DB::table('tb_prescricao')
             ->where('IdAgenda', $idAgenda)
+            ->where('Estado', 'Ativo')
+            ->orderBy('DataInternamento', 'desc')
             ->get();
 
         $atosMedicos = DB::table('tb_atos_medicos')
             ->where('IdAgenda', $idAgenda)
+            ->where('Estado', 'Ativo')
+            ->orderBy('DataAto', 'desc')
             ->get();
 
         $atosEnfermagem = DB::table('tb_atos_enfermagem')
             ->where('IdAgenda', $idAgenda)
+            ->where('Estado', 'Ativo')
+            ->orderBy('DataAto', 'desc')
             ->get();
 
         $sinaisVitais = DB::table('tb_triagem')
             ->where('IdAgenda', $idAgenda)
+            ->where('Estado', 'Ativo')
+            ->orderBy('CREATED_AT', 'desc')
             ->get();
+            
+        $alta = DB::table('tb_alta')
+            ->where('IdAgenda', $idAgenda)
+            ->first();
 
         return response()->json([
             'prescricoes' => $prescricoes,
             'atosMedicos' => $atosMedicos,
             'atosEnfermagem' => $atosEnfermagem,
-            'sinaisVitais' => $sinaisVitais
+            'sinaisVitais' => $sinaisVitais,
+            'alta' => $alta
         ]);
+    }
+
+    public function storePrescricao(Request $request)
+    {
+        $request->validate([
+            'IdAgenda' => 'required',
+            'Descricao' => 'required|string',
+            'Tipo' => 'required|in:Internamento,Observacao',
+        ]);
+
+        DB::table('tb_prescricao')->insert([
+            'IdAgenda' => $request->IdAgenda,
+            'DataInternamento' => now(),
+            'Descricao' => $request->Descricao,
+            'Observacao' => $request->Observacao,
+            'Tipo' => $request->Tipo,
+            'Medico' => Auth::user()->name ?? 'Médico',
+            'Estado' => 'Ativo',
+            'Cumprimento' => 'False',
+            'Cumprimento1' => 'False',
+            'Cumprimento2' => 'False',
+            'Cumprimento3' => 'False',
+        ]);
+
+        return redirect()->back()->with('message', 'Prescrição gravada com sucesso!');
+    }
+
+    public function toggleCumprimento(Request $request, $id)
+    {
+        $request->validate([
+            'campo' => 'required|in:Cumprimento,Cumprimento1,Cumprimento2,Cumprimento3',
+            'valor' => 'required|boolean'
+        ]);
+
+        $update = [
+            $request->campo => $request->valor ? 'True' : 'False'
+        ];
+
+        if ($request->valor) {
+            $update['Infermeiro'] = Auth::user()->name ?? 'Enfermeiro';
+        }
+
+        DB::table('tb_prescricao')->where('Id', $id)->update($update);
+
+        return response()->json(['message' => 'Status atualizado']);
     }
 
     public function storeAto(Request $request)
@@ -89,9 +147,9 @@ class InternamentoController extends Controller
         ];
 
         if ($request->tipo === 'medico') {
-            $data['Medico'] = Auth::user()->NOME_UTILIZADOR ?? 'Médico';
+            $data['Medico'] = Auth::user()->name ?? 'Médico';
         } else {
-            $data['Enfermeiro'] = Auth::user()->NOME_UTILIZADOR ?? 'Enfermeiro';
+            $data['Enfermeiro'] = Auth::user()->name ?? 'Enfermeiro';
         }
 
         DB::table($table)->insert($data);
@@ -99,11 +157,63 @@ class InternamentoController extends Controller
         return redirect()->back()->with('message', 'Ato registrado com sucesso!');
     }
 
-    public function darAlta($idAgenda)
+    public function storeSinaisVitais(Request $request)
     {
-        DB::table('tb_agendamento')
-            ->where('Codigo', $idAgenda)
-            ->update(['Situacao' => 'Alta']);
+        $request->validate([
+            'IdAgenda' => 'required',
+        ]);
+
+        $agendamento = DB::table('tb_agendamento')->where('Codigo', $request->IdAgenda)->first();
+
+        DB::table('tb_triagem')->insert([
+            'IdAgenda' => $request->IdAgenda,
+            'IdPaciente' => $agendamento->IdPaciente,
+            'Peso' => $request->Peso,
+            'Temperatura' => $request->Temperatura,
+            'PressaoArterial' => $request->PressaoArterial,
+            'FrequenciaCardioca' => $request->FrequenciaCardioca,
+            'FrequenciaRespiratoria' => $request->FrequenciaRespiratoria,
+            'SituacaoOxigenio' => $request->SituacaoOxigenio,
+            'Obs' => $request->Obs,
+            'Imferemiro' => Auth::user()->name ?? 'Enfermeiro',
+            'Estado' => 'Ativo',
+            'CREATED_AT' => now()
+        ]);
+
+        return redirect()->back()->with('message', 'Sinais vitais registrados!');
+    }
+
+    public function darAlta(Request $request, $idAgenda)
+    {
+        $request->validate([
+            'Operado' => 'nullable|string',
+            'Complicacoes' => 'nullable|string',
+            'Repouso' => 'nullable|string',
+            'Obs' => 'nullable|string',
+        ]);
+
+        DB::transaction(function () use ($request, $idAgenda) {
+            // Atualiza o agendamento
+            DB::table('tb_agendamento')
+                ->where('Codigo', $idAgenda)
+                ->update(['Situacao' => 'Alta']);
+
+            // Insere na tabela de alta
+            DB::table('tb_alta')->updateOrInsert(
+                ['IdAgenda' => $idAgenda],
+                [
+                    'Codigo' => 'ALTA-' . time(), // Gerando um código simples
+                    'Idmedico' => Auth::id() ?? 1,
+                    'Assinatura' => Auth::user()->name ?? 'Médico',
+                    'Operado' => $request->Operado,
+                    'Complicacoes' => $request->Complicacoes,
+                    'Repouso' => $request->Repouso,
+                    'Obs' => $request->Obs,
+                    'Estado' => 'Ativo',
+                    'CREATED_AT' => now()
+                ]
+            );
+        });
 
         return redirect()->back()->with('message', 'Alta registrada com sucesso!');
     }
