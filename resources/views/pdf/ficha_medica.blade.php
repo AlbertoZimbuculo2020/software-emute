@@ -2,129 +2,267 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Ficha Médica</title>
+    <title>Relatório Geral da Consulta</title>
     <style>
-        body { font-family: 'Helvetica', sans-serif; font-size: 12px; color: #333; margin: 0; padding: 0; }
-        .header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-        .logo { width: 100px; height: 100px; float: left; margin-right: 20px; }
-        .company-info { float: left; }
-        .company-name { font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 0; }
-        .report-title { text-align: center; font-size: 20px; font-weight: bold; text-transform: uppercase; margin: 20px 0; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .patient-box { background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        .patient-table { width: 100%; border-collapse: collapse; }
-        .patient-table td { padding: 5px 0; }
-        .section { margin-bottom: 20px; }
-        .section-title { font-size: 11px; font-weight: bold; text-transform: uppercase; background: #eee; padding: 5px 10px; margin-bottom: 10px; border-left: 4px solid #333; }
-        .content { padding: 0 10px; white-space: pre-wrap; line-height: 1.6; }
-        .footer { margin-top: 50px; text-align: center; }
-        .signature-line { width: 300px; border-bottom: 1px solid #000; margin: 0 auto 5px; }
-        .clear { clear: both; }
-        .triage-grid { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .triage-grid td { border: 1px solid #eee; padding: 8px; text-align: center; }
-        .triage-label { font-size: 9px; color: #777; text-transform: uppercase; }
-        .triage-value { font-size: 14px; font-weight: bold; }
+        @page {
+            margin: 120px 40px 60px 40px; /* Top margin for fixed header */
+        }
+        body { 
+            font-family: 'Helvetica', sans-serif; 
+            font-size: 11px; 
+            color: #000; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        /* FIXED HEADER FOR EVERY PAGE */
+        header {
+            position: fixed;
+            top: -100px;
+            left: 0px;
+            right: 0px;
+            height: 90px;
+        }
+
+        /* FIXED FOOTER FOR EVERY PAGE */
+        footer {
+            position: fixed;
+            bottom: -40px;
+            left: 0px;
+            right: 0px;
+            height: 30px;
+            text-align: center;
+            font-size: 9px;
+            color: #0066cc;
+            font-weight: bold;
+        }
+
+        .header-table { width: 100%; border-collapse: collapse; }
+        .logo { width: 80px; height: auto; float: left; margin-right: 15px; }
+        .clinic-name { font-size: 11px; font-weight: bold; text-transform: uppercase; margin: 0; padding-top: 15px; }
+        .page-num { text-align: right; font-size: 9px; font-weight: bold; vertical-align: top; padding-top: 15px; }
+
+        .report-title-container {
+            margin-top: 30px;
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 5px;
+            margin-bottom: 20px;
+        }
+        .report-title { 
+            font-size: 16px; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+        }
+
+        /* CONSULTA INFO */
+        .consulta-info { font-weight: bold; font-size: 11px; line-height: 1.4; margin-bottom: 15px; }
+
+        /* SECTION TITLES */
+        .section-separator { border-top: 1px solid #000; margin-top: 10px; margin-bottom: 5px; }
+        .section-title { text-align: center; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; }
+
+        /* PATIENT TABLE */
+        .patient-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 10px; }
+        .patient-table td { padding: 3px 0; }
+
+        /* TRIAGE TABLE */
+        .triage-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10px; }
+        .triage-table td { border: 1px solid #000; padding: 6px; }
+        .triage-label { font-weight: bold; width: 40%; }
+        .triage-value { width: 60%; }
+
+        /* CLINICAL BOXES */
+        .clinical-box-title { font-size: 10px; font-weight: bold; margin-bottom: 2px; margin-top: 15px; }
+        .clinical-box { border: 1px solid #000; padding: 8px; min-height: 50px; font-size: 10px; margin-bottom: 5px; white-space: pre-wrap; }
+
+        /* RECEITA TABLE */
+        .receita-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; text-align: center; }
+        .receita-table th { border: 1px solid #000; padding: 6px; background-color: #e6e6e6; font-weight: bold; }
+        .receita-table td { border: 1px solid #000; padding: 6px; }
+
+        /* SIGNATURE */
+        .signature-section { text-align: center; margin-top: 40px; font-size: 10px; font-weight: bold; }
+        .signature-line { width: 250px; border-bottom: 1px solid #000; margin: 30px auto 5px; }
+
+        .page-break { page-break-after: always; }
     </style>
 </head>
 <body>
-    <div class="header">
-        @if($empresa->IMAGEM)
-            <img src="{{ $empresa->IMAGEM }}" class="logo">
-        @endif
-        <div class="company-info">
-            <p class="company-name">{{ $empresa->DESCRICAO }}</p>
-            <p>NIF: {{ $empresa->NIF }}</p>
-            <p>Endereço: {{ $empresa->RUA }}, {{ $empresa->CIDADE }}</p>
-            <p>Tel: {{ $empresa->TELEFONE }} | Email: {{ $empresa->EMAIL }}</p>
-        </div>
-        <div class="clear"></div>
-    </div>
 
-    <div class="report-title">Relatório de Consulta Médica</div>
-
-    <div class="patient-box">
-        <table class="patient-table">
+    <!-- REPEATING HEADER -->
+    <header>
+        <table class="header-table">
             <tr>
-                <td width="50%"><strong>Paciente:</strong> {{ $paciente->PacienteNome }}</td>
-                <td width="50%"><strong>Nº Processo:</strong> {{ $paciente->Codigo }}</td>
-            </tr>
-            <tr>
-                <td><strong>Idade:</strong> {{ $idade }}</td>
-                <td><strong>Gênero:</strong> {{ $paciente->Genero }}</td>
-            </tr>
-            <tr>
-                <td><strong>Data:</strong> {{ date('d/m/Y H:i', strtotime($paciente->DataAgendamento)) }}</td>
-                <td><strong>Médico:</strong> {{ $paciente->MedicoNome }}</td>
-            </tr>
-        </table>
-    </div>
-
-    @if($triagem)
-    <div class="section">
-        <div class="section-title">Sinais Vitais (Triagem)</div>
-        <table class="triage-grid">
-            <tr>
-                <td><div class="triage-label">Peso</div><div class="triage-value">{{ $triagem->Peso ?? '--' }} kg</div></td>
-                <td><div class="triage-label">Temp</div><div class="triage-value">{{ $triagem->Temperatura ?? '--' }} °C</div></td>
-                <td><div class="triage-label">Pressão</div><div class="triage-value">{{ $triagem->PressaoArterial ?? '--' }}</div></td>
-                <td><div class="triage-label">F.C</div><div class="triage-value">{{ $triagem->FrequenciaCardiaca ?? '--' }}</div></td>
-                <td><div class="triage-label">Sat.O2</div><div class="triage-value">{{ $triagem->SaturacaoOxigenio ?? '--' }}</div></td>
-            </tr>
-        </table>
-    </div>
-    @endif
-
-    <div class="section">
-        <div class="section-title">Queixas Principais (QP)</div>
-        <div class="content">{{ $paciente->QP ?: 'Nenhuma registrada' }}</div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">História da Doença Atual (HDA)</div>
-        <div class="content">
-            @php 
-                $hdaParts = explode('|', $paciente->HDA);
-                echo trim($hdaParts[0]);
-            @endphp
-        </div>
-    </div>
-
-    @if(isset($hdaParts[1]) && trim($hdaParts[1]) !== '')
-    <div class="section">
-        <div class="section-title">Diagnóstico (CID-10)</div>
-        <div class="content">
-            <ul style="margin: 0; padding-left: 20px;">
-                @foreach(explode("\n", trim($hdaParts[1])) as $cid)
-                    @if(trim($cid))
-                        <li>{{ trim($cid) }}</li>
+                <td width="60%">
+                    @if($empresa && $empresa->IMAGEM)
+                        <img src="{{ $empresa->IMAGEM }}" class="logo">
                     @endif
-                @endforeach
-            </ul>
+                    <div class="clinic-name">{{ $empresa->Nome ?? 'LUDAL, DESENVOLVIMENTO E PROGRESSO - CLÍNICA TUAMAMICO' }}</div>
+                </td>
+                <td width="40%" class="page-num">
+                    página <span class="pagenum"></span>
+                </td>
+            </tr>
+        </table>
+        
+        <div class="report-title-container">
+            <span class="report-title">RELATÓRIO GERAL DA CONSULTA</span>
         </div>
+    </header>
+
+    <!-- REPEATING FOOTER -->
+    <footer>
+        {{ $empresa->Endereco ?? 'CACUACO, ECOCAMPO, 4 DE FEVEREIRO' }}<br>
+        {{ $empresa->Telefone ?? '924358803/' }}<br>
+        Contribuinte nº {{ $empresa->NIF ?? '5401150954' }}
+    </footer>
+
+    <!-- ADD PAGE NUMBERS SCRIPT -->
+    <script type="text/php">
+        if (isset($pdf)) {
+            $text = "{PAGE_NUM} / {PAGE_COUNT}";
+            $size = 9;
+            $font = $fontMetrics->getFont("Helvetica", "bold");
+            $width = $fontMetrics->getTextWidth($text, $font, $size) / 2;
+            $x = $pdf->get_width() - 55;
+            $y = 48;
+            $pdf->page_text($x, $y, $text, $font, $size);
+        }
+    </script>
+
+    <!-- PAGE 1: DADOS GERAIS E TRIAGEM -->
+    <div class="consulta-info">
+        CONSULTA Nº {{ $paciente->Codigo }}<br>
+        CONSULTA: Clínica Geral<br>
+        DATA DA CONSULTA: {{ date('d/m/Y', strtotime($paciente->DataAgendamento)) }}<br>
+        ESTADO DA CONSULTA: {{ $paciente->Situacao ?? 'Atendido' }}
     </div>
+
+    <div class="section-separator"></div>
+    <div class="section-title">DADOS PESSOAIS DO PACIENTE</div>
+
+    <table class="patient-table">
+        <tr>
+            <td width="50%"><strong>Nome:</strong> &nbsp;&nbsp;&nbsp;{{ $paciente->PacienteNome }}</td>
+            <td width="50%"><strong>Idade:</strong> &nbsp;&nbsp;&nbsp;{{ $idade }}</td>
+        </tr>
+        <tr>
+            <td><strong>Sexo:</strong> &nbsp;&nbsp;&nbsp;{{ $paciente->Genero }}</td>
+            <td><strong>Nº Processo:</strong> &nbsp;&nbsp;&nbsp;{{ $paciente->CodigoPaciente ?? $paciente->IdPaciente }}</td>
+        </tr>
+        <tr>
+            <td><strong>Data da Consulta:</strong> &nbsp;&nbsp;&nbsp;{{ date('Y-m-d', strtotime($paciente->DataAgendamento)) }}</td>
+            <td><strong>Seguradora:</strong> &nbsp;&nbsp;&nbsp;{{ $paciente->Seguradora ?? 'PARTICULAR' }}</td>
+        </tr>
+    </table>
+
+    <div class="section-separator"></div>
+    <div class="section-title">DADOS DA TRIAGEM</div>
+
+    <table class="triage-table">
+        <tr>
+            <td class="triage-label">Peso:</td>
+            <td class="triage-value">{{ $triagem->Peso ?? '0' }}</td>
+        </tr>
+        <tr>
+            <td class="triage-label">Temperatura Corporal:</td>
+            <td class="triage-value">{{ $triagem->Temperatura ?? '0' }}</td>
+        </tr>
+        <tr>
+            <td class="triage-label">Frequência cardíaca (pulso):</td>
+            <td class="triage-value">{{ $triagem->FrequenciaCardiaca ?? '0' }}</td>
+        </tr>
+        <tr>
+            <td class="triage-label">Frequência Respiratória:</td>
+            <td class="triage-value">{{ $triagem->FrequenciaRespiratoria ?? '0' }}</td>
+        </tr>
+        <tr>
+            <td class="triage-label">Saturação de oxigênio (oximetria):</td>
+            <td class="triage-value">{{ $triagem->SaturacaoOxigenio ?? '0' }}</td>
+        </tr>
+        <tr>
+            <td class="triage-label">Pressão arterial:</td>
+            <td class="triage-value">{{ $triagem->PressaoArterial ?? '0' }}</td>
+        </tr>
+        <tr>
+            <td class="triage-label">Observação:</td>
+            <td class="triage-value">{{ $triagem->Observacoes ?? 'Sem' }}</td>
+        </tr>
+    </table>
+
+    <div class="page-break"></div>
+
+    <!-- PAGE 2: DADOS CLINICOS -->
+    <div class="section-separator"></div>
+    <div class="section-title">DADOS CLINICOS</div>
+
+    <div class="clinical-box-title">Queixas Principais</div>
+    <div class="clinical-box">{{ $paciente->QP ?? '' }}</div>
+
+    <div class="clinical-box-title">Histórico da Doença Atual</div>
+    <div class="clinical-box">{{ $paciente->HDA ?? '' }}</div>
+
+    <div class="clinical-box-title">Exames Objectivos</div>
+    <div class="clinical-box">{{ $paciente->OBJ ?? '' }}</div>
+
+    <div class="clinical-box-title">Hipótese de Diagnostico</div>
+    <div class="clinical-box">{{ $paciente->COMPLEMENTARES ?? '' }}</div>
+
+    <div class="clinical-box-title">Observações</div>
+    <div class="clinical-box">{{ $paciente->RECOMENDACOES ?? '' }}</div>
+
+    <div class="page-break"></div>
+
+    <!-- PAGE 3: EXAMES E RECEITA -->
+    @if($exames && count($exames) > 0)
+        <div class="section-separator"></div>
+        <div class="section-title">EXAMES E RESULTADOS SOLICITADOS</div>
+        <ul style="font-size: 10px; margin-top: 0; margin-bottom: 20px;">
+            @foreach($exames as $ex)
+                <li>
+                    <strong>{{ $ex->Descricao ?? 'Exame' }}:</strong> 
+                    {{ $ex->Resultado ?? 'Pendente' }}
+                </li>
+            @endforeach
+        </ul>
+    @else
+        <div class="section-separator"></div>
+        <div class="section-title">EXAMES E RESULTADOS SOLICITADOS</div>
+        <div style="font-size: 10px; text-align: center; margin-bottom: 20px;">Nenhum exame solicitado.</div>
     @endif
 
-    <div class="section">
-        <div class="section-title">Exame Objectivo (OBJ)</div>
-        <div class="content">{{ $paciente->OBJ ?: 'Sem observações' }}</div>
-    </div>
+    <div class="section-separator"></div>
+    <div class="section-title">RECEITA MEDICA</div>
 
-    @if($paciente->COMPLEMENTARES)
-    <div class="section">
-        <div class="section-title">Hipótese de Diagnóstico / Complementares</div>
-        <div class="content">{{ $paciente->COMPLEMENTARES }}</div>
-    </div>
+    @if($receita && count($receita) > 0)
+        <table class="receita-table">
+            <thead>
+                <tr>
+                    <th width="50%">Farmaco</th>
+                    <th width="25%">Dosagem</th>
+                    <th width="25%">Quantidade</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($receita as $item)
+                    <tr>
+                        <td>{{ $item->Descricao ?? $item->Farmaco ?? '' }}</td>
+                        <td>{{ $item->Dosagem ?? '' }}</td>
+                        <td>{{ $item->Quantidade ?? $item->Qtd ?? $item->Dias ?? '' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @else
+        <div style="font-size: 10px; text-align: center; padding: 10px;">Nenhuma receita médica registada.</div>
     @endif
 
-    <div class="section">
-        <div class="section-title">Recomendações e Observações</div>
-        <div class="content">{{ $paciente->RECOMENDACOES ?: 'Seguir orientações verbais.' }}</div>
-    </div>
-
-    <div class="footer">
-        <p>Assinado digitalmente por</p>
+    <div class="signature-section">
+        Médico(a) Assistente:
         <div class="signature-line"></div>
-        <p><strong>Dr(a). {{ $paciente->MedicoNome }}</strong></p>
-        <p style="font-size: 10px; color: #888;">Impresso em {{ date('d/m/Y H:i:s') }}</p>
+        Dr.(a): {{ $paciente->MedicoNome ?? '' }}
     </div>
+
 </body>
 </html>

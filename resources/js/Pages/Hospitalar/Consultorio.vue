@@ -178,6 +178,11 @@ const imprimirResultadosLab = () => {
     window.open(route('hospitalar.laboratorio.imprimir', selectedPaciente.value.Codigo), '_blank');
 };
 
+const visualizarRelatorio = (codigoAgenda) => {
+    if (!codigoAgenda) return;
+    window.open(route('hospitalar.consultorio.imprimir.ficha', codigoAgenda), '_blank');
+};
+
 const calcularIdadeFormatoDesktop = (dataNascimento) => {
     if (!dataNascimento) return 'N/D';
     const birthDate = new Date(dataNascimento);
@@ -359,7 +364,7 @@ const encaminharPaciente = async () => {
                                 <tbody class="text-slate-600">
                                     <tr v-for="h in patientHistory" :key="h.Id" class="border-b border-slate-100 hover:bg-slate-50">
                                         <td class="p-1.5">{{ h.DataAgendamento?.substring(0,10) }}</td>
-                                        <td class="p-1.5 text-blue-600 font-bold underline cursor-pointer uppercase">Visualizar</td>
+                                        <td @click="visualizarRelatorio(h.Codigo)" class="p-1.5 text-blue-600 font-bold underline cursor-pointer uppercase">Visualizar</td>
                                     </tr>
                                 </tbody>
                             </table>

@@ -295,6 +295,11 @@ class ConsultorioController extends Controller
         if (!$paciente) return abort(404);
 
         $triagem = DB::table('tb_triagem')->where('IdAgenda', $idAgenda)->first();
+        
+        $exames = DB::table('tb_resultado_exame')->where('IdAgenda', $idAgenda)->where('Estado', '!=', 'Removido')->get();
+        
+        $receita = DB::table('tb_receita')->where('IdAgenda', $idAgenda)->where('Estado', '!=', 'Removido')->get();
+
         $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
         
         if ($empresa && $empresa->IMAGEM) {
@@ -308,7 +313,7 @@ class ConsultorioController extends Controller
             $idade = $today->diff($birthDate)->y . ' Anos';
         }
 
-        $pdf = Pdf::loadView('pdf.ficha_medica', compact('paciente', 'triagem', 'empresa', 'idade'));
+        $pdf = Pdf::loadView('pdf.ficha_medica', compact('paciente', 'triagem', 'exames', 'receita', 'empresa', 'idade'));
         return $pdf->stream("ficha_medica_{$idAgenda}.pdf");
     }
 
