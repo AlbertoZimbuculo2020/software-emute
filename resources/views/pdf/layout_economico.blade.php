@@ -18,28 +18,29 @@
             table-layout: fixed;
         }
         .col-report {
-            width: 50%;
-            padding: 15px;
-            vertical-align: top;
+            width: 48%;
+            padding: 10px;
             box-sizing: border-box;
-            font-size: 9px !important; /* Reduzir fonte global no modo econômico */
+            font-size: 9px !important;
         }
-        .divider {
-            position: fixed;
-            left: 50%;
-            top: 0;
-            bottom: 0;
+        .divider-td {
+            width: 4%;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .divider-line {
+            height: 100%;
             border-left: 1px dashed #ccc;
-            z-index: 100;
+            margin: 0 auto;
         }
         
         /* Ajustes agressivos para forçar o conteúdo a caber */
         .col-report img { max-width: 50px !important; height: auto !important; }
-        .col-report table { font-size: 8px !important; }
-        .col-report h1, .col-report h2, .col-report h3 { font-size: 12px !important; margin: 5px 0 !important; }
-        .col-report .report-title { font-size: 11px !important; }
-        .col-report .clinic-name { font-size: 10px !important; }
-        .col-report p, .col-report div, .col-report td { line-height: 1.1 !important; margin-bottom: 2px !important; }
+        .col-report table { width: 100% !important; font-size: 8px !important; border-collapse: collapse !important; }
+        .col-report h1, .col-report h2, .col-report h3 { font-size: 11px !important; margin: 3px 0 !important; }
+        .col-report .report-title { font-size: 11px !important; margin-top: 5px !important; }
+        .col-report .clinic-name { font-size: 9px !important; }
+        .col-report p, .col-report div, .col-report td { line-height: 1.1 !important; margin-bottom: 1px !important; }
 
         /* Neutralizar cabeçalhos e rodapés fixos */
         header, footer { 
@@ -53,19 +54,22 @@
     </style>
 </head>
 <body>
-    @if($data['is_duplicate'] ?? true)
-        <div class="divider"></div>
-    @endif
     <table class="wrapper-table">
         <tr>
-            <td class="col-report">
+            <td class="col-report" style="vertical-align: top;">
                 @include($original_view, $data)
             </td>
-            <td class="col-report">
-                @if($data['is_duplicate'] ?? true)
+            
+            @if($data['is_duplicate'] ?? true)
+                <td class="divider-td">
+                    <div class="divider-line"></div>
+                </td>
+                <td class="col-report" style="vertical-align: top;">
                     @include($original_view, $data)
-                @endif
-            </td>
+                </td>
+            @else
+                <td class="col-report"></td>
+            @endif
         </tr>
     </table>
 </body>

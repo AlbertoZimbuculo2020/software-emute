@@ -5,7 +5,11 @@
 @endif
     <meta charset="utf-8">
     <title>Justificativo Médico</title>
+@if(!isset($is_economico))
     <style>
+@else
+    <style>
+@endif
         body { font-family: 'Helvetica', sans-serif; font-size: 14px; color: #000; margin: 40px; }
         .header { text-align: center; margin-bottom: 40px; }
         .logo { max-width: 120px; max-height: 120px; margin-bottom: 10px; }

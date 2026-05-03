@@ -2,15 +2,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-@endif
     <meta charset="utf-8">
     <title>Relatório Geral da Consulta</title>
+@endif
+@if(!isset($is_economico))
     <style>
-    @if(!isset($is_economico))
         @page {
             margin: 120px 40px 60px 40px; /* Top margin for fixed header */
         }
-    @endif
+@else
+    <style>
+@endif
         body { 
             font-family: 'Helvetica', sans-serif; 
             font-size: 11px; 
@@ -71,10 +73,12 @@
         .patient-table td { padding: 3px 0; }
 
         /* TRIAGE TABLE */
-        .triage-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10px; }
-        .triage-table td { border: 1px solid #000; padding: 6px; }
-        .triage-label { font-weight: bold; width: 40%; }
-        .triage-value { width: 60%; }
+        .triage-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 10px; }
+        .triage-table td { border: 1px solid #000; padding: 4px; }
+        .triage-label { font-weight: bold; background-color: #f9f9f9; }
+        
+        .grid-triage { display: block; width: 100%; }
+        .grid-triage table { width: 100%; border-collapse: collapse; }
 
         /* CLINICAL BOXES */
         .clinical-box-title { font-size: 10px; font-weight: bold; margin-bottom: 2px; margin-top: 15px; }
@@ -89,13 +93,13 @@
         .signature-section { text-align: center; margin-top: 40px; font-size: 10px; font-weight: bold; }
         .signature-line { width: 250px; border-bottom: 1px solid #000; margin: 30px auto 5px; }
 
-        .page-break { page-break-after: always; }
     </style>
 @if(!isset($is_economico))
 </head>
 <body>
 @endif
 
+    @if(!isset($is_economico))
     <!-- REPEATING HEADER -->
     <header>
         <table class="header-table">
@@ -123,19 +127,24 @@
         {{ $empresa->Telefone ?? '924358803/' }}<br>
         Contribuinte nº {{ $empresa->NIF ?? '5401150954' }}
     </footer>
+    @endif
 
-    <!-- ADD PAGE NUMBERS SCRIPT -->
+@if(!isset($is_economico))
     <script type="text/php">
         if (isset($pdf)) {
-            $text = "{PAGE_NUM} / {PAGE_COUNT}";
+            $x = 520;
+            $y = 15;
+            $text = "Página {PAGE_NUM} de {PAGE_COUNT}";
+            $font = $fontMetrics->get_font("helvetica", "bold");
             $size = 9;
-            $font = $fontMetrics->getFont("Helvetica", "bold");
-            $width = $fontMetrics->getTextWidth($text, $font, $size) / 2;
-            $x = $pdf->get_width() - 55;
-            $y = 48;
-            $pdf->page_text($x, $y, $text, $font, $size);
+            $color = array(0,0,0);
+            $word_space = 0.0;
+            $char_space = 0.0;
+            $angle = 0.0;
+            $pdf->page_text($x, $y, $text, $font, $size, $color, $word_space, $char_space, $angle);
         }
     </script>
+@endif
 
     <!-- PAGE 1: DADOS GERAIS E TRIAGEM -->
     <div class="consulta-info">
@@ -167,34 +176,59 @@
     <div class="section-title">DADOS DA TRIAGEM</div>
 
     <table class="triage-table">
-        <tr>
-            <td class="triage-label">Peso:</td>
-            <td class="triage-value">{{ $triagem->Peso ?? '0' }}</td>
-        </tr>
-        <tr>
-            <td class="triage-label">Temperatura Corporal:</td>
-            <td class="triage-value">{{ $triagem->Temperatura ?? '0' }}</td>
-        </tr>
-        <tr>
-            <td class="triage-label">Frequência cardíaca (pulso):</td>
-            <td class="triage-value">{{ $triagem->FrequenciaCardiaca ?? '0' }}</td>
-        </tr>
-        <tr>
-            <td class="triage-label">Frequência Respiratória:</td>
-            <td class="triage-value">{{ $triagem->FrequenciaRespiratoria ?? '0' }}</td>
-        </tr>
-        <tr>
-            <td class="triage-label">Saturação de oxigênio (oximetria):</td>
-            <td class="triage-value">{{ $triagem->SaturacaoOxigenio ?? '0' }}</td>
-        </tr>
-        <tr>
-            <td class="triage-label">Pressão arterial:</td>
-            <td class="triage-value">{{ $triagem->PressaoArterial ?? '0' }}</td>
-        </tr>
-        <tr>
-            <td class="triage-label">Observação:</td>
-            <td class="triage-value">{{ $triagem->Observacoes ?? 'Sem' }}</td>
-        </tr>
+        @if(isset($is_economico))
+            <tr>
+                <td class="triage-label" width="25%">Peso:</td>
+                <td width="25%">{{ $triagem->Peso ?? '0' }}</td>
+                <td class="triage-label" width="25%">Temp:</td>
+                <td width="25%">{{ $triagem->Temperatura ?? '0' }}º</td>
+            </tr>
+            <tr>
+                <td class="triage-label">Puls:</td>
+                <td>{{ $triagem->FrequenciaCardiaca ?? '0' }}</td>
+                <td class="triage-label">Resp:</td>
+                <td>{{ $triagem->FrequenciaRespiratoria ?? '0' }}</td>
+            </tr>
+            <tr>
+                <td class="triage-label">SatO2:</td>
+                <td>{{ $triagem->SaturacaoOxigenio ?? '0' }}%</td>
+                <td class="triage-label">P.A:</td>
+                <td>{{ $triagem->PressaoArterial ?? '0' }}</td>
+            </tr>
+            <tr>
+                <td class="triage-label">Obs:</td>
+                <td colspan="3">{{ $triagem->Observacoes ?? 'Sem' }}</td>
+            </tr>
+        @else
+            <tr>
+                <td class="triage-label">Peso:</td>
+                <td class="triage-value">{{ $triagem->Peso ?? '0' }}</td>
+            </tr>
+            <tr>
+                <td class="triage-label">Temperatura Corporal:</td>
+                <td class="triage-value">{{ $triagem->Temperatura ?? '0' }}</td>
+            </tr>
+            <tr>
+                <td class="triage-label">Frequência cardíaca (pulso):</td>
+                <td class="triage-value">{{ $triagem->FrequenciaCardiaca ?? '0' }}</td>
+            </tr>
+            <tr>
+                <td class="triage-label">Frequência Respiratória:</td>
+                <td class="triage-value">{{ $triagem->FrequenciaRespiratoria ?? '0' }}</td>
+            </tr>
+            <tr>
+                <td class="triage-label">Saturação de oxigênio (oximetria):</td>
+                <td class="triage-value">{{ $triagem->SaturacaoOxigenio ?? '0' }}</td>
+            </tr>
+            <tr>
+                <td class="triage-label">Pressão arterial:</td>
+                <td class="triage-value">{{ $triagem->PressaoArterial ?? '0' }}</td>
+            </tr>
+            <tr>
+                <td class="triage-label">Observação:</td>
+                <td class="triage-value">{{ $triagem->Observacoes ?? 'Sem' }}</td>
+            </tr>
+        @endif
     </table>
 
     <div class="section-separator"></div>
@@ -230,14 +264,27 @@
     @if($exames && count($exames) > 0)
         <div class="section-separator"></div>
         <div class="section-title">EXAMES E RESULTADOS SOLICITADOS</div>
-        <ul style="font-size: 10px; margin-top: 0; margin-bottom: 20px;">
-            @foreach($exames as $ex)
-                <li>
-                    <strong>{{ $ex->Descricao ?? 'Exame' }}:</strong> 
-                    {{ $ex->Resultado ?? 'Pendente' }}
-                </li>
-            @endforeach
-        </ul>
+        @if(isset($is_economico))
+            <table width="100%" style="font-size: 8px;">
+                @foreach($exames->chunk(2) as $chunk)
+                <tr>
+                    @foreach($chunk as $ex)
+                    <td width="50%">• <strong>{{ $ex->Descricao }}:</strong> {{ $ex->Resultado ?? 'P' }}</td>
+                    @endforeach
+                    @if($chunk->count() < 2) <td></td> @endif
+                </tr>
+                @endforeach
+            </table>
+        @else
+            <ul style="font-size: 10px; margin-top: 0; margin-bottom: 20px;">
+                @foreach($exames as $ex)
+                    <li>
+                        <strong>{{ $ex->Descricao ?? 'Exame' }}:</strong> 
+                        {{ $ex->Resultado ?? 'Pendente' }}
+                    </li>
+                @endforeach
+            </ul>
+        @endif
     @else
         <div class="section-separator"></div>
         <div class="section-title">EXAMES E RESULTADOS SOLICITADOS</div>

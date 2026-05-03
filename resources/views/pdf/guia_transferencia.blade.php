@@ -5,7 +5,11 @@
 @endif
     <meta charset="utf-8">
     <title>Guia de Transferência</title>
+@if(!isset($is_economico))
     <style>
+@else
+    <style>
+@endif
         body { font-family: 'Helvetica', sans-serif; font-size: 13px; color: #000; margin: 40px; }
         .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
         .logo { max-width: 100px; max-height: 100px; margin-bottom: 5px; }

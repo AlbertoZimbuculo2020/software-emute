@@ -2,10 +2,14 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-@endif
     <meta charset="UTF-8">
     <title>Relatório de Resultados de Exames</title>
+@endif
+@if(!isset($is_economico))
     <style>
+@else
+    <style>
+@endif
         body { 
             font-family: 'Helvetica', 'Arial', sans-serif; 
             font-size: 11px; 

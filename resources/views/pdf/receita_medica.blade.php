@@ -2,10 +2,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-@endif
     <meta charset="utf-8">
     <title>Receita Médica</title>
+@endif
+@if(!isset($is_economico))
     <style>
+@else
+    <style>
+@endif
         body { font-family: 'Helvetica', sans-serif; font-size: 13px; color: #333; margin: 0; padding: 0; }
         .header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
         .logo { width: 100px; height: 100px; float: left; margin-right: 20px; }
@@ -22,6 +26,18 @@
         .signature-line { width: 300px; border-bottom: 1px solid #000; margin: 0 auto 5px; }
         .clear { clear: both; }
         .date { text-align: right; margin-bottom: 20px; font-weight: bold; }
+        
+        @if(isset($is_economico))
+        body { font-size: 10px; }
+        .recipe-title { font-size: 16px; margin: 10px 0; padding-bottom: 5px; }
+        .header { padding-bottom: 5px; margin-bottom: 10px; }
+        .logo { width: 50px; height: 50px; }
+        .company-name { font-size: 12px; }
+        .patient-info { margin-bottom: 15px; font-size: 11px; }
+        .items-table { margin-bottom: 20px; }
+        .items-table th { padding: 5px; font-size: 9px; }
+        .items-table td { padding: 5px; }
+        @endif
     </style>
 @if(!isset($is_economico))
 </head>
