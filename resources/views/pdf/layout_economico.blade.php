@@ -57,19 +57,30 @@
     <table class="wrapper-table">
         <tr>
             <td class="col-report" style="vertical-align: top;">
-                @include($original_view, $data)
+                @include($original_view, array_merge($data, ['column_index' => 1]))
             </td>
             
-            @if($data['is_duplicate'] ?? true)
+            @php
+                $show_second_col = ($data['is_duplicate'] ?? true) || ($original_view === 'pdf.ficha_medica');
+            @endphp
+
+            @if($show_second_col)
                 <td class="divider-td">
                     <div class="divider-line"></div>
                 </td>
-                <td class="col-report" style="vertical-align: top;">
-                    @include($original_view, $data)
-                </td>
             @else
-                <td class="col-report"></td>
+                <td class="divider-td"></td>
             @endif
+
+            <td class="col-report" style="vertical-align: top;">
+                @if($data['is_duplicate'] ?? true)
+                    @include($original_view, array_merge($data, ['column_index' => 1]))
+                @elseif($original_view === 'pdf.ficha_medica')
+                    @include($original_view, array_merge($data, ['column_index' => 2]))
+                @else
+                    <!-- Lado livre para reuso do papel -->
+                @endif
+            </td>
         </tr>
     </table>
 </body>

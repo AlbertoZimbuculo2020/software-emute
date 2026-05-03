@@ -49,17 +49,24 @@
         .page-num { text-align: right; font-size: 9px; font-weight: bold; vertical-align: top; padding-top: 15px; }
 
         .report-title-container {
-            margin-top: 30px;
-            text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 5px;
             margin-bottom: 20px;
+            @if(isset($is_economico))
+            margin-top: 5px;
+            margin-bottom: 10px;
+            @endif
         }
         .report-title { 
-            font-size: 16px; 
+            font-size: 14px; 
             font-weight: bold; 
             text-transform: uppercase; 
         }
+        
+        @if(isset($is_economico))
+        .report-title { font-size: 11px; }
+        .section-separator { margin-top: 5px; margin-bottom: 2px; }
+        .section-title { font-size: 9px; margin-bottom: 5px; }
+        .consulta-info { font-size: 9px; margin-bottom: 5px; }
+        @endif
 
         /* CONSULTA INFO */
         .consulta-info { font-weight: bold; font-size: 11px; line-height: 1.4; margin-bottom: 15px; }
@@ -83,6 +90,11 @@
         /* CLINICAL BOXES */
         .clinical-box-title { font-size: 10px; font-weight: bold; margin-bottom: 2px; margin-top: 15px; }
         .clinical-box { border: 1px solid #000; padding: 8px; min-height: 50px; font-size: 10px; margin-bottom: 5px; white-space: pre-wrap; }
+        
+        @if(isset($is_economico))
+        .clinical-box-title { font-size: 8px; margin-top: 5px; }
+        .clinical-box { padding: 4px; min-height: 10px; font-size: 8px; margin-bottom: 2px; }
+        @endif
 
         /* RECEITA TABLE */
         .receita-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; text-align: center; }
@@ -99,6 +111,7 @@
 <body>
 @endif
 
+@if(!isset($is_economico) || (isset($column_index) && $column_index == 1))
     @if(!isset($is_economico))
     <!-- REPEATING HEADER -->
     <header>
@@ -108,7 +121,7 @@
                     @if($empresa && $empresa->IMAGEM)
                         <img src="{{ $empresa->IMAGEM }}" class="logo">
                     @endif
-                    <div class="clinic-name">{{ $empresa->Nome ?? 'LUDAL, DESENVOLVIMENTO E PROGRESSO - CLÍNICA TUAMAMICO' }}</div>
+                    <div class="clinic-name">{{ $empresa->DESCRICAO }}</div>
                 </td>
                 <td width="40%" class="page-num">
                     página <span class="pagenum"></span>
@@ -123,11 +136,26 @@
 
     <!-- REPEATING FOOTER -->
     <footer>
-        {{ $empresa->Endereco ?? 'CACUACO, ECOCAMPO, 4 DE FEVEREIRO' }}<br>
-        {{ $empresa->Telefone ?? '924358803/' }}<br>
-        Contribuinte nº {{ $empresa->NIF ?? '5401150954' }}
+        {{ $empresa->ENDERECO ?? '' }} | Tel: {{ $empresa->TELEFONE ?? '' }} | NIF: {{ $empresa->NIF ?? '' }}
     </footer>
     @endif
+
+    @if(isset($is_economico))
+    <!-- MINI HEADER FOR ECONOMIC MODE -->
+    <div style="border-bottom: 1px solid #000; padding-bottom: 2px; margin-bottom: 5px;">
+        <table width="100%">
+            <tr>
+                <td width="40px">@if($empresa->IMAGEM)<img src="{{ $empresa->IMAGEM }}" style="width: 35px;">@endif</td>
+                <td>
+                    <div style="font-size: 8px; font-weight: bold;">{{ $empresa->DESCRICAO }}</div>
+                    <div style="font-size: 7px;">NIF: {{ $empresa->NIF }} | Tel: {{ $empresa->TELEFONE }}</div>
+                </td>
+                <td align="right" style="font-size: 7px;">Relatório de Consulta</td>
+            </tr>
+        </table>
+    </div>
+    @endif
+@endif
 
 @if(!isset($is_economico))
     <script type="text/php">
@@ -147,6 +175,7 @@
 @endif
 
     <!-- PAGE 1: DADOS GERAIS E TRIAGEM -->
+@if(!isset($is_economico) || (isset($column_index) && $column_index == 1))
     <div class="consulta-info">
         CONSULTA Nº {{ $paciente->Codigo }}<br>
         CONSULTA: Clínica Geral<br>
@@ -260,16 +289,29 @@
 
     <div class="clinical-box-title">Observações / Recomendações</div>
     <div class="clinical-box">{{ $paciente->RECOMENDACOES ?? '—' }}</div>
+@endif
 
-    @if($exames && count($exames) > 0)
+    <!-- EXAMES -->
+    @php
+        $is_split = isset($is_economico) && !($is_duplicate ?? true);
+        $midpoint = ceil($exames->count() / 2);
+        
+        if($is_split) {
+            $exames_list = ($column_index == 1) ? $exames->slice(0, $midpoint) : $exames->slice($midpoint);
+        } else {
+            $exames_list = $exames;
+        }
+    @endphp
+
+    @if($exames_list->count() > 0)
         <div class="section-separator"></div>
-        <div class="section-title">EXAMES E RESULTADOS SOLICITADOS</div>
+        <div class="section-title">EXAMES E RESULTADOS SOLICITADOS @if($is_split && $column_index == 2) (CONT.) @endif</div>
         @if(isset($is_economico))
-            <table width="100%" style="font-size: 8px;">
-                @foreach($exames->chunk(2) as $chunk)
+            <table width="100%" style="font-size: 7px; border-collapse: collapse;">
+                @foreach($exames_list->chunk(2) as $chunk)
                 <tr>
                     @foreach($chunk as $ex)
-                    <td width="50%">• <strong>{{ $ex->Descricao }}:</strong> {{ $ex->Resultado ?? 'P' }}</td>
+                    <td width="50%" style="padding: 1px 0;">• <strong>{{ $ex->Descricao }}:</strong> {{ $ex->Resultado ?? 'P' }}</td>
                     @endforeach
                     @if($chunk->count() < 2) <td></td> @endif
                 </tr>
@@ -277,7 +319,7 @@
             </table>
         @else
             <ul style="font-size: 10px; margin-top: 0; margin-bottom: 20px;">
-                @foreach($exames as $ex)
+                @foreach($exames_list as $ex)
                     <li>
                         <strong>{{ $ex->Descricao ?? 'Exame' }}:</strong> 
                         {{ $ex->Resultado ?? 'Pendente' }}
@@ -285,12 +327,9 @@
                 @endforeach
             </ul>
         @endif
-    @else
-        <div class="section-separator"></div>
-        <div class="section-title">EXAMES E RESULTADOS SOLICITADOS</div>
-        <div style="font-size: 10px; text-align: center; margin-bottom: 20px;">Nenhum exame solicitado.</div>
     @endif
 
+@if(!isset($is_economico) || (isset($column_index) && $column_index == 2))
     <div class="section-separator"></div>
     <div class="section-title">RECEITA MEDICA</div>
 
@@ -318,10 +357,11 @@
     @endif
 
     <div class="signature-section">
-        Médico(a) Assistente:
         <div class="signature-line"></div>
-        Dr.(a): {{ $paciente->MedicoNome ?? '' }}
+        Dr(a). {{ $paciente->MedicoNome ?? '' }}<br>
+        <span style="font-weight: normal; font-size: 8px;">Médico(a) Assistente</span>
     </div>
+@endif
 
 @if(!isset($is_economico))
 </body>
