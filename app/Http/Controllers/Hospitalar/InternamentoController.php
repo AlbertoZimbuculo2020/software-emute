@@ -334,4 +334,157 @@ class InternamentoController extends Controller
 
         return $pdf->stream("Controlo_Vitais_{$id}.pdf");
     }
+
+    // ─── Cumprimento (Enfermagem) ─────────────────────────────────────────────
+
+    public function getDepositos()
+    {
+        $depositos = DB::table('tb_deposito')
+            ->where('ESTADO', 'Ativo')
+            ->select('CODIGO', 'DEPOSITO')
+            ->get();
+        return response()->json($depositos);
+    }
+
+    public function getArtigos(Request $request)
+    {
+        $depositoId = $request->input('deposito', '');
+        $search     = $request->input('search', '');
+
+        $query = DB::table('tb_artigo as a')
+            ->join('tb_compra_fornecedor as cf', 'a.CODIGO', '=', 'cf.ID_PRODUTO')
+            ->select(
+                'a.CODIGO',
+                'a.DESCRICAO as PRODUTO',
+                DB::raw('SUM(cf.QTD_ATUAL) as Stock'),
+                'a.PV as PRECO'
+            )
+            ->where('cf.ESTADO', 'Ativo')
+            ->where('a.ESTADO', 'Ativo')
+            ->groupBy('a.CODIGO', 'a.DESCRICAO', 'a.PV')
+            ->having('Stock', '>', 0);
+
+        if ($depositoId) {
+            $query->where('cf.ID_DEPOSITO', $depositoId);
+        }
+        if ($search) {
+            $query->where('a.DESCRICAO', 'like', "%{$search}%");
+        }
+
+        return response()->json($query->get());
+    }
+
+    public function gravarCumprimento(Request $request)
+    {
+        $cumprimentos = $request->input('cumprimentos', []);
+
+        foreach ($cumprimentos as $item) {
+            DB::table('tb_prescricao')
+                ->where('Id', $item['id'])
+                ->update([
+                    'Cumprimento'  => $item['c0'] ? 'True' : 'False',
+                    'Cumprimento1' => $item['c1'] ? 'True' : 'False',
+                    'Cumprimento2' => $item['c2'] ? 'True' : 'False',
+                    'Cumprimento3' => $item['c3'] ? 'True' : 'False',
+                    'Infermeiro'   => Auth::user()->name,
+                ]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Cumprimento gravado com sucesso!']);
+    }
+
+    public function finalizarSaidaFarmaco(Request $request)
+    {
+        $itens      = $request->input('itens', []);
+        $depositoId = $request->input('deposito', '');
+        $paciente   = $request->input('paciente', '');
+        $motivo     = $request->input('motivo', 'Saída de Fármacos - Internamento');
+
+        if (empty($itens)) {
+            return response()->json(['success' => false, 'message' => 'Nenhum fármaco adicionado!'], 422);
+        }
+
+        $total = collect($itens)->sum(fn($i) => $i['PRECO'] * $i['quantidade']);
+        $now   = now();
+
+        $seq = DB::table('tb_sequencial_fatura')->where('TIPO', 'SD')->first();
+        $num = ($seq->SEQUENCIAL ?? 0) + 1;
+        $codigo = 'SD' . str_pad($num, 6, '0', STR_PAD_LEFT);
+        DB::table('tb_sequencial_fatura')->where('TIPO', 'SD')->update(['SEQUENCIAL' => $num]);
+
+        $idFatura = DB::table('tb_fatura')->insertGetId([
+            'CODIGO'         => $codigo,
+            'TIPO'           => 'SD',
+            'ID_UTILIZADOR'  => Auth::id(),
+            'ID_MOEDA'       => 'MD000000000',
+            'ID_TURNO'       => '1',
+            'LUGAR_ENTREGA'  => 'Saída Interna - Enfermagem',
+            'DATA_'          => $now->toDateString(),
+            'DATAVENCIMENTO' => $now->toDateString(),
+            'DATA_ENTREGA'   => $now->toDateString(),
+            'VALOR'          => $total,
+            'DEBITO'         => $total,
+            'CREDITO'        => 0,
+            'IVA'            => 0,
+            'DESCONTO'       => 0,
+            'RETENCAO'       => 0,
+            'MOEDA_EXTRANGERA' => 0,
+            'CAMBIO'         => 1,
+            'PAGAMENTO'      => '',
+            'HASH_COD'       => '',
+            'CHAVE'          => '',
+            'STATU'          => 'Ativo',
+            'HORA'           => $now->toTimeString(),
+            'PAGO'           => 0,
+            'TROCO'          => 0,
+            'OBSERVACAO'     => $motivo,
+            'IMPRIMIR'       => 'ORIGINAL',
+            'NOME_DOCUMENTO' => 'SAIDA DE PRODUTO',
+            'USUARIO'        => Auth::user()->name,
+            'NIF'            => '999999999',
+            'CLIENTE'        => 'Paciente: ' . $paciente,
+            'ESTADO'         => 'Ativo',
+            'DESCRICAO'      => 'Saida',
+            'CREATED_AT'     => $now,
+        ]);
+
+        foreach ($itens as $item) {
+            DB::table('tb_venda')->insert([
+                'CODIGO'        => $item['CODIGO'],
+                'PRODUTO'       => $item['PRODUTO'],
+                'QUANTIDADE'    => $item['quantidade'],
+                'ID_FATURA'     => $idFatura,
+                'ESTADO'        => 'Ativo',
+                'ID_UTILIZADOR' => Auth::id(),
+                'DATA_'         => $now->toDateString(),
+                'VALOR'         => $item['PRECO'],
+                'MONTANTE'      => $item['PRECO'] * $item['quantidade'],
+                'IVA'           => 0,
+                'DESCONTO'      => 0,
+                'RETENCAO'      => 0,
+                'CREATED_AT'    => $now,
+            ]);
+
+            // Baixa o stock FIFO por lote
+            $qtdRestante = $item['quantidade'];
+            $lotes = DB::table('tb_compra_fornecedor')
+                ->where('ID_PRODUTO', $item['CODIGO'])
+                ->where('ID_DEPOSITO', $depositoId)
+                ->where('ESTADO', 'Ativo')
+                ->where('QTD_ATUAL', '>', 0)
+                ->orderBy('DATA_COMPRA', 'asc')
+                ->get();
+
+            foreach ($lotes as $lote) {
+                if ($qtdRestante <= 0) break;
+                $reduzir = min($qtdRestante, $lote->QTD_ATUAL);
+                DB::table('tb_compra_fornecedor')
+                    ->where('ID_COMPRA_FORNECEDOR', $lote->ID_COMPRA_FORNECEDOR)
+                    ->decrement('QTD_ATUAL', $reduzir);
+                $qtdRestante -= $reduzir;
+            }
+        }
+
+        return response()->json(['success' => true, 'message' => 'Saída registada!', 'codigo' => $codigo]);
+    }
 }

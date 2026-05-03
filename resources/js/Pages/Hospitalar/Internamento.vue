@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import axios from 'axios';
-import { Search, CheckCircle2, AlertCircle, Printer, PlusCircle, ClipboardCheck, Plus, LayoutGrid, Users, Stethoscope, Syringe, Activity, X } from 'lucide-vue-next';
+import { Search, CheckCircle2, AlertCircle, Printer, PlusCircle, ClipboardCheck, Plus, LayoutGrid, Users, Stethoscope, Syringe, Activity, X, Package2, Minus } from 'lucide-vue-next';
 
 const props = defineProps({
     internados: { type: Array, default: () => [] },
@@ -18,6 +18,17 @@ const showPrescricaoModal = ref(false);
 const showAtoModal = ref(false);
 const showSinaisModal = ref(false);
 const showAltaModal = ref(false);
+const showCumprimentoModal = ref(false);
+
+// ─── Cumprimento (Enfermagem) state ───────────────────────────────────────
+const depositos = ref([]);
+const depositoSelecionado = ref('');
+const searchArtigo = ref('');
+const artigos = ref([]);
+const cartFarmacos = ref([]);
+const motivoSaida = ref('');
+const cumprimentoTab = ref('prescricoes'); // 'prescricoes' | 'ficha'
+const prescricoesCumprimento = ref([]);  // cópia das prescrições com estado local
 
 const atoType = ref('medico'); // 'medico' or 'enfermagem'
 
@@ -250,6 +261,99 @@ const imprimirRelatorioVitais = () => {
     if (!selectedPaciente.value) return;
     window.open(route('hospitalar.internamento.imprimir.vitais', selectedPaciente.value.Codigo), '_blank');
 };
+
+// ─── Cumprimento (Enfermagem) ─────────────────────────────────────────────
+
+const openCumprimentoModal = async () => {
+    if (!selectedPaciente.value) return;
+    showCumprimentoModal.value = true;
+    cumprimentoTab.value = 'prescricoes';
+    cartFarmacos.value = [];
+    motivoSaida.value = '';
+    searchArtigo.value = '';
+    artigos.value = [];
+
+    // Carrega prescrições com estado local de cumprimento
+    prescricoesCumprimento.value = details.value.prescricoes.map(p => ({
+        id: p.Id,
+        DataInternamento: p.DataInternamento || p.CREATED_AT,
+        Descricao: p.Descricao,
+        c0: p.Cumprimento === 'True',
+        c1: p.Cumprimento1 === 'True',
+        c2: p.Cumprimento2 === 'True',
+        c3: p.Cumprimento3 === 'True',
+        Observacao: p.Observacao || ''
+    }));
+
+    // Carrega depósitos
+    try {
+        const res = await axios.get(route('hospitalar.internamento.depositos'));
+        depositos.value = res.data;
+        if (res.data.length > 0) {
+            depositoSelecionado.value = res.data[0].CODIGO;
+            await buscarArtigos();
+        }
+    } catch (e) {
+        console.error('Erro ao carregar depósitos:', e);
+    }
+};
+
+const buscarArtigos = async () => {
+    try {
+        const res = await axios.get(route('hospitalar.internamento.artigos'), {
+            params: { deposito: depositoSelecionado.value, search: searchArtigo.value }
+        });
+        artigos.value = res.data;
+    } catch (e) {
+        console.error('Erro ao buscar artigos:', e);
+    }
+};
+
+const adicionarAoCarrinho = (artigo) => {
+    const existe = cartFarmacos.value.find(i => i.CODIGO === artigo.CODIGO);
+    if (existe) {
+        existe.quantidade++;
+    } else {
+        cartFarmacos.value.push({ ...artigo, quantidade: 1 });
+    }
+};
+
+const removerDoCarrinho = (codigo) => {
+    cartFarmacos.value = cartFarmacos.value.filter(i => i.CODIGO !== codigo);
+};
+
+const gravarCumprimento = async () => {
+    try {
+        await axios.post(route('hospitalar.internamento.cumprimento'), {
+            cumprimentos: prescricoesCumprimento.value
+        });
+        showToast('Cumprimento gravado com sucesso!');
+    } catch (e) {
+        showToast('Erro ao gravar cumprimento', 'error');
+    }
+};
+
+const finalizarSaidaFarmaco = async () => {
+    if (cartFarmacos.value.length === 0) {
+        showToast('Adicione fármacos ao carrinho primeiro!', 'error');
+        return;
+    }
+    try {
+        await axios.post(route('hospitalar.internamento.saida-farmaco'), {
+            itens: cartFarmacos.value,
+            deposito: depositoSelecionado.value,
+            paciente: selectedPaciente.value?.PacienteNome,
+            motivo: motivoSaida.value || 'Saída de Fármacos - Internamento',
+            idAgenda: selectedPaciente.value?.Codigo
+        });
+        showToast('Saída de fármacos registada com sucesso!');
+        cartFarmacos.value = [];
+        motivoSaida.value = '';
+        await buscarArtigos(); // refresh stock
+    } catch (e) {
+        showToast('Erro ao registar saída de fármacos', 'error');
+    }
+};
 </script>
 
 <template>
@@ -297,7 +401,7 @@ const imprimirRelatorioVitais = () => {
                 <div class="flex flex-col flex-1 mx-1 border border-blue-200 rounded-sm">
                     <div class="bg-[#f0f7ff] text-[#2196F3] text-center font-black text-[9px] uppercase py-0.5 border-b border-blue-100">Área dos Enfermeiros</div>
                     <div class="flex gap-0.5 p-0.5">
-                        <button class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Cumprimento (Enfermagem)</button>
+                        <button @click="openCumprimentoModal" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Cumprimento (Enfermagem)</button>
                         <button @click="openSinaisModal" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Controlo de Sinais Vitais</button>
                         <button @click="openAtoModal('enfermagem')" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Registo de Actos da Enfermaria</button>
                     </div>
@@ -757,6 +861,199 @@ const imprimirRelatorioVitais = () => {
         </div>
 
         <!-- Alta Modal -->
+        <!-- Cumprimento (Enfermagem) Modal -->
+        <div v-if="showCumprimentoModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[500] p-4">
+            <div class="bg-slate-50 w-full max-w-7xl shadow-2xl rounded-xl overflow-hidden flex flex-col h-[850px] border border-white animate-in zoom-in duration-300">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-[#000080] to-blue-800 text-white p-4 flex justify-between items-center shadow-lg relative">
+                    <div class="flex items-center gap-3">
+                        <ClipboardCheck class="w-5 h-5 text-blue-300" />
+                        <span class="font-black uppercase text-sm tracking-widest">PRESCRIÇÕES MÉDICAS - Cumprimento da Enfermagem</span>
+                    </div>
+                    <button @click="showCumprimentoModal = false" class="hover:bg-red-500/20 text-white/80 hover:text-white rounded-full p-1.5 transition-all">
+                        <X class="w-5 h-5" />
+                    </button>
+                </div>
+
+                <!-- Main Content Area -->
+                <div class="flex-1 flex flex-col overflow-hidden">
+                    <!-- Top Section: Patient Info & Pharmacy (Stock Exit) -->
+                    <div class="grid grid-cols-12 gap-6 p-6 border-b border-slate-200 bg-white">
+                        <!-- Patient & Nurse Info -->
+                        <div class="col-span-3 space-y-4">
+                            <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                <label class="block text-[10px] font-black uppercase text-blue-400 mb-1">Paciente</label>
+                                <div class="text-sm font-black text-slate-800">{{ selectedPaciente?.PacienteNome }}</div>
+                            </div>
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                <label class="block text-[10px] font-black uppercase text-slate-400 mb-1">Enfermeiro</label>
+                                <div class="text-sm font-black text-slate-800">{{ $page.props.auth.user.name }}</div>
+                            </div>
+                            <button @click="gravarCumprimento" class="w-full py-3 bg-blue-600 text-white font-black uppercase text-xs rounded-xl shadow-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
+                                <Printer class="w-4 h-4" /> Gravar e Imprimir
+                            </button>
+                        </div>
+
+                        <!-- Fármacos Usados Section -->
+                        <div class="col-span-9 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden flex flex-col border-dashed">
+                            <div class="bg-slate-200/50 px-4 py-2 flex justify-between items-center">
+                                <div class="flex items-center gap-2 text-[10px] font-black uppercase text-slate-600">
+                                    <Package2 class="w-3.5 h-3.5" /> Fármacos Usados (Saída de Stock)
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <select v-model="depositoSelecionado" @change="buscarArtigos" class="text-[10px] font-bold border-none bg-white rounded px-2 py-1 outline-none shadow-sm">
+                                        <option value="">Selecione o Depósito</option>
+                                        <option v-for="d in depositos" :key="d.CODIGO" :value="d.CODIGO">{{ d.DEPOSITO }}</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-1 overflow-hidden">
+                                <!-- Search & Selection -->
+                                <div class="w-1/2 p-4 border-r border-slate-200 flex flex-col gap-3">
+                                    <div class="relative">
+                                        <Search class="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                                        <input v-model="searchArtigo" @input="buscarArtigos" type="text" placeholder="Pesquisar produto..." class="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:border-blue-400 bg-white" />
+                                    </div>
+                                    <div class="flex-1 overflow-y-auto custom-scrollbar border border-slate-200 rounded-lg bg-white">
+                                        <table class="w-full text-[10px]">
+                                            <thead class="bg-slate-50 sticky top-0 border-b border-slate-100 z-10">
+                                                <tr>
+                                                    <th class="p-2 text-left">Produto</th>
+                                                    <th class="p-2 text-right">Stock</th>
+                                                    <th class="p-2 text-center">Add</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="a in artigos" :key="a.CODIGO" class="border-b border-slate-50 hover:bg-blue-50">
+                                                    <td class="p-2 font-bold text-slate-700">{{ a.PRODUTO }}</td>
+                                                    <td class="p-2 text-right font-black text-blue-600">{{ a.Stock }}</td>
+                                                    <td class="p-2 text-center">
+                                                        <button @click="adicionarAoCarrinho(a)" class="p-1 hover:bg-blue-600 hover:text-white rounded transition-colors text-blue-600">
+                                                            <Plus class="w-4 h-4" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Cart & Finalize -->
+                                <div class="w-1/2 p-4 flex flex-col gap-3">
+                                    <div class="flex-1 overflow-y-auto custom-scrollbar border border-slate-200 rounded-lg bg-white">
+                                        <table class="w-full text-[10px]">
+                                            <thead class="bg-slate-50 sticky top-0 border-b border-slate-100 z-10">
+                                                <tr>
+                                                    <th class="p-2 text-left">Produto</th>
+                                                    <th class="p-2 text-center">Qtd</th>
+                                                    <th class="p-2 text-right">Preço</th>
+                                                    <th class="p-2 text-center"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="item in cartFarmacos" :key="item.CODIGO" class="border-b border-slate-50">
+                                                    <td class="p-2 font-bold">{{ item.PRODUTO }}</td>
+                                                    <td class="p-2 text-center">
+                                                        <input v-model="item.quantidade" type="number" class="w-12 text-center border-none bg-slate-50 rounded font-black" min="1" />
+                                                    </td>
+                                                    <td class="p-2 text-right font-black">{{ (item.PRECO * item.quantidade).toLocaleString() }}</td>
+                                                    <td class="p-2 text-center">
+                                                        <button @click="removerDoCarrinho(item.CODIGO)" class="text-red-500 hover:scale-110 transition-transform">
+                                                            <Minus class="w-4 h-4" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <input v-model="motivoSaida" type="text" placeholder="Motivo da saída..." class="flex-1 border border-slate-200 p-2 text-xs rounded-lg outline-none focus:border-blue-400" />
+                                        <button @click="finalizarSaidaFarmaco" class="bg-green-600 text-white px-4 py-2 rounded-lg font-black text-xs hover:bg-green-700 shadow-md transition-all">
+                                            Finalizar Saída
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Section: Tabs & Prescriptions -->
+                    <div class="flex-1 flex flex-col overflow-hidden">
+                        <!-- Tabs -->
+                        <div class="flex border-b border-slate-200 bg-slate-100 px-6">
+                            <button @click="cumprimentoTab = 'prescricoes'" 
+                                :class="cumprimentoTab === 'prescricoes' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-400'"
+                                class="px-6 py-3 font-black text-[10px] uppercase tracking-wider transition-all">
+                                Prescrições Médicas
+                            </button>
+                            <button @click="cumprimentoTab = 'ficha'" 
+                                :class="cumprimentoTab === 'ficha' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-400'"
+                                class="px-6 py-3 font-black text-[10px] uppercase tracking-wider transition-all">
+                                Ficha Médica
+                            </button>
+                        </div>
+
+                        <!-- Tab Content -->
+                        <div class="flex-1 p-6 overflow-hidden">
+                            <!-- Prescriptions Tab -->
+                            <div v-if="cumprimentoTab === 'prescricoes'" class="h-full flex flex-col border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden">
+                                <div class="flex-1 overflow-y-auto custom-scrollbar">
+                                    <table class="w-full text-left border-collapse">
+                                        <thead class="bg-slate-50 sticky top-0 border-b border-slate-200 z-10 text-[10px] font-black uppercase text-slate-500">
+                                            <tr>
+                                                <th class="p-4 w-40">Data e Hora</th>
+                                                <th class="p-4">Prescrição Médica</th>
+                                                <th class="p-4 w-60 text-center">Cumprimento (M/T/N/...)</th>
+                                                <th class="p-4">Notas de Enfermagem</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="p in prescricoesCumprimento" :key="p.id" class="border-b border-slate-50 hover:bg-blue-50/30 transition-colors">
+                                                <td class="p-4 font-bold text-slate-500">{{ p.DataInternamento }}</td>
+                                                <td class="p-4 font-black text-slate-800">{{ p.Descricao }}</td>
+                                                <td class="p-4">
+                                                    <div class="flex justify-center gap-4">
+                                                        <label class="flex items-center gap-1 cursor-pointer">
+                                                            <input type="checkbox" v-model="p.c0" class="rounded text-blue-600 focus:ring-blue-500" />
+                                                            <span class="text-[9px] font-black text-slate-400">M</span>
+                                                        </label>
+                                                        <label class="flex items-center gap-1 cursor-pointer">
+                                                            <input type="checkbox" v-model="p.c1" class="rounded text-blue-600 focus:ring-blue-500" />
+                                                            <span class="text-[9px] font-black text-slate-400">T</span>
+                                                        </label>
+                                                        <label class="flex items-center gap-1 cursor-pointer">
+                                                            <input type="checkbox" v-model="p.c2" class="rounded text-blue-600 focus:ring-blue-500" />
+                                                            <span class="text-[9px] font-black text-slate-400">N</span>
+                                                        </label>
+                                                        <label class="flex items-center gap-1 cursor-pointer">
+                                                            <input type="checkbox" v-model="p.c3" class="rounded text-blue-600 focus:ring-blue-500" />
+                                                            <span class="text-[9px] font-black text-slate-400">...</span>
+                                                        </label>
+                                                    </div>
+                                                </td>
+                                                <td class="p-4">
+                                                    <input v-model="p.Observacao" type="text" class="w-full border border-slate-200 p-2 text-[10px] rounded focus:border-blue-400 outline-none" placeholder="Observações..." />
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Ficha Médica Tab (Placeholder for now) -->
+                            <div v-else class="h-full flex items-center justify-center border border-slate-200 rounded-xl bg-slate-50 border-dashed">
+                                <div class="text-center">
+                                    <ClipboardCheck class="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                                    <div class="text-slate-400 font-bold uppercase text-xs tracking-widest">A visualizar Ficha Médica do Paciente</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div v-if="showAltaModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-[500] p-4">
             <div class="bg-white w-full max-w-md shadow-2xl rounded-sm overflow-hidden border border-slate-200 scale-in-center">
                 <div class="bg-green-700 text-white p-5 font-black text-center uppercase tracking-widest relative">
