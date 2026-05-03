@@ -53,14 +53,18 @@
     </style>
 </head>
 <body>
-    <div class="divider"></div>
+    @if($data['is_duplicate'] ?? true)
+        <div class="divider"></div>
+    @endif
     <table class="wrapper-table">
         <tr>
             <td class="col-report">
                 @include($original_view, $data)
             </td>
             <td class="col-report">
-                @include($original_view, $data)
+                @if($data['is_duplicate'] ?? true)
+                    @include($original_view, $data)
+                @endif
             </td>
         </tr>
     </table>
