@@ -153,21 +153,22 @@
     </style>
 </head>
 <body>
-    @php
-        $empresa = \Illuminate\Support\Facades\DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
-    @endphp
 
     <!-- HEADER -->
     <table class="header-table">
         <tr>
             <td class="logo-cell">
-                <div class="logo-placeholder">LOGO</div>
+                @if($empresa && $empresa->IMAGEM)
+                    <img src="{{ $empresa->IMAGEM }}" style="width: 80px; height: auto;">
+                @else
+                    <div class="logo-placeholder">LOGO</div>
+                @endif
             </td>
             <td class="clinic-info">
-                <p class="clinic-name">{{ $empresa->Nome ?? 'LUDAL, DESENVOLVIMENTO E PROGRESSO - CLÍNICA TUAMAMICO' }}</p>
-                <p class="clinic-details">Contribuinte nº {{ $empresa->NIF ?? '5401150954' }}</p>
-                <p class="clinic-details">Contacto: {{ $empresa->Telefone ?? '924358803/' }}</p>
-                <p class="clinic-details">{{ $empresa->Endereco ?? 'CACUACO, ECOCAMPO, 4 DE FEVEREIRO' }}</p>
+                <p class="clinic-name">{{ $empresa->DESCRICAO ?? $empresa->Nome ?? 'CLÍNICA TUAMAMICO' }}</p>
+                <p class="clinic-details">Contribuinte nº {{ $empresa->NIF ?? '' }}</p>
+                <p class="clinic-details">Contacto: {{ $empresa->TELEFONE ?? $empresa->Telefone ?? '' }} / {{ $empresa->TELEFONE2 ?? '' }}</p>
+                <p class="clinic-details">{{ $empresa->ENDERECO ?? $empresa->Endereco ?? ($empresa->PROVINCIA ?? '') . ', ' . ($empresa->CIDADE ?? '') . ', ' . ($empresa->RUA ?? '') }}</p>
             </td>
         </tr>
     </table>

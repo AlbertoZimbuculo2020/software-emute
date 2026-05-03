@@ -229,9 +229,15 @@ class LaboratorioController extends Controller
             ->where('Estado', '!=', 'Removido')
             ->get();
 
+        $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
+        if ($empresa && $empresa->IMAGEM) {
+            $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
+        }
+
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.laboratorio_resultado', [
             'paciente' => $agendamento,
-            'exames' => $exames
+            'exames' => $exames,
+            'empresa' => $empresa
         ]);
 
         return $pdf->stream('resultado_laboratorio_'.$idAgenda.'.pdf');

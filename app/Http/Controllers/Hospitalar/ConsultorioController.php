@@ -365,6 +365,7 @@ class ConsultorioController extends Controller
             ->select(
                 'tb_agendamento.*', 
                 'tb_tipoentidade.Nome as PacienteNome', 
+                'tb_tipoentidade.Telefone',
                 'tb_entidade.DataNascimento',
                 'tb_entidade.Genero',
                 'medico.Nome as MedicoNome'
@@ -374,29 +375,41 @@ class ConsultorioController extends Controller
 
         if (!$paciente) return abort(404);
 
-        $agendamento = $paciente; // Reusing for template compatibility if needed
-
         $requestedExams = request('exames');
         if (!empty($requestedExams)) {
             $ids = array_map('trim', explode(',', $requestedExams));
-            // Os IDs vindos do frontend têm o prefixo 'cat_', precisamos limpar
+            // IDs from frontend can have 'cat_' or 'sol_' prefixes
             $cleanIds = array_map(function($id) {
-                return str_replace('cat_', '', $id);
+                return str_replace(['cat_', 'sol_'], '', $id);
             }, $ids);
             
-            $exames = DB::table('tb_exames')
+            // If they are 'sol_', we might want to fetch from tb_resultado_exame first
+            // but for a REQUISITION, we usually want the base exam definition if it's new,
+            // or the existing one if it's already solicited.
+            // Let's check both.
+            
+            $examesSolicitados = DB::table('tb_resultado_exame')
+                ->where('IdAgenda', $idAgenda)
                 ->whereIn('Id', $cleanIds)
-                ->get()
-                ->map(function ($ex) {
-                    return (object)[
-                        'Descricao' => $ex->Descricao,
-                        'Categoria' => $ex->Categoria ?? 'LABORATÓRIO GERAL',
-                        'Filhos' => $ex->Filhos ?? '',
-                        'Resultado' => '',
-                        'Referencia' => $ex->Referencia ?? '',
-                        'Estado' => 'Pendente'
-                    ];
-                });
+                ->get();
+
+            if ($examesSolicitados->count() > 0) {
+                $exames = $examesSolicitados;
+            } else {
+                $exames = DB::table('tb_exames')
+                    ->whereIn('Id', $cleanIds)
+                    ->get()
+                    ->map(function ($ex) {
+                        return (object)[
+                            'Descricao' => $ex->Descricao,
+                            'Categoria' => $ex->Categoria ?? 'LABORATÓRIO GERAL',
+                            'Filhos' => $ex->Filhos ?? '',
+                            'Resultado' => '',
+                            'Referencia' => $ex->Referencia ?? '',
+                            'Estado' => 'Pendente'
+                        ];
+                    });
+            }
         } else {
             $exames = DB::table('tb_resultado_exame')
                 ->where('IdAgenda', $idAgenda)
@@ -405,8 +418,17 @@ class ConsultorioController extends Controller
         }
 
         $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
+        if ($empresa && $empresa->IMAGEM) {
+            $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
+        }
 
-        $pdf = Pdf::loadView('pdf.requisicao_exames', compact('paciente', 'exames', 'empresa', 'agendamento'));
+        $idade = 'N/D';
+        if ($paciente->DataNascimento) {
+            $birthDate = new \DateTime($paciente->DataNascimento);
+            $idade = (new \DateTime())->diff($birthDate)->y . ' Anos';
+        }
+
+        $pdf = Pdf::loadView('pdf.requisicao_exames', compact('paciente', 'exames', 'empresa', 'idade'));
         return $pdf->stream("requisicao_{$idAgenda}.pdf");
     }
 
