@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import axios from 'axios';
-import { Search, CheckCircle2, AlertCircle, Printer, PlusCircle, ClipboardCheck, Plus, LayoutGrid, Users, Stethoscope, Syringe } from 'lucide-vue-next';
+import { Search, CheckCircle2, AlertCircle, Printer, PlusCircle, ClipboardCheck, Plus, LayoutGrid, Users, Stethoscope, Syringe, Activity, X } from 'lucide-vue-next';
 
 const props = defineProps({
     internados: { type: Array, default: () => [] },
@@ -599,109 +599,157 @@ const imprimirRelatorioVitais = () => {
             </div>
         </div>
 
-        <!-- Sinais Vitais Modal (Legacy Style) -->
-        <div v-if="showSinaisModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-[500] p-4">
-            <div class="bg-[#f0f0f0] w-full max-w-6xl shadow-2xl rounded-sm border-2 border-slate-400 overflow-hidden flex flex-col h-[650px]">
-                <div class="bg-[#000080] text-white p-2 font-bold flex justify-between items-center uppercase text-xs tracking-widest">
-                    <span>Controlo de sinais vitais</span>
-                    <button @click="showSinaisModal = false" class="hover:bg-red-600 px-2 rounded transition-colors">&times;</button>
-                </div>
-                
-                <div class="bg-[#000080] text-white text-center py-1 text-sm font-black border-t border-white/20">
-                    {{ selectedPaciente?.Codigo }}
-                </div>
-
-                <div class="flex-1 flex overflow-hidden p-4 gap-4">
-                    <!-- Left Column: Info and Form -->
-                    <div class="w-1/2 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
-                        <div class="space-y-1 mb-4">
-                            <div class="text-xl font-black text-slate-800">{{ selectedPaciente?.Codigo }}</div>
-                            <div class="text-xl font-black text-slate-800">{{ selectedPaciente?.PacienteNome }}</div>
-                            <div class="text-slate-500 font-bold">...</div>
-                        </div>
-
-                        <div class="grid grid-cols-3 items-center gap-2">
-                            <div class="font-black text-[11px] uppercase text-slate-600">ENFERMEIRO</div>
-                            <div class="col-span-2 border border-slate-300 bg-white p-1.5 text-xs font-bold uppercase shadow-sm">{{ $page.props.auth.user.name }}</div>
-
-                            <div class="font-bold text-xs text-slate-700">Peso:</div>
-                            <div class="col-span-2"><input v-model="sinaisForm.Peso" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
-
-                            <div class="font-bold text-xs text-slate-700">Temperatura corporal:</div>
-                            <div class="col-span-2"><input v-model="sinaisForm.Temperatura" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
-
-                            <div class="font-bold text-xs text-slate-700">Tensão Arterial BD:</div>
-                            <div class="col-span-2"><input v-model="sinaisForm.PressaoArterial" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
-
-                            <div class="font-bold text-xs text-slate-700">Tensão Arterial BE:</div>
-                            <div class="col-span-2"><input v-model="sinaisForm.PressaoArterialBE" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
-
-                            <div class="font-bold text-xs text-slate-700">Pulsação BD:</div>
-                            <div class="col-span-2"><input v-model="sinaisForm.FrequenciaCardioca" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
-
-                            <div class="font-bold text-xs text-slate-700">Pulsação BE:</div>
-                            <div class="col-span-2"><input v-model="sinaisForm.PulsoBE" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
-
-                            <div class="font-bold text-xs text-slate-700">Frequência respiratória:</div>
-                            <div class="col-span-2"><input v-model="sinaisForm.FrequenciaRespiratoria" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
-
-                            <div class="font-bold text-xs text-slate-700">Situação de oxigênio (oximetria):</div>
-                            <div class="col-span-2"><input v-model="sinaisForm.SituacaoOxigenio" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
-
-                            <div class="font-bold text-xs text-slate-700 self-start mt-1">Observação:</div>
-                            <div class="col-span-2"><textarea v-model="sinaisForm.Obs" class="w-full border border-slate-300 p-2 text-xs font-bold outline-none focus:border-blue-500 h-16 resize-none"></textarea></div>
-                        </div>
-
-                        <button @click="submitSinais" class="w-full py-2.5 bg-gradient-to-b from-blue-400 to-blue-600 text-white font-black uppercase text-sm rounded shadow-lg hover:from-blue-500 hover:to-blue-700 transition-all border border-blue-700">
-                            GRAVAR DADOS DA TRIAGEM
-                        </button>
+        <!-- Sinais Vitais Modal (Modernized Legacy) -->
+        <div v-if="showSinaisModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[500] p-4">
+            <div class="bg-slate-50 w-full max-w-6xl shadow-2xl rounded-xl overflow-hidden flex flex-col h-[750px] border border-white animate-in zoom-in duration-300">
+                <!-- Premium Header -->
+                <div class="bg-gradient-to-r from-[#000080] to-blue-800 text-white p-4 flex justify-between items-center shadow-lg relative">
+                    <div class="flex items-center gap-3">
+                        <Activity class="w-5 h-5 text-blue-300" />
+                        <span class="font-black uppercase text-sm tracking-widest">Controlo de Sinais Vitais</span>
                     </div>
+                    <div class="absolute left-1/2 -translate-x-1/2 font-black text-blue-200 text-xs tracking-tighter opacity-50">
+                        SESSÃO: {{ selectedPaciente?.Codigo }}
+                    </div>
+                    <button @click="showSinaisModal = false" class="hover:bg-red-500/20 text-white/80 hover:text-white rounded-full p-1.5 transition-all">
+                        <X class="w-5 h-5" />
+                    </button>
+                </div>
 
-                    <!-- Right Column: History -->
-                    <div class="w-1/2 border border-slate-300 bg-white flex flex-col overflow-hidden">
-                        <div class="bg-slate-100 p-2 text-center font-bold text-xs border-b border-slate-300">Histórico de Triagem do Paciente</div>
-                        
-                        <div class="p-3 bg-slate-50 border-b border-slate-200">
-                            <div class="text-[10px] font-bold text-slate-500 uppercase mb-2">Pesquisar Triagem por Data</div>
-                            <div class="flex gap-2">
-                                <div class="flex-1 flex items-center gap-2">
-                                    <span class="text-[10px] font-bold">Data Inicio</span>
-                                    <input type="date" class="flex-1 border border-slate-300 p-1 text-xs outline-none" />
-                                </div>
-                                <div class="flex-1 flex items-center gap-2">
-                                    <span class="text-[10px] font-bold">Data Final</span>
-                                    <input type="date" class="flex-1 border border-slate-300 p-1 text-xs outline-none" />
+                <div class="flex-1 flex overflow-hidden p-6 gap-6">
+                    <!-- Left Column: Patient & Form -->
+                    <div class="w-[45%] flex flex-col gap-6 overflow-y-auto custom-scrollbar pr-2">
+                        <!-- Patient Mini-Card -->
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-12 -mt-12 transition-all group-hover:scale-110"></div>
+                            <div class="relative">
+                                <div class="text-blue-600 font-black text-xs mb-1 uppercase tracking-tighter">Paciente em Internamento</div>
+                                <div class="text-2xl font-black text-slate-800 leading-tight">{{ selectedPaciente?.PacienteNome }}</div>
+                                <div class="flex items-center gap-4 mt-3 text-xs font-bold text-slate-500">
+                                    <span class="flex items-center gap-1.5"><LayoutGrid class="w-3.5 h-3.5" /> ID: {{ selectedPaciente?.Codigo }}</span>
+                                    <span class="flex items-center gap-1.5"><Users class="w-3.5 h-3.5" /> {{ selectedPaciente?.Tipo || 'Normal' }}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="flex-1 overflow-auto custom-scrollbar">
-                            <table class="w-full text-[10px] border-collapse">
-                                <thead class="bg-slate-100 sticky top-0 font-bold border-b border-slate-300">
-                                    <tr>
-                                        <th class="p-2 border-r border-slate-200">Cod. Paciente</th>
-                                        <th class="p-2 border-r border-slate-200">Data</th>
-                                        <th class="p-2 border-r border-slate-200">Paciente</th>
-                                        <th class="p-2">Ação</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="sv in details.sinaisVitais" :key="sv.Id" class="border-b border-slate-100 hover:bg-slate-50">
-                                        <td class="p-2 border-r border-slate-100">{{ selectedPaciente?.Codigo }}</td>
-                                        <td class="p-2 border-r border-slate-100">{{ new Date(sv.CREATED_AT).toLocaleDateString() }}</td>
-                                        <td class="p-2 border-r border-slate-100 truncate max-w-[100px]">{{ selectedPaciente?.PacienteNome }}</td>
-                                        <td class="p-2 text-center">
-                                            <button @click="sinaisForm = {...sv}" class="text-blue-600 hover:underline font-bold">Selecionar</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                        <!-- Vital Signs Form -->
+                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
+                            <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
+                                <div class="p-2 bg-blue-50 text-blue-600 rounded-lg"><Syringe class="w-4 h-4" /></div>
+                                <span class="font-black text-xs uppercase text-slate-500 tracking-wider">Registo de Parâmetros</span>
+                            </div>
 
-                        <div class="p-4 bg-slate-100 border-t border-slate-300">
-                            <button @click="imprimirRelatorioVitais" class="w-full py-2 bg-gradient-to-b from-blue-400 to-blue-600 text-white font-black uppercase text-xs rounded shadow hover:from-blue-500 hover:to-blue-700 transition-all border border-blue-700">
-                                RELATORIO DE CONTRO VITAIS
+                            <div class="space-y-4">
+                                <!-- Nurse Field -->
+                                <div class="group">
+                                    <label class="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 mb-1.5 group-focus-within:text-blue-500 transition-colors">
+                                        <Users class="w-3 h-3" /> Enfermeiro Responsável
+                                    </label>
+                                    <div class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-xs font-black text-slate-700 shadow-inner">{{ $page.props.auth.user.name }}</div>
+                                </div>
+
+                                <!-- Form Grid -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div v-for="f in [
+                                        {label: 'Peso', unit: 'kg', model: 'Peso', icon: LayoutGrid},
+                                        {label: 'Temperatura', unit: '°C', model: 'Temperatura', icon: AlertCircle},
+                                        {label: 'Tensão Art. (BD)', unit: 'mmHg', model: 'PressaoArterial', icon: Activity},
+                                        {label: 'Tensão Art. (BE)', unit: 'mmHg', model: 'PressaoArterialBE', icon: Activity},
+                                        {label: 'Pulsação (BD)', unit: 'bpm', model: 'FrequenciaCardioca', icon: CheckCircle2},
+                                        {label: 'Pulsação (BE)', unit: 'bpm', model: 'PulsoBE', icon: CheckCircle2},
+                                        {label: 'Freq. Resp.', unit: 'rpm', model: 'FrequenciaRespiratoria', icon: Stethoscope},
+                                        {label: 'Oximetria', unit: '%', model: 'SituacaoOxigenio', icon: ClipboardCheck},
+                                    ]" :key="f.model" class="group">
+                                        <label class="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 mb-1.5 group-focus-within:text-blue-500 transition-colors">
+                                            <component :is="f.icon" class="w-3 h-3" /> {{ f.label }}
+                                        </label>
+                                        <div class="relative">
+                                            <input v-model="sinaisForm[f.model]" type="text" class="w-full border border-slate-200 p-2.5 pr-8 rounded-lg text-xs font-black outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-right shadow-sm bg-slate-50/50" />
+                                            <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-300">{{ f.unit }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="group">
+                                    <label class="flex items-center gap-2 text-[10px] font-black uppercase text-slate-400 mb-1.5 group-focus-within:text-blue-500">
+                                        <ClipboardCheck class="w-3 h-3" /> Observações Clínicas
+                                    </label>
+                                    <textarea v-model="sinaisForm.Obs" class="w-full border border-slate-200 p-3 rounded-xl text-xs font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all h-24 shadow-sm bg-slate-50/50 resize-none" placeholder="Indique qualquer anomalia ou observação relevante..."></textarea>
+                                </div>
+                            </div>
+
+                            <button @click="submitSinais" class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-black uppercase text-xs rounded-xl shadow-xl hover:shadow-blue-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4">
+                                <PlusCircle class="w-4 h-4" /> Gravar Dados da Triagem
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: History Tracking -->
+                    <div class="flex-1 flex flex-col gap-6">
+                        <div class="bg-white flex-1 rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                            <div class="p-5 border-b border-slate-100 bg-white flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 bg-slate-50 text-slate-600 rounded-lg"><ClipboardCheck class="w-4 h-4" /></div>
+                                    <span class="font-black text-xs uppercase text-slate-500 tracking-wider">Histórico de Triagens</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <div class="flex flex-col">
+                                        <span class="text-[8px] font-black text-slate-400 uppercase ml-1 mb-0.5">Início</span>
+                                        <input type="date" class="border border-slate-200 p-1.5 rounded-lg text-[10px] font-bold outline-none bg-slate-50" />
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span class="text-[8px] font-black text-slate-400 uppercase ml-1 mb-0.5">Fim</span>
+                                        <input type="date" class="border border-slate-200 p-1.5 rounded-lg text-[10px] font-bold outline-none bg-slate-50" />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex-1 overflow-auto custom-scrollbar">
+                                <table class="w-full text-left border-collapse">
+                                    <thead class="bg-slate-50 sticky top-0 font-black uppercase text-[10px] text-slate-500 border-b border-slate-200 z-10">
+                                        <tr>
+                                            <th class="p-4">Data/Hora</th>
+                                            <th class="p-4">Paciente</th>
+                                            <th class="p-4 text-center">Temp/Peso</th>
+                                            <th class="p-4 text-center">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-[11px]">
+                                        <tr v-for="sv in details.sinaisVitais" :key="sv.Id" class="border-b border-slate-50 hover:bg-blue-50/50 transition-colors group">
+                                            <td class="p-4 font-bold text-slate-600">{{ new Date(sv.CREATED_AT).toLocaleString() }}</td>
+                                            <td class="p-4">
+                                                <div class="font-black text-slate-800">{{ selectedPaciente?.PacienteNome }}</div>
+                                                <div class="text-[10px] text-slate-400 font-bold uppercase">{{ sv.IdAgenda }}</div>
+                                            </td>
+                                            <td class="p-4 text-center">
+                                                <span class="inline-flex gap-2 bg-slate-100 px-2 py-1 rounded-full font-black text-slate-600">
+                                                    <span>{{ sv.Temperatura }}°C</span>
+                                                    <span class="text-slate-300">|</span>
+                                                    <span>{{ sv.Peso }}kg</span>
+                                                </span>
+                                            </td>
+                                            <td class="p-4 text-center">
+                                                <button @click="sinaisForm = {...sv}" class="bg-white border border-slate-200 px-3 py-1.5 rounded-lg font-black text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm">
+                                                    Selecionar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="!details.sinaisVitais.length">
+                                            <td colspan="4" class="p-12 text-center text-slate-400">
+                                                <AlertCircle class="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                                <div class="font-bold">Nenhum registo encontrado para este paciente.</div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Footer Actions -->
+                            <div class="p-6 bg-slate-50 border-t border-slate-200">
+                                <button @click="imprimirRelatorioVitais" class="w-full py-3.5 bg-white border-2 border-blue-600 text-blue-600 font-black uppercase text-xs rounded-xl shadow-lg hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center gap-2">
+                                    <Printer class="w-4 h-4" /> Gerar Relatório de Controlo de Sinais
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
