@@ -171,12 +171,15 @@ class InternamentoController extends Controller
             'Peso' => $request->Peso,
             'Temperatura' => $request->Temperatura,
             'PressaoArterial' => $request->PressaoArterial,
+            'PressaoArterialBE' => $request->PressaoArterialBE,
             'FrequenciaCardioca' => $request->FrequenciaCardioca,
+            'PulsoBE' => $request->PulsoBE,
             'FrequenciaRespiratoria' => $request->FrequenciaRespiratoria,
             'SituacaoOxigenio' => $request->SituacaoOxigenio,
             'Obs' => $request->Obs,
             'Imferemiro' => Auth::user()->name ?? 'Enfermeiro',
             'Estado' => 'Ativo',
+            'CREATED_AT' => now()
         ]);
 
         return redirect()->back()->with('message', 'Sinais vitais registrados!');
@@ -302,5 +305,33 @@ class InternamentoController extends Controller
         ]);
 
         return $pdf->stream("Atos_Enfermagem_{$id}.pdf");
+    }
+
+    public function imprimirVitais($id)
+    {
+        $agendamento = DB::table('tb_agendamento')
+            ->join('tb_tipoentidade as p', 'tb_agendamento.IdPaciente', '=', 'p.Codigo')
+            ->select('tb_agendamento.*', 'p.Nome as PacienteNome')
+            ->where('tb_agendamento.Codigo', $id)
+            ->first();
+
+        $sinaisVitais = DB::table('tb_triagem')
+            ->where('IdAgenda', $id)
+            ->where('Estado', 'Ativo')
+            ->orderBy('CREATED_AT', 'desc')
+            ->get();
+
+        $empresa = DB::table('tb_empresa')->first();
+        if ($empresa && isset($empresa->IMAGEM)) {
+            $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.triagem_report', [
+            'agendamento' => $agendamento,
+            'sinaisVitais' => $sinaisVitais,
+            'empresa' => $empresa
+        ]);
+
+        return $pdf->stream("Controlo_Vitais_{$id}.pdf");
     }
 }

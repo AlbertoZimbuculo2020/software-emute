@@ -32,13 +32,16 @@ const atoForm = ref({
 });
 
 const sinaisForm = ref({
-    Peso: '',
-    Temperatura: '',
-    PressaoArterial: '',
-    FrequenciaCardioca: '',
-    FrequenciaRespiratoria: '',
-    SituacaoOxigenio: '',
-    Obs: ''
+    Peso: '0',
+    Temperatura: '0',
+    PressaoArterial: '0',
+    PressaoArterialBE: '0',
+    FrequenciaCardioca: '0',
+    PulsoBE: '0',
+    FrequenciaRespiratoria: '0',
+    SituacaoOxigenio: '0',
+    Obs: '',
+    Enfermeiro: ''
 });
 
 const altaForm = ref({
@@ -217,6 +220,22 @@ const openAtoModal = (type) => {
     showAtoModal.value = true;
 };
 
+const openSinaisModal = () => {
+    sinaisForm.value = {
+        Peso: '0',
+        Temperatura: '0',
+        PressaoArterial: '0',
+        PressaoArterialBE: '0',
+        FrequenciaCardioca: '0',
+        PulsoBE: '0',
+        FrequenciaRespiratoria: '0',
+        SituacaoOxigenio: '0',
+        Obs: '',
+        Enfermeiro: props.auth?.user?.name || 'Enfermeiro'
+    };
+    showSinaisModal.value = true;
+};
+
 const imprimirProcesso = () => {
     if (!selectedPaciente.value) return;
     window.open(route('hospitalar.internamento.imprimir.processo', selectedPaciente.value.Codigo), '_blank');
@@ -225,6 +244,11 @@ const imprimirProcesso = () => {
 const imprimirAtosEnfermagem = () => {
     if (!selectedPaciente.value) return;
     window.open(route('hospitalar.internamento.imprimir.atos-enfermagem', selectedPaciente.value.Codigo), '_blank');
+};
+
+const imprimirRelatorioVitais = () => {
+    if (!selectedPaciente.value) return;
+    window.open(route('hospitalar.internamento.imprimir.vitais', selectedPaciente.value.Codigo), '_blank');
 };
 </script>
 
@@ -274,7 +298,7 @@ const imprimirAtosEnfermagem = () => {
                     <div class="bg-[#f0f7ff] text-[#2196F3] text-center font-black text-[9px] uppercase py-0.5 border-b border-blue-100">Área dos Enfermeiros</div>
                     <div class="flex gap-0.5 p-0.5">
                         <button class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Cumprimento (Enfermagem)</button>
-                        <button @click="showSinaisModal = true" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Controlo de Sinais Vitais</button>
+                        <button @click="openSinaisModal" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Controlo de Sinais Vitais</button>
                         <button @click="openAtoModal('enfermagem')" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Registo de Actos da Enfermaria</button>
                     </div>
                 </div>
@@ -575,33 +599,111 @@ const imprimirAtosEnfermagem = () => {
             </div>
         </div>
 
-        <!-- Sinais Vitais Modal -->
+        <!-- Sinais Vitais Modal (Legacy Style) -->
         <div v-if="showSinaisModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-[500] p-4">
-            <div class="bg-white w-full max-w-xl shadow-2xl rounded-sm border-2 border-slate-400 overflow-hidden scale-in-center">
-                <div class="bg-slate-800 text-white p-4 font-bold flex justify-between items-center uppercase text-sm tracking-widest">
-                    <span>Lançamento de Sinais Vitais</span>
+            <div class="bg-[#f0f0f0] w-full max-w-6xl shadow-2xl rounded-sm border-2 border-slate-400 overflow-hidden flex flex-col h-[650px]">
+                <div class="bg-[#000080] text-white p-2 font-bold flex justify-between items-center uppercase text-xs tracking-widest">
+                    <span>Controlo de sinais vitais</span>
                     <button @click="showSinaisModal = false" class="hover:bg-red-600 px-2 rounded transition-colors">&times;</button>
                 </div>
-                <div class="p-8 grid grid-cols-2 gap-8 bg-slate-50">
-                    <div v-for="field in [
-                        {label: 'Peso (kg)', model: 'Peso'},
-                        {label: 'Temperatura (°C)', model: 'Temperatura'},
-                        {label: 'Pressão Arterial', model: 'PressaoArterial'},
-                        {label: 'Freq. Cardíaca', model: 'FrequenciaCardioca'},
-                        {label: 'Freq. Respiratória', model: 'FrequenciaRespiratoria'},
-                        {label: 'Saturação O2', model: 'SituacaoOxigenio'}
-                    ]" :key="field.model">
-                        <label class="block text-[11px] font-black uppercase text-slate-500 mb-1.5">{{ field.label }}</label>
-                        <input v-model="sinaisForm[field.model]" type="text" class="w-full border-2 border-slate-300 p-2.5 text-sm font-black rounded focus:border-blue-500 outline-none bg-white shadow-sm" />
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-[11px] font-black uppercase text-slate-500 mb-1.5">Observações Adicionais</label>
-                        <textarea v-model="sinaisForm.Obs" rows="3" class="w-full border-2 border-slate-300 p-3 text-sm rounded focus:border-blue-500 outline-none resize-none bg-white shadow-inner"></textarea>
-                    </div>
+                
+                <div class="bg-[#000080] text-white text-center py-1 text-sm font-black border-t border-white/20">
+                    {{ selectedPaciente?.Codigo }}
                 </div>
-                <div class="p-4 bg-white border-t border-slate-200 flex justify-end gap-3">
-                    <button @click="showSinaisModal = false" class="px-8 py-3 border-2 border-slate-300 hover:bg-slate-100 text-xs font-black uppercase rounded">Cancelar</button>
-                    <button @click="submitSinais" class="px-8 py-3 bg-blue-600 text-white hover:bg-blue-700 text-xs font-black uppercase rounded shadow-xl">Gravar Sinais</button>
+
+                <div class="flex-1 flex overflow-hidden p-4 gap-4">
+                    <!-- Left Column: Info and Form -->
+                    <div class="w-1/2 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
+                        <div class="space-y-1 mb-4">
+                            <div class="text-xl font-black text-slate-800">{{ selectedPaciente?.Codigo }}</div>
+                            <div class="text-xl font-black text-slate-800">{{ selectedPaciente?.PacienteNome }}</div>
+                            <div class="text-slate-500 font-bold">...</div>
+                        </div>
+
+                        <div class="grid grid-cols-3 items-center gap-2">
+                            <div class="font-black text-[11px] uppercase text-slate-600">ENFERMEIRO</div>
+                            <div class="col-span-2 border border-slate-300 bg-white p-1.5 text-xs font-bold uppercase shadow-sm">{{ $page.props.auth.user.name }}</div>
+
+                            <div class="font-bold text-xs text-slate-700">Peso:</div>
+                            <div class="col-span-2"><input v-model="sinaisForm.Peso" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
+
+                            <div class="font-bold text-xs text-slate-700">Temperatura corporal:</div>
+                            <div class="col-span-2"><input v-model="sinaisForm.Temperatura" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
+
+                            <div class="font-bold text-xs text-slate-700">Tensão Arterial BD:</div>
+                            <div class="col-span-2"><input v-model="sinaisForm.PressaoArterial" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
+
+                            <div class="font-bold text-xs text-slate-700">Tensão Arterial BE:</div>
+                            <div class="col-span-2"><input v-model="sinaisForm.PressaoArterialBE" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
+
+                            <div class="font-bold text-xs text-slate-700">Pulsação BD:</div>
+                            <div class="col-span-2"><input v-model="sinaisForm.FrequenciaCardioca" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
+
+                            <div class="font-bold text-xs text-slate-700">Pulsação BE:</div>
+                            <div class="col-span-2"><input v-model="sinaisForm.PulsoBE" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
+
+                            <div class="font-bold text-xs text-slate-700">Frequência respiratória:</div>
+                            <div class="col-span-2"><input v-model="sinaisForm.FrequenciaRespiratoria" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
+
+                            <div class="font-bold text-xs text-slate-700">Situação de oxigênio (oximetria):</div>
+                            <div class="col-span-2"><input v-model="sinaisForm.SituacaoOxigenio" type="text" class="w-full border border-slate-300 p-1.5 text-right text-xs font-bold outline-none focus:border-blue-500" /></div>
+
+                            <div class="font-bold text-xs text-slate-700 self-start mt-1">Observação:</div>
+                            <div class="col-span-2"><textarea v-model="sinaisForm.Obs" class="w-full border border-slate-300 p-2 text-xs font-bold outline-none focus:border-blue-500 h-16 resize-none"></textarea></div>
+                        </div>
+
+                        <button @click="submitSinais" class="w-full py-2.5 bg-gradient-to-b from-blue-400 to-blue-600 text-white font-black uppercase text-sm rounded shadow-lg hover:from-blue-500 hover:to-blue-700 transition-all border border-blue-700">
+                            GRAVAR DADOS DA TRIAGEM
+                        </button>
+                    </div>
+
+                    <!-- Right Column: History -->
+                    <div class="w-1/2 border border-slate-300 bg-white flex flex-col overflow-hidden">
+                        <div class="bg-slate-100 p-2 text-center font-bold text-xs border-b border-slate-300">Histórico de Triagem do Paciente</div>
+                        
+                        <div class="p-3 bg-slate-50 border-b border-slate-200">
+                            <div class="text-[10px] font-bold text-slate-500 uppercase mb-2">Pesquisar Triagem por Data</div>
+                            <div class="flex gap-2">
+                                <div class="flex-1 flex items-center gap-2">
+                                    <span class="text-[10px] font-bold">Data Inicio</span>
+                                    <input type="date" class="flex-1 border border-slate-300 p-1 text-xs outline-none" />
+                                </div>
+                                <div class="flex-1 flex items-center gap-2">
+                                    <span class="text-[10px] font-bold">Data Final</span>
+                                    <input type="date" class="flex-1 border border-slate-300 p-1 text-xs outline-none" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 overflow-auto custom-scrollbar">
+                            <table class="w-full text-[10px] border-collapse">
+                                <thead class="bg-slate-100 sticky top-0 font-bold border-b border-slate-300">
+                                    <tr>
+                                        <th class="p-2 border-r border-slate-200">Cod. Paciente</th>
+                                        <th class="p-2 border-r border-slate-200">Data</th>
+                                        <th class="p-2 border-r border-slate-200">Paciente</th>
+                                        <th class="p-2">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="sv in details.sinaisVitais" :key="sv.Id" class="border-b border-slate-100 hover:bg-slate-50">
+                                        <td class="p-2 border-r border-slate-100">{{ selectedPaciente?.Codigo }}</td>
+                                        <td class="p-2 border-r border-slate-100">{{ new Date(sv.CREATED_AT).toLocaleDateString() }}</td>
+                                        <td class="p-2 border-r border-slate-100 truncate max-w-[100px]">{{ selectedPaciente?.PacienteNome }}</td>
+                                        <td class="p-2 text-center">
+                                            <button @click="sinaisForm = {...sv}" class="text-blue-600 hover:underline font-bold">Selecionar</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="p-4 bg-slate-100 border-t border-slate-300">
+                            <button @click="imprimirRelatorioVitais" class="w-full py-2 bg-gradient-to-b from-blue-400 to-blue-600 text-white font-black uppercase text-xs rounded shadow hover:from-blue-500 hover:to-blue-700 transition-all border border-blue-700">
+                                RELATORIO DE CONTRO VITAIS
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
