@@ -1,6 +1,8 @@
+@if(!isset($is_economico))
 <!DOCTYPE html>
 <html>
 <head>
+@endif
     <meta charset="utf-8">
     <title>Justificativo Médico</title>
     <style>
@@ -15,8 +17,10 @@
         .signature-line { border-bottom: 1px solid #000; width: 300px; margin: 0 auto 10px; }
         .footer { position: fixed; bottom: -20px; left: 0; right: 0; text-align: center; font-size: 10px; color: #555; }
     </style>
+@if(!isset($is_economico))
 </head>
 <body>
+@endif
     <div class="header">
         @if($empresa && $empresa->IMAGEM)
             <img src="{{ $empresa->IMAGEM }}" class="logo">
@@ -52,5 +56,7 @@
         Tel: {{ $empresa->Telefone ?? '924358803' }} | 
         NIF: {{ $empresa->NIF ?? '5401150954' }}
     </div>
+@if(!isset($is_economico))
 </body>
 </html>
+@endif

@@ -1,12 +1,16 @@
+@if(!isset($is_economico))
 <!DOCTYPE html>
 <html>
 <head>
+@endif
     <meta charset="utf-8">
     <title>Relatório Geral da Consulta</title>
     <style>
+    @if(!isset($is_economico))
         @page {
             margin: 120px 40px 60px 40px; /* Top margin for fixed header */
         }
+    @endif
         body { 
             font-family: 'Helvetica', sans-serif; 
             font-size: 11px; 
@@ -87,8 +91,10 @@
 
         .page-break { page-break-after: always; }
     </style>
+@if(!isset($is_economico))
 </head>
 <body>
+@endif
 
     <!-- REPEATING HEADER -->
     <header>
@@ -270,5 +276,7 @@
         Dr.(a): {{ $paciente->MedicoNome ?? '' }}
     </div>
 
+@if(!isset($is_economico))
 </body>
 </html>
+@endif

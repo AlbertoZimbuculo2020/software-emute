@@ -234,11 +234,19 @@ class LaboratorioController extends Controller
             $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
         }
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.laboratorio_resultado', [
+        $view = 'pdf.laboratorio_resultado';
+        $data = [
             'paciente' => $agendamento,
             'exames' => $exames,
             'empresa' => $empresa
-        ]);
+        ];
+
+        if (request('modo') === 'economico') {
+            $data['is_economico'] = true;
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.layout_economico', ['original_view' => $view, 'data' => $data])->setPaper('a4', 'landscape');
+        } else {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, $data);
+        }
 
         return $pdf->stream('resultado_laboratorio_'.$idAgenda.'.pdf');
     }

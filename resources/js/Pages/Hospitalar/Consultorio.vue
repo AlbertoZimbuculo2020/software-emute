@@ -53,6 +53,7 @@ watch(selectedExameToLancar, (newVal) => {
 
 const examesSolicitados = ref([]); 
 const selectedExams = ref([]); 
+const isEconomicMode = ref(false); 
 
 // CID-10 Logic
 const selectedCids = ref([]);
@@ -180,34 +181,44 @@ const removerItemReceita = async (id) => {
 // IMPRESSÃO 
 const imprimirDadosClinico = () => {
     if (!selectedPaciente.value) return;
-    window.open(route('hospitalar.consultorio.imprimir.ficha', selectedPaciente.value.Codigo), '_blank');
+    let url = route('hospitalar.consultorio.imprimir.ficha', selectedPaciente.value.Codigo);
+    if (isEconomicMode.value) url += '?modo=economico';
+    window.open(url, '_blank');
 };
 
 const gerarJustificativo = () => {
     if (!selectedPaciente.value) return;
-    window.open(route('hospitalar.consultorio.imprimir.justificativo', selectedPaciente.value.Codigo), '_blank');
+    let url = route('hospitalar.consultorio.imprimir.justificativo', selectedPaciente.value.Codigo);
+    if (isEconomicMode.value) url += '?modo=economico';
+    window.open(url, '_blank');
 };
 
 const gerarGuiaTransferencia = () => {
     if (!selectedPaciente.value) return;
-    window.open(route('hospitalar.consultorio.imprimir.guia', selectedPaciente.value.Codigo), '_blank');
+    let url = route('hospitalar.consultorio.imprimir.guia', selectedPaciente.value.Codigo);
+    if (isEconomicMode.value) url += '?modo=economico';
+    window.open(url, '_blank');
 };
 const imprimirReceita = () => {
     if (!selectedPaciente.value) return;
-    window.open(route('hospitalar.consultorio.imprimir.receita', selectedPaciente.value.Codigo), '_blank');
+    let url = route('hospitalar.consultorio.imprimir.receita', selectedPaciente.value.Codigo);
+    if (isEconomicMode.value) url += '?modo=economico';
+    window.open(url, '_blank');
 };
 const imprimirRequisicao = () => {
     if (!selectedPaciente.value) return;
     const ids = selectedExams.value.join(',');
     let url = route('hospitalar.consultorio.imprimir.requisicao', selectedPaciente.value.Codigo);
-    if (ids) {
-        url += '?exames=' + ids;
-    }
+    let sep = '?';
+    if (ids) { url += sep + 'exames=' + ids; sep = '&'; }
+    if (isEconomicMode.value) { url += sep + 'modo=economico'; }
     window.open(url, '_blank');
 };
 const imprimirResultadosLab = () => {
     if (!selectedPaciente.value) return;
-    window.open(route('hospitalar.laboratorio.imprimir', selectedPaciente.value.Codigo), '_blank');
+    let url = route('hospitalar.laboratorio.imprimir', selectedPaciente.value.Codigo);
+    if (isEconomicMode.value) url += '?modo=economico';
+    window.open(url, '_blank');
 };
 
 const visualizarRelatorio = (codigoAgenda) => {
@@ -612,6 +623,10 @@ const encaminharPaciente = async () => {
                                 <button @click="imprimirDadosClinico" class="bg-orange-500 text-white px-4 rounded font-black hover:bg-orange-600 shadow-md flex items-center justify-center">
                                     <Printer class="w-3.5 h-3.5" />
                                 </button>
+                                <!-- MINI TOGGLE ECONOMICO -->
+                                <button @click="isEconomicMode = !isEconomicMode" :class="isEconomicMode ? 'bg-emerald-500' : 'bg-slate-400'" class="px-2 rounded text-[8px] font-black text-white uppercase transition-all shadow-md">
+                                    {{ isEconomicMode ? 'Eco ON' : 'Eco OFF' }}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -857,6 +872,16 @@ const encaminharPaciente = async () => {
                     <button @click="showDocumentosModal = false">×</button>
                 </div>
                 <div class="p-6 flex flex-col gap-4 bg-slate-50">
+                    <!-- TOGGLE ECONOMICO NO MODAL -->
+                    <label class="flex items-center justify-between cursor-pointer bg-white p-3 rounded border border-slate-200 shadow-sm">
+                        <span class="text-[10px] font-black text-slate-600 uppercase">Economia de Papel (2x A5)</span>
+                        <div class="relative">
+                            <input type="checkbox" v-model="isEconomicMode" class="sr-only">
+                            <div class="w-10 h-5 bg-slate-300 rounded-full shadow-inner"></div>
+                            <div :class="['absolute w-5 h-5 bg-white rounded-full shadow inset-y-0 left-0 transition-all', isEconomicMode ? 'translate-x-5 bg-emerald-500' : '']"></div>
+                        </div>
+                    </label>
+
                     <button @click="gerarJustificativo" class="bg-blue-600 text-white py-3 rounded font-black uppercase text-[10px] shadow-sm hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
                         <FileText class="w-4 h-4" /> Justificativo Médico
                     </button>

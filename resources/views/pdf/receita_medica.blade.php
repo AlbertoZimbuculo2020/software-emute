@@ -1,6 +1,8 @@
+@if(!isset($is_economico))
 <!DOCTYPE html>
 <html>
 <head>
+@endif
     <meta charset="utf-8">
     <title>Receita Médica</title>
     <style>
@@ -21,8 +23,10 @@
         .clear { clear: both; }
         .date { text-align: right; margin-bottom: 20px; font-weight: bold; }
     </style>
+@if(!isset($is_economico))
 </head>
 <body>
+@endif
     <div class="header">
         @if($empresa->IMAGEM)
             <img src="{{ $empresa->IMAGEM }}" class="logo">
@@ -73,5 +77,7 @@
         <p><strong>Dr(a). {{ $paciente->MedicoNome }}</strong></p>
         <p style="font-size: 11px;">Médico(a) Responsável</p>
     </div>
+@if(!isset($is_economico))
 </body>
 </html>
+@endif

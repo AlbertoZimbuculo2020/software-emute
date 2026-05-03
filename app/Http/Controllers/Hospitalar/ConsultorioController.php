@@ -307,11 +307,8 @@ class ConsultorioController extends Controller
         if (!$paciente) return abort(404);
 
         $triagem = DB::table('tb_triagem')->where('IdAgenda', $idAgenda)->first();
-        
         $exames = DB::table('tb_resultado_exame')->where('IdAgenda', $idAgenda)->where('Estado', '!=', 'Removido')->get();
-        
         $receita = DB::table('tb_receita')->where('IdAgenda', $idAgenda)->where('Estado', '!=', 'Removido')->get();
-
         $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
         
         if ($empresa && $empresa->IMAGEM) {
@@ -321,11 +318,19 @@ class ConsultorioController extends Controller
         $idade = 'N/D';
         if ($paciente->DataNascimento) {
             $birthDate = new \DateTime($paciente->DataNascimento);
-            $today = new \DateTime();
-            $idade = $today->diff($birthDate)->y . ' Anos';
+            $idade = (new \DateTime())->diff($birthDate)->y . ' Anos';
         }
 
-        $pdf = Pdf::loadView('pdf.ficha_medica', compact('paciente', 'triagem', 'exames', 'receita', 'empresa', 'idade'));
+        $view = 'pdf.ficha_medica';
+        $data = compact('paciente', 'triagem', 'exames', 'receita', 'empresa', 'idade');
+
+        if (request('modo') === 'economico') {
+            $data['is_economico'] = true;
+            $pdf = Pdf::loadView('pdf.layout_economico', ['original_view' => $view, 'data' => $data])->setPaper('a4', 'landscape');
+        } else {
+            $pdf = Pdf::loadView($view, $data);
+        }
+        
         return $pdf->stream("ficha_medica_{$idAgenda}.pdf");
     }
 
@@ -352,7 +357,16 @@ class ConsultorioController extends Controller
 
         $dataExtenso = "Luanda, " . date('d') . " de " . $this->mesExtenso(date('m')) . " de " . date('Y');
 
-        $pdf = Pdf::loadView('pdf.receita_medica', compact('paciente', 'itens', 'empresa', 'dataExtenso'));
+        $view = 'pdf.receita_medica';
+        $data = compact('paciente', 'itens', 'empresa', 'dataExtenso');
+
+        if (request('modo') === 'economico') {
+            $data['is_economico'] = true;
+            $pdf = Pdf::loadView('pdf.layout_economico', ['original_view' => $view, 'data' => $data])->setPaper('a4', 'landscape');
+        } else {
+            $pdf = Pdf::loadView($view, $data);
+        }
+        
         return $pdf->stream("receita_{$idAgenda}.pdf");
     }
 
@@ -378,15 +392,9 @@ class ConsultorioController extends Controller
         $requestedExams = request('exames');
         if (!empty($requestedExams)) {
             $ids = array_map('trim', explode(',', $requestedExams));
-            // IDs from frontend can have 'cat_' or 'sol_' prefixes
             $cleanIds = array_map(function($id) {
                 return str_replace(['cat_', 'sol_'], '', $id);
             }, $ids);
-            
-            // If they are 'sol_', we might want to fetch from tb_resultado_exame first
-            // but for a REQUISITION, we usually want the base exam definition if it's new,
-            // or the existing one if it's already solicited.
-            // Let's check both.
             
             $examesSolicitados = DB::table('tb_resultado_exame')
                 ->where('IdAgenda', $idAgenda)
@@ -428,7 +436,16 @@ class ConsultorioController extends Controller
             $idade = (new \DateTime())->diff($birthDate)->y . ' Anos';
         }
 
-        $pdf = Pdf::loadView('pdf.requisicao_exames', compact('paciente', 'exames', 'empresa', 'idade'));
+        $view = 'pdf.requisicao_exames';
+        $data = compact('paciente', 'exames', 'empresa', 'idade');
+
+        if (request('modo') === 'economico') {
+            $data['is_economico'] = true;
+            $pdf = Pdf::loadView('pdf.layout_economico', ['original_view' => $view, 'data' => $data])->setPaper('a4', 'landscape');
+        } else {
+            $pdf = Pdf::loadView($view, $data);
+        }
+        
         return $pdf->stream("requisicao_{$idAgenda}.pdf");
     }
 
@@ -449,7 +466,16 @@ class ConsultorioController extends Controller
             $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
         }
 
-        $pdf = Pdf::loadView('pdf.justificativo_medico', compact('paciente', 'empresa'));
+        $view = 'pdf.justificativo_medico';
+        $data = compact('paciente', 'empresa');
+
+        if (request('modo') === 'economico') {
+            $data['is_economico'] = true;
+            $pdf = Pdf::loadView('pdf.layout_economico', ['original_view' => $view, 'data' => $data])->setPaper('a4', 'landscape');
+        } else {
+            $pdf = Pdf::loadView($view, $data);
+        }
+        
         return $pdf->stream("justificativo_{$idAgenda}.pdf");
     }
 
@@ -476,7 +502,16 @@ class ConsultorioController extends Controller
             $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
         }
 
-        $pdf = Pdf::loadView('pdf.guia_transferencia', compact('paciente', 'idade', 'empresa'));
+        $view = 'pdf.guia_transferencia';
+        $data = compact('paciente', 'idade', 'empresa');
+
+        if (request('modo') === 'economico') {
+            $data['is_economico'] = true;
+            $pdf = Pdf::loadView('pdf.layout_economico', ['original_view' => $view, 'data' => $data])->setPaper('a4', 'landscape');
+        } else {
+            $pdf = Pdf::loadView($view, $data);
+        }
+        
         return $pdf->stream("guia_transferencia_{$idAgenda}.pdf");
     }
 

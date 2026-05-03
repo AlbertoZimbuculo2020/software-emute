@@ -1,6 +1,8 @@
+@if(!isset($is_economico))
 <!DOCTYPE html>
 <html lang="pt">
 <head>
+@endif
     <meta charset="UTF-8">
     <title>Requisição de Exames</title>
     <style>
@@ -151,8 +153,10 @@
             margin: 30px auto 5px auto;
         }
     </style>
+@if(!isset($is_economico))
 </head>
 <body>
+@endif
 
     <!-- HEADER -->
     <table class="header-table">
@@ -310,5 +314,7 @@
         Dr(a).: {{ auth()->user()->name ?? '' }}
     </div>
 
+@if(!isset($is_economico))
 </body>
 </html>
+@endif
