@@ -177,13 +177,12 @@ class InternamentoController extends Controller
             'Obs' => $request->Obs,
             'Imferemiro' => Auth::user()->name ?? 'Enfermeiro',
             'Estado' => 'Ativo',
-            'CREATED_AT' => now()
         ]);
 
         return redirect()->back()->with('message', 'Sinais vitais registrados!');
     }
 
-    public function darAlta(Request $request, $idAgenda)
+    public function darAlta(Request $request, $id)
     {
         $request->validate([
             'Operado' => 'nullable|string',
@@ -192,29 +191,116 @@ class InternamentoController extends Controller
             'Obs' => 'nullable|string',
         ]);
 
-        DB::transaction(function () use ($request, $idAgenda) {
-            // Atualiza o agendamento
+        DB::transaction(function () use ($request, $id) {
+            // Atualiza Agendamento
             DB::table('tb_agendamento')
-                ->where('Codigo', $idAgenda)
+                ->where('Codigo', $id)
                 ->update(['Situacao' => 'Alta']);
 
-            // Insere na tabela de alta
-            DB::table('tb_alta')->updateOrInsert(
-                ['IdAgenda' => $idAgenda],
-                [
-                    'Codigo' => 'ALTA-' . time(), // Gerando um código simples
-                    'Idmedico' => Auth::id() ?? 1,
-                    'Assinatura' => Auth::user()->name ?? 'Médico',
-                    'Operado' => $request->Operado,
-                    'Complicacoes' => $request->Complicacoes,
-                    'Repouso' => $request->Repouso,
-                    'Obs' => $request->Obs,
-                    'Estado' => 'Ativo',
-                    'CREATED_AT' => now()
-                ]
-            );
+            // Grava na tb_alta
+            DB::table('tb_alta')->insert([
+                'IdAgenda' => $id,
+                'DataAlta' => now(),
+                'Operado' => $request->Operado,
+                'Complicacoes' => $request->Complicacoes,
+                'Repouso' => $request->Repouso,
+                'Obs' => $request->Obs,
+                'Medico' => auth()->user()->name,
+                'IdMedico' => auth()->user()->id,
+            ]);
         });
 
-        return redirect()->back()->with('message', 'Alta registrada com sucesso!');
+        return redirect()->back()->with('message', 'Alta processada com sucesso');
+    }
+
+    public function imprimirProcesso($id)
+    {
+        $agendamento = DB::table('tb_agendamento')
+            ->join('tb_tipoentidade as p', 'tb_agendamento.IdPaciente', '=', 'p.Codigo')
+            ->leftJoin('tb_entidade as e', 'p.IdEntidade', '=', 'e.Codigo')
+            ->leftJoin('tb_tipoentidade as m', 'tb_agendamento.IdMedico', '=', 'm.Codigo')
+            ->select(
+                'tb_agendamento.*', 
+                'p.Nome as PacienteNome', 
+                'm.Nome as MedicoNome', 
+                'e.Genero as Sexo', 
+                'e.DataNascimento as Nascimento', 
+                'p.Telefone', 
+                'p.Rua as Morada'
+            )
+            ->where('tb_agendamento.Codigo', $id)
+            ->first();
+
+        if (!$agendamento) abort(404);
+
+        $prescricoes = DB::table('tb_prescricao')
+            ->where('IdAgenda', $id)
+            ->where('Estado', 'Ativo')
+            ->orderBy('DataInternamento', 'desc')
+            ->get();
+
+        $atosMedicos = DB::table('tb_atos_medicos')
+            ->where('IdAgenda', $id)
+            ->where('Estado', 'Ativo')
+            ->orderBy('DataAto', 'desc')
+            ->get();
+
+        $atosEnfermagem = DB::table('tb_atos_enfermagem')
+            ->where('IdAgenda', $id)
+            ->where('Estado', 'Ativo')
+            ->orderBy('DataAto', 'desc')
+            ->get();
+
+        $sinaisVitais = DB::table('tb_triagem')
+            ->where('IdAgenda', $id)
+            ->where('Estado', 'Ativo')
+            ->orderBy('CREATED_AT', 'desc')
+            ->get();
+
+        $alta = DB::table('tb_alta')
+            ->where('IdAgenda', $id)
+            ->first();
+
+        $empresa = DB::table('tb_empresa')->first();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.processo_clinico', [
+            'agendamento' => $agendamento,
+            'prescricoes' => $prescricoes,
+            'atosMedicos' => $atosMedicos,
+            'atosEnfermagem' => $atosEnfermagem,
+            'sinaisVitais' => $sinaisVitais,
+            'alta' => $alta,
+            'empresa' => $empresa
+        ]);
+
+        return $pdf->stream("Processo_Clinico_{$id}.pdf");
+    }
+
+    public function imprimirAtosEnfermagem($id)
+    {
+        $agendamento = DB::table('tb_agendamento')
+            ->join('tb_tipoentidade as p', 'tb_agendamento.IdPaciente', '=', 'p.Codigo')
+            ->select('tb_agendamento.*', 'p.Nome as PacienteNome')
+            ->where('tb_agendamento.Codigo', $id)
+            ->first();
+
+        $atosEnfermagem = DB::table('tb_atos_enfermagem')
+            ->where('IdAgenda', $id)
+            ->where('Estado', 'Ativo')
+            ->orderBy('DataAto', 'desc')
+            ->get();
+
+        $empresa = DB::table('tb_empresa')->first();
+        if ($empresa && isset($empresa->IMAGEM)) {
+            $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.atos_enfermagem', [
+            'agendamento' => $agendamento,
+            'atosEnfermagem' => $atosEnfermagem,
+            'empresa' => $empresa
+        ]);
+
+        return $pdf->stream("Atos_Enfermagem_{$id}.pdf");
     }
 }
