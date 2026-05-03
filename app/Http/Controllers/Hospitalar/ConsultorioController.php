@@ -398,6 +398,54 @@ class ConsultorioController extends Controller
         return $pdf->stream("requisicao_{$idAgenda}.pdf");
     }
 
+    public function imprimirJustificativo($idAgenda)
+    {
+        $paciente = DB::table('tb_agendamento')
+            ->join('tb_tipoentidade', 'tb_agendamento.IdPaciente', '=', 'tb_tipoentidade.Codigo')
+            ->leftJoin('tb_entidade', 'tb_tipoentidade.IdEntidade', '=', 'tb_entidade.Codigo')
+            ->leftJoin('tb_tipoentidade as medico', 'tb_agendamento.IdMedico', '=', 'medico.Codigo')
+            ->select('tb_agendamento.*', 'tb_tipoentidade.Nome as PacienteNome', 'tb_entidade.DataNascimento', 'tb_entidade.Genero', 'medico.Nome as MedicoNome')
+            ->where('tb_agendamento.Codigo', $idAgenda)
+            ->first();
+
+        if (!$paciente) return abort(404);
+
+        $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
+        if ($empresa && $empresa->IMAGEM) {
+            $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
+        }
+
+        $pdf = Pdf::loadView('pdf.justificativo_medico', compact('paciente', 'empresa'));
+        return $pdf->stream("justificativo_{$idAgenda}.pdf");
+    }
+
+    public function imprimirGuia($idAgenda)
+    {
+        $paciente = DB::table('tb_agendamento')
+            ->join('tb_tipoentidade', 'tb_agendamento.IdPaciente', '=', 'tb_tipoentidade.Codigo')
+            ->leftJoin('tb_entidade', 'tb_tipoentidade.IdEntidade', '=', 'tb_entidade.Codigo')
+            ->leftJoin('tb_tipoentidade as medico', 'tb_agendamento.IdMedico', '=', 'medico.Codigo')
+            ->select('tb_agendamento.*', 'tb_tipoentidade.Nome as PacienteNome', 'tb_entidade.DataNascimento', 'tb_entidade.Genero', 'medico.Nome as MedicoNome')
+            ->where('tb_agendamento.Codigo', $idAgenda)
+            ->first();
+
+        if (!$paciente) return abort(404);
+
+        $idade = 'N/D';
+        if ($paciente->DataNascimento) {
+            $birthDate = new \DateTime($paciente->DataNascimento);
+            $idade = (new \DateTime())->diff($birthDate)->y . ' Anos';
+        }
+
+        $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
+        if ($empresa && $empresa->IMAGEM) {
+            $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
+        }
+
+        $pdf = Pdf::loadView('pdf.guia_transferencia', compact('paciente', 'idade', 'empresa'));
+        return $pdf->stream("guia_transferencia_{$idAgenda}.pdf");
+    }
+
     private function mesExtenso($m) {
         $meses = [
             '01' => 'Janeiro', '02' => 'Fevereiro', '03' => 'Março', '04' => 'Abril',

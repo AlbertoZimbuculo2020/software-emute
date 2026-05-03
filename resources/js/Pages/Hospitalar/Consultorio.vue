@@ -27,6 +27,7 @@ const isLoading = ref(false);
 
 const activeExamFilter = ref('SOLICITADOS'); 
 const showLancarResultadosModal = ref(false);
+const showDocumentosModal = ref(false);
 const searchExameTerm = ref('');
 const selectedExameToLancar = ref(null);
 
@@ -159,6 +160,16 @@ const removerItemReceita = async (id) => {
 const imprimirDadosClinico = () => {
     if (!selectedPaciente.value) return;
     window.open(route('hospitalar.consultorio.imprimir.ficha', selectedPaciente.value.Codigo), '_blank');
+};
+
+const gerarJustificativo = () => {
+    if (!selectedPaciente.value) return;
+    window.open(route('hospitalar.consultorio.imprimir.justificativo', selectedPaciente.value.Codigo), '_blank');
+};
+
+const gerarGuiaTransferencia = () => {
+    if (!selectedPaciente.value) return;
+    window.open(route('hospitalar.consultorio.imprimir.guia', selectedPaciente.value.Codigo), '_blank');
 };
 const imprimirReceita = () => {
     if (!selectedPaciente.value) return;
@@ -569,7 +580,7 @@ const encaminharPaciente = async () => {
                                 <button @click="salvarConsulta" class="flex-grow bg-blue-600 text-white py-2 font-black uppercase text-[9px] tracking-widest shadow-md hover:bg-blue-700 transition-all flex items-center justify-center gap-2 rounded">
                                     <Save class="w-3.5 h-3.5" /> GRAVAR DADOS
                                 </button>
-                                <button @click="imprimirDadosClinico" class="bg-orange-500 text-white px-4 rounded font-black hover:bg-orange-600 shadow-md">
+                                <button @click="imprimirDadosClinico" class="bg-orange-500 text-white px-4 rounded font-black hover:bg-orange-600 shadow-md flex items-center justify-center">
                                     <Printer class="w-3.5 h-3.5" />
                                 </button>
                             </div>
@@ -631,7 +642,7 @@ const encaminharPaciente = async () => {
                         <button @click="form.situacao = 'Internado'; salvarConsulta()" class="bg-blue-600 text-white py-3 rounded font-black uppercase text-[9px] flex items-center justify-center gap-2 hover:bg-blue-700 shadow-sm">
                             <Activity class="w-4 h-4" /> INTERNAMENTO
                         </button>
-                        <button class="bg-slate-800 text-white py-3 rounded font-black uppercase text-[9px] flex items-center justify-center gap-2 hover:bg-slate-900 shadow-sm">
+                        <button @click="showDocumentosModal = true" class="bg-slate-800 text-white py-3 rounded font-black uppercase text-[9px] flex items-center justify-center gap-2 hover:bg-slate-900 shadow-sm">
                             <FileText class="w-4 h-4" /> DOCUMENTOS
                         </button>
                         <button @click="salvarConsulta" class="bg-emerald-500 text-white py-3 rounded font-black uppercase text-[9px] flex items-center justify-center gap-2 hover:bg-emerald-600 shadow-sm">
@@ -716,6 +727,23 @@ const encaminharPaciente = async () => {
                 <span class="text-[9px] font-black uppercase tracking-widest">{{ notification.message }}</span>
             </div>
         </Transition>
+        <!-- MODAL: Documentos -->
+        <div v-if="showDocumentosModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+             <div class="bg-white w-[400px] rounded shadow-2xl border border-slate-300 flex flex-col overflow-hidden">
+                <div class="bg-blue-900 text-white text-center py-2 font-black uppercase text-[10px] flex justify-between px-4">
+                    <span>Documentos Auxiliares</span>
+                    <button @click="showDocumentosModal = false">×</button>
+                </div>
+                <div class="p-6 flex flex-col gap-4 bg-slate-50">
+                    <button @click="gerarJustificativo" class="bg-blue-600 text-white py-3 rounded font-black uppercase text-[10px] shadow-sm hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
+                        <FileText class="w-4 h-4" /> Justificativo Médico
+                    </button>
+                    <button @click="gerarGuiaTransferencia" class="bg-emerald-600 text-white py-3 rounded font-black uppercase text-[10px] shadow-sm hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
+                        <FileText class="w-4 h-4" /> Guia de Transferência
+                    </button>
+                </div>
+             </div>
+        </div>
     </DashboardLayout>
 </template>
 
