@@ -54,7 +54,7 @@ class ConsultorioController extends Controller
             ->get();
 
         $listaMedicos = DB::table('tb_tipoentidade')
-            ->where('TipoEntidade', 'Medico')
+            ->whereIn('TipoEntidade', ['Medico', 'Medicos'])
             ->where('Estado', 'Ativo')
             ->select('Codigo', 'Nome')
             ->get();

@@ -216,6 +216,7 @@ Route::get('/hospitalar/internamento/imprimir-vitais/{id}', [InternamentoControl
 Route::get('/hospitalar/internamento/depositos', [InternamentoController::class, 'getDepositos'])->middleware(['auth', 'verified'])->name('hospitalar.internamento.depositos');
 Route::get('/hospitalar/internamento/artigos', [InternamentoController::class, 'getArtigos'])->middleware(['auth', 'verified'])->name('hospitalar.internamento.artigos');
 Route::post('/hospitalar/internamento/cumprimento', [InternamentoController::class, 'gravarCumprimento'])->middleware(['auth', 'verified'])->name('hospitalar.internamento.cumprimento');
+Route::get('/hospitalar/internamento/imprimir-cumprimento/{id}', [InternamentoController::class, 'imprimirCumprimento'])->middleware(['auth', 'verified'])->name('hospitalar.internamento.imprimir.cumprimento');
 Route::post('/hospitalar/internamento/saida-farmaco', [InternamentoController::class, 'finalizarSaidaFarmaco'])->middleware(['auth', 'verified'])->name('hospitalar.internamento.saida-farmaco');
 
 Route::get('/hospitalar/laboratorio', [LaboratorioController::class, 'index'])->middleware(['auth', 'verified'])->name('hospitalar.laboratorio.index');

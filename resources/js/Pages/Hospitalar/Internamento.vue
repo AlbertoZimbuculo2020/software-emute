@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import axios from 'axios';
 import { Search, CheckCircle2, AlertCircle, Printer, PlusCircle, ClipboardCheck, Plus, LayoutGrid, Users, Stethoscope, Syringe, Activity, X, Package2, Minus } from 'lucide-vue-next';
@@ -9,6 +9,24 @@ const props = defineProps({
     internados: { type: Array, default: () => [] },
     historico: { type: Array, default: () => [] }
 });
+
+const page = usePage();
+
+const isMedico = computed(() => {
+    return page.props.auth.user.ID_PERFIL == 3;
+});
+
+const isEnfermeiro = computed(() => {
+    return page.props.auth.user.ID_PERFIL == 2 || page.props.auth.user.ID_PERFIL == 3 || page.props.auth.user.ACESSO === 'SIM';
+});
+
+const requireMedico = (action) => {
+    if (isMedico.value) {
+        action();
+    } else {
+        showToast('Área restrita a médicos', 'error');
+    }
+};
 
 const searchTerm = ref('');
 const histSearchTerm = ref('');
@@ -242,7 +260,7 @@ const openSinaisModal = () => {
         FrequenciaRespiratoria: '0',
         SituacaoOxigenio: '0',
         Obs: '',
-        Enfermeiro: props.auth?.user?.name || 'Enfermeiro'
+        Enfermeiro: page.props.auth.user.name || 'Enfermeiro'
     };
     showSinaisModal.value = true;
 };
@@ -328,6 +346,8 @@ const gravarCumprimento = async () => {
             cumprimentos: prescricoesCumprimento.value
         });
         showToast('Cumprimento gravado com sucesso!');
+        // Abrir impresso
+        window.open(route('hospitalar.internamento.imprimir.cumprimento', selectedPaciente.value.Codigo), '_blank');
     } catch (e) {
         showToast('Erro ao gravar cumprimento', 'error');
     }
@@ -391,14 +411,14 @@ const finalizarSaidaFarmaco = async () => {
                 <div class="flex flex-col flex-1 mx-1 border border-blue-200 rounded-sm">
                     <div class="bg-[#f0f7ff] text-[#2196F3] text-center font-black text-[9px] uppercase py-0.5 border-b border-blue-100">Área dos Médicos</div>
                     <div class="flex gap-0.5 p-0.5">
-                        <button @click="showPrescricaoModal = true" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Prescrições Médicas</button>
-                        <button @click="openAtoModal('medico')" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Registo de Actos Médicos</button>
-                        <button @click="showAltaModal = true" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Título de Alta</button>
+                        <button @click="requireMedico(() => showPrescricaoModal = true)" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Prescrições Médicas</button>
+                        <button @click="requireMedico(() => openAtoModal('medico'))" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Registo de Actos Médicos</button>
+                        <button @click="requireMedico(() => showAltaModal = true)" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Título de Alta</button>
                     </div>
                 </div>
 
                 <!-- Group 3: Área dos Enfermeiros -->
-                <div class="flex flex-col flex-1 mx-1 border border-blue-200 rounded-sm">
+                <div v-if="isEnfermeiro" class="flex flex-col flex-1 mx-1 border border-blue-200 rounded-sm">
                     <div class="bg-[#f0f7ff] text-[#2196F3] text-center font-black text-[9px] uppercase py-0.5 border-b border-blue-100">Área dos Enfermeiros</div>
                     <div class="flex gap-0.5 p-0.5">
                         <button @click="openCumprimentoModal" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Cumprimento (Enfermagem)</button>

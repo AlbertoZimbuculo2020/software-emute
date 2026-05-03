@@ -54,15 +54,18 @@ class MedicoController extends Controller
             'rua' => 'nullable|string|max:100',
         ]);
 
-        $lastMedico = DB::table('tb_medico')
-            ->join('tb_tipoentidade', 'tb_medico.IdTipoEntidade', '=', 'tb_tipoentidade.Codigo')
-            ->orderBy('tb_medico.Id', 'desc')
-            ->first();
+        // Geração de código mais robusta
+        $lastMedico = DB::table('tb_tipoentidade')
+            ->where('Codigo', 'like', 'MED%')
+            ->select('Codigo')
+            ->get()
+            ->map(function($item) {
+                preg_match('/MED(\d+)/', $item->Codigo, $matches);
+                return isset($matches[1]) ? intval($matches[1]) : 0;
+            })
+            ->max();
 
-        $newIdNumber = 1;
-        if ($lastMedico && preg_match('/MED(\d+)/', $lastMedico->IdTipoEntidade, $matches)) {
-            $newIdNumber = intval($matches[1]) + 1;
-        }
+        $newIdNumber = ($lastMedico ?: 0) + 1;
         $newCodigo = 'MED' . str_pad($newIdNumber, 3, '0', STR_PAD_LEFT);
 
         DB::beginTransaction();
@@ -77,11 +80,11 @@ class MedicoController extends Controller
                 'Codigo' => $newCodigo,
                 'IdEntidade' => $newCodigo,
                 'Nome' => strtoupper($request->nome),
-                'Telefone' => $request->telefone,
+                'Telefone' => $request->telefone ?: '---',
                 'TipoEntidade' => 'Medico',
                 'Pais' => 'Angola',
-                'Cidade' => $request->cidade,
-                'Rua' => $request->rua,
+                'Cidade' => $request->cidade ?: 'S/N',
+                'Rua' => $request->rua ?: 'S/N',
                 'Estado' => 'Ativo'
             ]);
 

@@ -386,11 +386,39 @@ class InternamentoController extends Controller
                     'Cumprimento1' => $item['c1'] ? 'True' : 'False',
                     'Cumprimento2' => $item['c2'] ? 'True' : 'False',
                     'Cumprimento3' => $item['c3'] ? 'True' : 'False',
+                    'Observacao'   => $item['Observacao'] ?? '',
                     'Infermeiro'   => Auth::user()->name,
                 ]);
         }
 
         return response()->json(['success' => true, 'message' => 'Cumprimento gravado com sucesso!']);
+    }
+
+    public function imprimirCumprimento($id)
+    {
+        $agendamento = DB::table('tb_agendamento')
+            ->join('tb_tipoentidade as p', 'tb_agendamento.IdPaciente', '=', 'p.Codigo')
+            ->select('tb_agendamento.*', 'p.Nome as PacienteNome')
+            ->where('tb_agendamento.Codigo', $id)
+            ->first();
+
+        $prescricoes = DB::table('tb_prescricao')
+            ->where('IdAgenda', $id)
+            ->where('Estado', 'Ativo')
+            ->get();
+
+        $empresa = DB::table('tb_empresa')->first();
+        if ($empresa && isset($empresa->IMAGEM)) {
+            $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.cumprimento_prescricoes', [
+            'agendamento' => $agendamento,
+            'prescricoes' => $prescricoes,
+            'empresa' => $empresa
+        ]);
+
+        return $pdf->stream("Cumprimento_Prescricoes_{$id}.pdf");
     }
 
     public function finalizarSaidaFarmaco(Request $request)
