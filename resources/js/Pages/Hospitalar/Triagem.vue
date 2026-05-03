@@ -16,6 +16,7 @@ const props = defineProps({
 const searchTerm = ref('');
 const selectedPaciente = ref(null);
 const notification = ref({ show: false, message: '', type: 'success' });
+const confirmModal = ref({ isOpen: false, title: '', message: '', onConfirm: null });
 
 const showNotification = (message, type = 'success') => {
     notification.value = { show: true, message, type };
@@ -62,17 +63,25 @@ const enviarTriage = () => {
         showNotification('Selecione um paciente na lista primeiro.', 'error');
         return;
     }
-    
-    form.post(route('hospitalar.triagem.store'), {
-        onSuccess: () => {
-            showNotification('Triagem realizada e paciente enviado para o consultório!');
-            selectedPaciente.value = null;
-            form.reset();
-        },
-        onError: () => {
-            showNotification('Erro ao processar triagem.', 'error');
+
+    confirmModal.value = {
+        isOpen: true,
+        title: 'Enviar para Consultório',
+        message: `Deseja enviar o paciente ${selectedPaciente.value.PacienteNome} para o consultório médico com os sinais vitais registrados?`,
+        onConfirm: () => {
+            confirmModal.value.isOpen = false;
+            form.post(route('hospitalar.triagem.store'), {
+                onSuccess: () => {
+                    showNotification('Triagem realizada e paciente enviado para o consultório!');
+                    selectedPaciente.value = null;
+                    form.reset();
+                },
+                onError: () => {
+                    showNotification('Erro ao processar triagem.', 'error');
+                }
+            });
         }
-    });
+    };
 };
 
 const calcularIdade = (dataNascimento) => {
@@ -289,6 +298,33 @@ const calcularIdade = (dataNascimento) => {
             </div>
         </Transition>
     </DashboardLayout>
+
+    <!-- PREMIUM CONFIRM MODAL -->
+    <Transition enter-active-class="duration-300 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="duration-200 ease-in" leave-to-class="opacity-0 scale-95">
+        <div v-if="confirmModal.isOpen" class="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" @click="confirmModal.isOpen = false"></div>
+            <div class="relative bg-white rounded-[2.5rem] shadow-2xl p-10 max-w-md w-full border border-white/20 animate-fadeIn text-center">
+                <div class="flex flex-col items-center">
+                    <div class="w-20 h-20 bg-blue-50 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner">
+                        <Activity class="w-10 h-10 text-blue-600" />
+                    </div>
+                    <h3 class="text-lg font-black text-slate-900 uppercase tracking-tight mb-2">{{ confirmModal.title }}</h3>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-8 px-4">
+                        {{ confirmModal.message }}
+                    </p>
+                    
+                    <div class="grid grid-cols-2 gap-4 w-full text-[10px] font-black uppercase tracking-widest">
+                        <button @click="confirmModal.isOpen = false" class="py-4 bg-slate-100 text-slate-500 rounded-2xl hover:bg-slate-200 transition-all">
+                            Cancelar
+                        </button>
+                        <button @click="confirmModal.onConfirm" class="py-4 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-200">
+                            Confirmar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Transition>
 </template>
 
 <style scoped>

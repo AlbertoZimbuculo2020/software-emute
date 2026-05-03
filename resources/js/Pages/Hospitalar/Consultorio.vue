@@ -24,6 +24,7 @@ const selectedPaciente = ref(null);
 const triageData = ref(null);
 const patientHistory = ref([]);
 const isLoading = ref(false);
+const confirmModal = ref({ isOpen: false, title: '', message: '', onConfirm: null });
 
 const activeExamFilter = ref('SOLICITADOS'); 
 const showLancarResultadosModal = ref(false);
@@ -313,6 +314,34 @@ const salvarConsulta = () => {
             showNotification('Dados gravados com sucesso!');
         }
     });
+};
+
+const confirmarFinalizar = () => {
+    confirmModal.value = {
+        isOpen: true,
+        title: 'Finalizar Consulta',
+        message: 'Deseja concluir o atendimento clínico e liberar o paciente?',
+        onConfirm: () => {
+            confirmModal.value.isOpen = false;
+            form.situacao = 'Finalizado';
+            salvarConsulta();
+            selectedPaciente.value = null;
+        }
+    };
+};
+
+const confirmarInternamento = () => {
+    confirmModal.value = {
+        isOpen: true,
+        title: 'Solicitar Internamento',
+        message: 'O paciente será encaminhado para a unidade de internamento. Confirmar?',
+        onConfirm: () => {
+            confirmModal.value.isOpen = false;
+            form.situacao = 'Internado';
+            salvarConsulta();
+            selectedPaciente.value = null;
+        }
+    };
 };
 
 const adicionarCidDaPesquisa = () => {
@@ -708,13 +737,13 @@ const encaminharPaciente = async () => {
 
                     <!-- Final Action Buttons (2x2 Grid at bottom right) -->
                     <div class="grid grid-cols-2 gap-1 mt-auto pt-1 pb-1 shrink-0">
-                        <button @click="form.situacao = 'Internado'; salvarConsulta()" class="bg-blue-600 text-white py-3 rounded font-black uppercase text-[9px] flex items-center justify-center gap-2 hover:bg-blue-700 shadow-sm">
+                        <button @click="confirmarInternamento" class="bg-blue-600 text-white py-3 rounded font-black uppercase text-[9px] flex items-center justify-center gap-2 hover:bg-blue-700 shadow-sm">
                             <Activity class="w-4 h-4" /> INTERNAMENTO
                         </button>
                         <button @click="showDocumentosModal = true" class="bg-slate-800 text-white py-3 rounded font-black uppercase text-[9px] flex items-center justify-center gap-2 hover:bg-slate-900 shadow-sm">
                             <FileText class="w-4 h-4" /> DOCUMENTOS
                         </button>
-                        <button @click="salvarConsulta" class="bg-emerald-500 text-white py-3 rounded font-black uppercase text-[9px] flex items-center justify-center gap-2 hover:bg-emerald-600 shadow-sm">
+                        <button @click="confirmarFinalizar" class="bg-emerald-500 text-white py-3 rounded font-black uppercase text-[9px] flex items-center justify-center gap-2 hover:bg-emerald-600 shadow-sm">
                             <CheckCircle class="w-4 h-4" /> FINALIZAR
                         </button>
                         <button @click="showEncaminharModal = true" class="bg-blue-600 text-white py-3 rounded font-black uppercase text-[9px] flex items-center justify-center gap-2 hover:bg-blue-700 shadow-sm">
@@ -923,6 +952,33 @@ const encaminharPaciente = async () => {
              </div>
         </div>
     </DashboardLayout>
+
+    <!-- PREMIUM CONFIRM MODAL -->
+    <Transition enter-active-class="duration-300 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="duration-200 ease-in" leave-to-class="opacity-0 scale-95">
+        <div v-if="confirmModal.isOpen" class="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" @click="confirmModal.isOpen = false"></div>
+            <div class="relative bg-white rounded-[2.5rem] shadow-2xl p-10 max-w-md w-full border border-white/20 animate-fadeIn text-center">
+                <div class="flex flex-col items-center">
+                    <div class="w-20 h-20 bg-blue-50 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner">
+                        <Stethoscope class="w-10 h-10 text-blue-600" />
+                    </div>
+                    <h3 class="text-lg font-black text-slate-900 uppercase tracking-tight mb-2">{{ confirmModal.title }}</h3>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-8 px-4">
+                        {{ confirmModal.message }}
+                    </p>
+                    
+                    <div class="grid grid-cols-2 gap-4 w-full text-[10px] font-black uppercase tracking-widest">
+                        <button @click="confirmModal.isOpen = false" class="py-4 bg-slate-100 text-slate-500 rounded-2xl hover:bg-slate-200 transition-all">
+                            Cancelar
+                        </button>
+                        <button @click="confirmModal.onConfirm" class="py-4 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-200">
+                            Confirmar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Transition>
 </template>
 
 <style scoped>

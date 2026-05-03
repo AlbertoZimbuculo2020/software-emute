@@ -607,26 +607,31 @@ const formatCurrency = (value) => {
         </div>
 
         <!-- Elegant Confirm Modal -->
-        <div v-if="confirmModal.isOpen" class="fixed inset-0 z-[150] flex items-center justify-center">
-            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="closeConfirm"></div>
-            <div class="relative bg-white shadow-2xl w-full max-w-sm rounded-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                <div class="p-5">
-                    <div class="flex items-center gap-3 mb-3 text-[#000080]">
-                        <AlertCircle class="w-6 h-6" />
-                        <h3 class="font-bold text-lg">{{ confirmModal.title }}</h3>
-                    </div>
-                    <p class="text-slate-600 text-sm leading-relaxed mb-6">{{ confirmModal.message }}</p>
-                    <div class="flex justify-end gap-3">
-                        <button @click="closeConfirm" class="px-4 py-2 border border-slate-300 text-slate-700 font-bold rounded hover:bg-slate-50 transition-colors text-sm">
-                            Cancelar
-                        </button>
-                        <button @click="confirmModal.onConfirm" class="px-5 py-2 bg-[#000080] hover:bg-blue-900 text-white font-bold rounded shadow transition-colors text-sm">
-                            Confirmar
-                        </button>
+        <Transition enter-active-class="duration-300 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="duration-200 ease-in" leave-to-class="opacity-0 scale-95">
+            <div v-if="confirmModal.isOpen" class="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" @click="closeConfirm"></div>
+                <div class="relative bg-white rounded-[2.5rem] shadow-2xl p-10 max-w-md w-full border border-white/20 animate-fadeIn text-center">
+                    <div class="flex flex-col items-center">
+                        <div class="w-20 h-20 bg-blue-50 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner">
+                            <AlertCircle class="w-10 h-10 text-blue-600" />
+                        </div>
+                        <h3 class="text-lg font-black text-slate-900 uppercase tracking-tight mb-2">{{ confirmModal.title }}</h3>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-8 px-4">
+                            {{ confirmModal.message }}
+                        </p>
+                        
+                        <div class="grid grid-cols-2 gap-4 w-full text-[10px] font-black uppercase tracking-widest">
+                            <button @click="closeConfirm" class="py-4 bg-slate-100 text-slate-500 rounded-2xl hover:bg-slate-200 transition-all">
+                                Cancelar
+                            </button>
+                            <button @click="confirmModal.onConfirm" class="py-4 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-200">
+                                Confirmar
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </Transition>
 
     </DashboardLayout>
 </template>
