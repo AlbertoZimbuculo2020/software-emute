@@ -337,22 +337,28 @@ const salvarMedOcupacional = async () => {
 };
 
 const finalizarMedOcupacional = async () => {
-    if (!confirm("Deseja finalizar esta consulta de Medicina Ocupacional? O relatório será impresso e o atendimento concluído.")) return;
-    
-    await salvarMedOcupacional();
-    imprimirDadosClinico();
-    
-    try {
-        await axios.post(route('hospitalar.consultorio.store'), {
-            Codigo: selectedPaciente.value.Codigo,
-            situacao: 'Finalizado'
-        });
-        showMedOcupacionalModal.value = false;
-        selectedPaciente.value = null;
-        refreshWaitlist();
-    } catch (e) {
-        showNotification('Erro ao finalizar consulta.', 'error');
-    }
+    confirmModal.value = {
+        isOpen: true,
+        title: 'Finalizar Medicina Ocupacional',
+        message: 'Deseja finalizar esta consulta de Medicina Ocupacional? O relatório será impresso e o atendimento concluído.',
+        onConfirm: async () => {
+            confirmModal.value.isOpen = false;
+            await salvarMedOcupacional();
+            imprimirDadosClinico();
+            
+            try {
+                await axios.post(route('hospitalar.consultorio.store'), {
+                    Codigo: selectedPaciente.value.Codigo,
+                    situacao: 'Finalizado'
+                });
+                showMedOcupacionalModal.value = false;
+                selectedPaciente.value = null;
+                refreshWaitlist();
+            } catch (e) {
+                showNotification('Erro ao finalizar consulta.', 'error');
+            }
+        }
+    };
 };
 
 // IMPRESSÃO 
@@ -583,14 +589,21 @@ const salvarConsulta = () => {
 };
 
 const removerExameSolicitado = async (exame) => {
-    if (!confirm(`Deseja remover o exame "${exame.nome}"?`)) return;
-    try {
-        await axios.post(route('hospitalar.consultorio.remover-exame'), { Id: exame.dbId });
-        showNotification('Exame removido com sucesso!');
-        selecionarPaciente(selectedPaciente.value);
-    } catch (e) {
-        showNotification(e.response?.data?.error || 'Erro ao remover exame.', 'error');
-    }
+    confirmModal.value = {
+        isOpen: true,
+        title: 'Remover Exame',
+        message: `Deseja remover o exame "${exame.nome}"?`,
+        onConfirm: async () => {
+            confirmModal.value.isOpen = false;
+            try {
+                await axios.post(route('hospitalar.consultorio.remover-exame'), { Id: exame.dbId });
+                showNotification('Exame removido com sucesso!');
+                selecionarPaciente(selectedPaciente.value);
+            } catch (e) {
+                showNotification(e.response?.data?.error || 'Erro ao remover exame.', 'error');
+            }
+        }
+    };
 };
 
 const confirmarFinalizar = () => {

@@ -639,7 +639,7 @@ class ConsultorioController extends Controller
             'Alergia' => $data['historiaPregressa']['alergias']['detail'] ?? '',
             'Cirugias' => $data['historiaPregressa']['cirurgias']['detail'] ?? '',
             'DoencasFamiliares' => implode(', ', $data['historiaFamiliar'] ?? []),
-            'CarteiraVacina' => $data['apresentouCarteiraVacina'] ? 'Sim' : 'Não',
+            'CarteiraVacina' => $data['apresentouCarteiraVacina'] ? 'Apresentou' : 'N_Apresentou',
             'MedicacaoUso' => $data['habitosVida']['medicacao']['detail'] ?? '',
             'HabitosAlimentares' => $data['habitosVida']['alimentacao']['detail'] ?? '',
             'Tabaco' => json_encode($data['habitosVida']['tabaco'] ?? []),
