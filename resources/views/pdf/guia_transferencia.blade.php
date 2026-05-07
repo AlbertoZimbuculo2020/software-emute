@@ -22,6 +22,23 @@
         .signature { text-align: center; margin-top: 60px; }
         .signature-line { border-bottom: 1px solid #000; width: 250px; margin: 0 auto 10px; }
         .footer { position: fixed; bottom: -20px; left: 0; right: 0; text-align: center; font-size: 10px; color: #555; }
+        @media print {
+            .no-print { display: none; }
+            body { margin: 20px; }
+        }
+        .no-print-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 9999;
+        }
 @if(!isset($is_economico))
     </style>
 @endif
@@ -46,16 +63,30 @@
         <div class="info-row"><strong>Sexo:</strong> {{ $paciente->Genero }}</div>
         <div class="info-row"><strong>Nº da Consulta:</strong> {{ $paciente->Codigo }}</div>
         <div class="info-row"><strong>Data:</strong> {{ date('d/m/Y', strtotime($paciente->DataAgendamento)) }}</div>
+        <div class="info-row"><strong>Unidade de Destino:</strong> {{ $correspondente ?? '_______________________' }}</div>
     </div>
 
     <div class="content-box">
-        <div class="content-title">Motivo da Transferência / Resumo Clínico:</div>
-        <br><br><br><br><br><br><br><br>
+        <div class="content-title">Resumo Clínico / Motivo da Transferência:</div>
+        <div style="font-size: 11px; white-space: pre-wrap;">{{ $motivo ?: '—' }}</div>
     </div>
     
-    <div class="content-box" style="min-height: 100px;">
-        <div class="content-title">Unidade de Destino (Sugestão):</div>
-        <br><br>
+    <div class="content-box" style="min-height: 80px;">
+        <div class="content-title">Diagnóstico / Hipótese Diagnóstica:</div>
+        <div style="font-size: 11px; white-space: pre-wrap;">{{ $diagnostico ?: '—' }}</div>
+    </div>
+
+    <div class="content-box" style="min-height: 80px;">
+        <div class="content-title">Exames e Análises Realizadas:</div>
+        <div style="font-size: 11px;">
+            <strong>Exames:</strong> {{ $exames_realizados ?: '—' }}<br>
+            <strong>Análises:</strong> {{ $analises ?: '—' }}
+        </div>
+    </div>
+
+    <div class="content-box" style="min-height: 80px;">
+        <div class="content-title">Tratamento Efetuado:</div>
+        <div style="font-size: 11px; white-space: pre-wrap;">{{ $tratamento ?: '—' }}</div>
     </div>
 
     <div class="signature">
@@ -70,6 +101,14 @@
         NIF: {{ $empresa->NIF ?? '5401150954' }}
     </div>
 @if(!isset($only_content) && !isset($is_economico))
+    <button class="no-print no-print-btn" onclick="window.print()">IMPRIMIR GUIA</button>
+    <script>
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        }
+    </script>
 </body>
 </html>
 @endif

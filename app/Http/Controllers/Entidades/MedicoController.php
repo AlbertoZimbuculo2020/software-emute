@@ -13,8 +13,7 @@ class MedicoController extends Controller
     {
         $medicos = DB::table('tb_medico')
             ->join('tb_tipoentidade', 'tb_medico.IdTipoEntidade', '=', 'tb_tipoentidade.Codigo')
-            ->join('tb_entidade', 'tb_tipoentidade.IdEntidade', '=', 'tb_entidade.Codigo')
-            ->where('tb_medico.Estado', 'Ativo')
+            ->leftJoin('tb_entidade', 'tb_tipoentidade.IdEntidade', '=', 'tb_entidade.Codigo')
             ->select(
                 'tb_medico.Id',
                 'tb_medico.IdTipoEntidade as Codigo',
@@ -23,8 +22,11 @@ class MedicoController extends Controller
                 'tb_medico.CarteiraMedica',
                 'tb_tipoentidade.Telefone',
                 'tb_tipoentidade.Cidade',
-                'tb_tipoentidade.Rua'
+                'tb_tipoentidade.Rua',
+                'tb_tipoentidade.TipoEntidade'
             )
+            ->whereIn('tb_tipoentidade.TipoEntidade', ['Medico', 'Medicos'])
+            ->where('tb_medico.Estado', 'Ativo')
             ->get();
 
         $consultas = DB::table('tb_consulta')
@@ -58,15 +60,24 @@ class MedicoController extends Controller
         $lastMedico = DB::table('tb_tipoentidade')
             ->where('Codigo', 'like', 'MED%')
             ->select('Codigo')
-            ->get()
-            ->map(function($item) {
-                preg_match('/MED(\d+)/', $item->Codigo, $matches);
-                return isset($matches[1]) ? intval($matches[1]) : 0;
-            })
-            ->max();
-
-        $newIdNumber = ($lastMedico ?: 0) + 1;
+            ->get();
+            
+        $maxId = 0;
+        foreach ($lastMedico as $item) {
+            if (preg_match('/MED(\d+)/', $item->Codigo, $matches)) {
+                $num = intval($matches[1]);
+                if ($num > $maxId) $maxId = $num;
+            }
+        }
+        
+        $newIdNumber = $maxId + 1;
         $newCodigo = 'MED' . str_pad($newIdNumber, 3, '0', STR_PAD_LEFT);
+
+        // Check if exists in tb_entidade just in case
+        while (DB::table('tb_entidade')->where('Codigo', $newCodigo)->exists()) {
+            $newIdNumber++;
+            $newCodigo = 'MED' . str_pad($newIdNumber, 3, '0', STR_PAD_LEFT);
+        }
 
         DB::beginTransaction();
         try {
@@ -81,7 +92,7 @@ class MedicoController extends Controller
                 'IdEntidade' => $newCodigo,
                 'Nome' => strtoupper($request->nome),
                 'Telefone' => $request->telefone ?: '---',
-                'TipoEntidade' => 'Medico',
+                'TipoEntidade' => 'Medicos',
                 'Pais' => 'Angola',
                 'Cidade' => $request->cidade ?: 'S/N',
                 'Rua' => $request->rua ?: 'S/N',

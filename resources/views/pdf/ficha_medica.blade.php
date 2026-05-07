@@ -104,6 +104,26 @@
         .signature-section { text-align: center; margin-top: 40px; font-size: 10px; font-weight: bold; }
         .signature-line { width: 250px; border-bottom: 1px solid #000; margin: 30px auto 5px; }
 
+        @media print {
+            .no-print { display: none; }
+            body { padding: 0; }
+            header { position: fixed; top: 0; }
+            footer { position: fixed; bottom: 0; }
+        }
+
+        .no-print-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 9999;
+        }
 @if(!isset($is_economico))
     </style>
 @endif
@@ -293,6 +313,28 @@
 
     <div class="clinical-box-title">Observações / Recomendações</div>
     <div class="clinical-box">{{ $paciente->RECOMENDACOES ?? '—' }}</div>
+
+    @if($medicina)
+        <div class="section-separator"></div>
+        <div class="section-title">MEDICINA OCUPACIONAL</div>
+        
+        <table class="patient-table">
+            <tr>
+                <td width="50%"><strong>Posto de Trabalho:</strong> {{ $medicina->Funcao ?? '—' }}</td>
+                <td width="50%"><strong>Empresa:</strong> {{ $medicina->Empresa ?? '—' }}</td>
+            </tr>
+            <tr>
+                <td colspan="2"><strong>Factores de Risco:</strong> {{ $medicina->FactoresRiscos ?? '—' }}</td>
+            </tr>
+        </table>
+
+        <div class="clinical-box-title">Exame Clínico Ocupacional / Observações</div>
+        <div class="clinical-box">{{ $medicina->Resultado ?? '—' }}</div>
+
+        <div style="margin-top: 10px; font-weight: bold; border: 1px solid #000; padding: 10px; background-color: #f0f0f0;">
+            ESTADO DE APTIDÃO: <span style="text-transform: uppercase; font-size: 14px;">{{ $medicina->Resultado ?: 'NÃO DEFINIDO' }}</span>
+        </div>
+    @endif
 @endif
 
     <!-- EXAMES -->
@@ -368,6 +410,14 @@
 @endif
 
 @if(!isset($only_content) && !isset($is_economico))
+    <button class="no-print no-print-btn" onclick="window.print()">IMPRIMIR RELATÓRIO</button>
+    <script>
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        }
+    </script>
 </body>
 </html>
 @endif

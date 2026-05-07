@@ -78,6 +78,35 @@ class ConsultorioController extends Controller
             'empresa'         => $empresa
         ]);
     }
+    public function getWaitlist()
+    {
+        $user = auth()->user();
+        
+        $query = DB::table('tb_agendamento')
+            ->join('tb_tipoentidade', 'tb_agendamento.IdPaciente', '=', 'tb_tipoentidade.Codigo')
+            ->leftJoin('tb_entidade', 'tb_tipoentidade.IdEntidade', '=', 'tb_entidade.Codigo')
+            ->leftJoin('tb_tipoentidade as medico', 'tb_agendamento.IdMedico', '=', 'medico.Codigo')
+            ->select(
+                'tb_agendamento.*', 
+                'tb_tipoentidade.Nome as PacienteNome',
+                'tb_tipoentidade.Telefone',
+                'tb_tipoentidade.Rua',
+                'tb_tipoentidade.Cidade',
+                'tb_entidade.DataNascimento',
+                'tb_entidade.Genero',
+                'medico.Nome as MedicoNome'
+            )
+            ->whereIn('tb_agendamento.Situacao', ['Consultorio', 'Reconsulta', 'Laboratorio'])
+            ->where('tb_agendamento.Estado', 'Ativo');
+
+        if ($user->ID_PESSOA) {
+            $query->where('tb_agendamento.IdMedico', $user->ID_PESSOA);
+        } else if ($user->ACESSO !== 'SIM') {
+            $query->where('tb_agendamento.IdMedico', 'PROTECTED');
+        }
+
+        return response()->json($query->get());
+    }
 
     public function getPatientData($idAgenda)
     {
@@ -212,6 +241,29 @@ class ConsultorioController extends Controller
         return response()->json(['message' => 'Exames enviados com sucesso!']);
     }
 
+    public function removerExameSolicitado(Request $request)
+    {
+        $request->validate(['Id' => 'required']);
+        
+        $exame = DB::table('tb_resultado_exame')->where('Id', $request->Id)->first();
+        if (!$exame) return response()->json(['error' => 'Exame não encontrado'], 404);
+        
+        // Check permissions
+        if (auth()->user()->NOME_UTILIZADOR !== $exame->Utilizador && auth()->user()->ACESSO !== 'SIM') {
+             return response()->json(['error' => 'Sem permissão para remover exames solicitados por outro utilizador.'], 403);
+        }
+
+        DB::table('tb_resultado_exame')->where('Id', $request->Id)->update(['Estado' => 'Removido']);
+        
+        DB::table('tb_carrinho_hospitalar')
+            ->where('ID_AGENDA', $exame->IdAgenda)
+            ->where('CODIGO', $exame->CodExame)
+            ->where('ESTADO', 'N_PAGO')
+            ->delete();
+
+        return response()->json(['message' => 'Exame removido com sucesso!']);
+    }
+
     // ─────────────────────────────────────────────
     //  RECEITA MÉDICA
     // ─────────────────────────────────────────────
@@ -321,18 +373,20 @@ class ConsultorioController extends Controller
             $idade = (new \DateTime())->diff($birthDate)->y . ' Anos';
         }
 
+        $medicina = DB::table('tb_medicina_ocupacional')->where('IdAgenda', $idAgenda)->first();
+        
         $view = 'pdf.ficha_medica';
-        $data = compact('paciente', 'triagem', 'exames', 'receita', 'empresa', 'idade');
+        $data = compact('paciente', 'triagem', 'exames', 'receita', 'empresa', 'idade', 'medicina');
 
         if (request('modo') === 'economico') {
             $data['is_economico'] = true;
             $data['is_duplicate'] = request('duplicado') !== '0';
-            $pdf = Pdf::loadView('pdf.layout_economico', ['original_view' => $view, 'data' => $data])->setPaper('a4', 'landscape');
-        } else {
-            $pdf = Pdf::loadView($view, $data);
+            $data['original_view'] = $view;
+            $data['data'] = $data;
+            return view('pdf.layout_economico', $data);
         }
         
-        return $pdf->stream("ficha_medica_{$idAgenda}.pdf");
+        return view($view, $data);
     }
 
     public function imprimirReceita($idAgenda)
@@ -364,12 +418,12 @@ class ConsultorioController extends Controller
         if (request('modo') === 'economico') {
             $data['is_economico'] = true;
             $data['is_duplicate'] = request('duplicado') !== '0';
-            $pdf = Pdf::loadView('pdf.layout_economico', ['original_view' => $view, 'data' => $data])->setPaper('a4', 'landscape');
-        } else {
-            $pdf = Pdf::loadView($view, $data);
+            $data['original_view'] = $view;
+            $data['data'] = $data;
+            return view('pdf.layout_economico', $data);
         }
         
-        return $pdf->stream("receita_{$idAgenda}.pdf");
+        return view($view, $data);
     }
 
     public function imprimirRequisicao($idAgenda)
@@ -444,12 +498,12 @@ class ConsultorioController extends Controller
         if (request('modo') === 'economico') {
             $data['is_economico'] = true;
             $data['is_duplicate'] = request('duplicado') !== '0';
-            $pdf = Pdf::loadView('pdf.layout_economico', ['original_view' => $view, 'data' => $data])->setPaper('a4', 'landscape');
-        } else {
-            $pdf = Pdf::loadView($view, $data);
+            $data['original_view'] = $view;
+            $data['data'] = $data;
+            return view('pdf.layout_economico', $data);
         }
         
-        return $pdf->stream("requisicao_{$idAgenda}.pdf");
+        return view($view, $data);
     }
 
     public function imprimirJustificativo($idAgenda)
@@ -471,16 +525,20 @@ class ConsultorioController extends Controller
 
         $view = 'pdf.justificativo_medico';
         $data = compact('paciente', 'empresa');
+        $data['familiar'] = request('familiar');
+        $data['data_internado'] = request('data_internado');
+        $data['data_inicio'] = request('data_inicio');
+        $data['data_fim'] = request('data_fim');
 
         if (request('modo') === 'economico') {
             $data['is_economico'] = true;
             $data['is_duplicate'] = request('duplicado') !== '0';
-            $pdf = Pdf::loadView('pdf.layout_economico', ['original_view' => $view, 'data' => $data])->setPaper('a4', 'landscape');
-        } else {
-            $pdf = Pdf::loadView($view, $data);
+            $data['original_view'] = $view;
+            $data['data'] = $data;
+            return view('pdf.layout_economico', $data);
         }
         
-        return $pdf->stream("justificativo_{$idAgenda}.pdf");
+        return view($view, $data);
     }
 
     public function imprimirGuia($idAgenda)
@@ -508,16 +566,119 @@ class ConsultorioController extends Controller
 
         $view = 'pdf.guia_transferencia';
         $data = compact('paciente', 'idade', 'empresa');
+        $data['correspondente'] = request('correspondente');
+        $data['motivo'] = request('motivo');
+        $data['exames_realizados'] = request('exames_realizados');
+        $data['analises'] = request('analises');
+        $data['diagnostico'] = request('diagnostico');
+        $data['tratamento'] = request('tratamento');
 
         if (request('modo') === 'economico') {
             $data['is_economico'] = true;
             $data['is_duplicate'] = request('duplicado') !== '0';
-            $pdf = Pdf::loadView('pdf.layout_economico', ['original_view' => $view, 'data' => $data])->setPaper('a4', 'landscape');
-        } else {
-            $pdf = Pdf::loadView($view, $data);
+            $data['original_view'] = $view;
+            $data['data'] = $data;
+            return view('pdf.layout_economico', $data);
         }
         
-        return $pdf->stream("guia_transferencia_{$idAgenda}.pdf");
+        return view($view, $data);
+    }
+
+    public function imprimirMedicinaOcupacional($idAgenda)
+    {
+        $paciente = DB::table('tb_agendamento')
+            ->join('tb_tipoentidade', 'tb_agendamento.IdPaciente', '=', 'tb_tipoentidade.Codigo')
+            ->leftJoin('tb_entidade', 'tb_tipoentidade.IdEntidade', '=', 'tb_entidade.Codigo')
+            ->leftJoin('tb_tipoentidade as medico', 'tb_agendamento.IdMedico', '=', 'medico.Codigo')
+            ->select('tb_agendamento.*', 'tb_tipoentidade.Nome as PacienteNome', 'tb_entidade.DataNascimento', 'tb_entidade.Genero', 'medico.Nome as MedicoNome')
+            ->where('tb_agendamento.Codigo', $idAgenda)
+            ->first();
+
+        if (!$paciente) return abort(404);
+
+        $dadosOcupacionais = DB::table('tb_medicina_ocupacional')->where('IdAgenda', $idAgenda)->first();
+        $historico = [];
+        if ($dadosOcupacionais) {
+            $historico = DB::table('tb_historico_ocupacional')->where('IdMedicinaOcupacional', $dadosOcupacionais->Id)->get();
+        }
+        
+        $idade = 'N/D';
+        if ($paciente->DataNascimento) {
+            $birthDate = new \DateTime($paciente->DataNascimento);
+            $idade = (new \DateTime())->diff($birthDate)->y . ' Anos';
+        }
+
+        $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
+        if ($empresa && $empresa->IMAGEM) {
+            $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
+        }
+
+        $mesExtenso = $this->mesExtenso(date('m'));
+
+        return view('pdf.medicina_ocupacional', compact('paciente', 'idade', 'empresa', 'dadosOcupacionais', 'historico', 'mesExtenso'));
+    }
+
+    public function storeMedicinaOcupacional(Request $request)
+    {
+        $data = $request->all();
+        $idAgenda = $data['IdAgenda'];
+
+        // Validation (basic for now)
+        if (empty($data['empresa']) || empty($data['funcao'])) {
+            return response()->json(['message' => 'Empresa e Função são obrigatórios.'], 422);
+        }
+
+        // Main table tb_medicina_ocupacional
+        $medData = [
+            'Empresa' => $data['empresa'],
+            'Funcao' => $data['funcao'],
+            'TipoExame' => implode(', ', $data['tipoExame'] ?? []),
+            'FactoresRiscos' => implode(', ', $data['factoresRisco'] ?? []),
+            'DoencaInfectoContagiosa' => $data['historiaPregressa']['infecto']['detail'] ?? '',
+            'DoencaCronica' => $data['historiaPregressa']['cronicas']['detail'] ?? '',
+            'Alergia' => $data['historiaPregressa']['alergias']['detail'] ?? '',
+            'Cirugias' => $data['historiaPregressa']['cirurgias']['detail'] ?? '',
+            'DoencasFamiliares' => implode(', ', $data['historiaFamiliar'] ?? []),
+            'CarteiraVacina' => $data['apresentouCarteiraVacina'] ? 'Sim' : 'Não',
+            'MedicacaoUso' => $data['habitosVida']['medicacao']['detail'] ?? '',
+            'HabitosAlimentares' => $data['habitosVida']['alimentacao']['detail'] ?? '',
+            'Tabaco' => json_encode($data['habitosVida']['tabaco'] ?? []),
+            'Alcool' => json_encode($data['habitosVida']['alcool'] ?? []),
+            'Drogas' => json_encode($data['habitosVida']['drogas'] ?? []),
+            'LazerRecreacao' => $data['habitosVida']['lazer']['detail'] ?? '',
+            'EstadoGeralBoca' => $data['avaliacaoDentaria']['estadoBoca'] ?? '',
+            'RiscoInfenccao' => $data['avaliacaoDentaria']['riscoInfeccao'] ?? 'Baixo',
+            'IdadeInicioTrabalho' => $data['idadeInicioTrabalho'] ?? '',
+            'EncaminharTratamento' => $data['avaliacaoDentaria']['encaminhadoTratamento'] ? 'Sim' : 'Não',
+            'Recomendacoes' => implode(', ', $data['recomendacoes'] ?? []),
+            'EncaminhaMedicoEspecialista' => implode(', ', $data['encaminhamentos'] ?? []),
+            'Resultado' => $data['resultadoFinal'] ?? 'Apto',
+            'ExameFisicoGeral' => json_encode($data['exameFisico'] ?? []),
+            'Estado' => 'Ativo',
+            'CREATED_AT' => now()
+        ];
+
+        DB::table('tb_medicina_ocupacional')->updateOrInsert(['IdAgenda' => $idAgenda], $medData);
+        $medRecord = DB::table('tb_medicina_ocupacional')->where('IdAgenda', $idAgenda)->first();
+
+        // Historico Ocupacional
+        DB::table('tb_historico_ocupacional')->where('IdMedicinaOcupacional', $medRecord->Id)->delete();
+        foreach ($data['historicoOcupacional'] ?? [] as $hist) {
+            if (!empty($hist['funcao'])) {
+                DB::table('tb_historico_ocupacional')->insert([
+                    'IdMedicinaOcupacional' => $medRecord->Id,
+                    'Funcao' => $hist['funcao'],
+                    'Tempo' => $hist['tempo']
+                ]);
+            }
+        }
+
+        return response()->json(['message' => 'Dados de Medicina Ocupacional gravados com sucesso!']);
+    }
+
+    public function getVacinas()
+    {
+        return response()->json(DB::table('tb_vacinas')->where('Estado', 'Ativo')->get());
     }
 
     private function mesExtenso($m) {
@@ -528,4 +689,5 @@ class ConsultorioController extends Controller
         ];
         return $meses[$m] ?? '';
     }
+
 }

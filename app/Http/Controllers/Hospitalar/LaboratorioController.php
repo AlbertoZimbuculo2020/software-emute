@@ -244,11 +244,12 @@ class LaboratorioController extends Controller
         if (request('modo') === 'economico') {
             $data['is_economico'] = true;
             $data['is_duplicate'] = request('duplicado') !== '0';
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.layout_economico', ['original_view' => $view, 'data' => $data])->setPaper('a4', 'landscape');
-        } else {
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, $data);
+            $data['original_view'] = $view;
+            $data['data'] = $data;
+            return view('pdf.layout_economico', $data);
         }
 
-        return $pdf->stream('resultado_laboratorio_'.$idAgenda.'.pdf');
+        return view($view, $data);
     }
+
 }

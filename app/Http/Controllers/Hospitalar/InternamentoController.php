@@ -20,7 +20,7 @@ class InternamentoController extends Controller
                 'tb_agendamento.*', 
                 'paciente.Nome as PacienteNome',
                 'medico.Nome as MedicoNome',
-                DB::raw("(SELECT MIN(DataInternamento) FROM tb_prescricao WHERE IdAgenda = tb_agendamento.Codigo AND Tipo = 'Internamento') as DataInternamento")
+                DB::raw("(SELECT COALESCE(MIN(DataInternamento), CURRENT_DATE) FROM tb_prescricao WHERE IdAgenda = tb_agendamento.Codigo AND Tipo = 'Internamento') as DataInternamento")
             )
             ->where('tb_agendamento.Situacao', 'Internado')
             ->where('tb_agendamento.Estado', 'Ativo')

@@ -155,6 +155,23 @@
             border-top: 1px solid #000;
             margin: 30px auto 5px auto;
         }
+        @media print {
+            .no-print { display: none; }
+            body { padding: 40px; }
+        }
+        .no-print-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 9999;
+        }
 @if(!isset($is_economico))
     </style>
 @endif
@@ -326,6 +343,14 @@
     </div>
 
 @if(!isset($only_content) && !isset($is_economico))
+    <button class="no-print no-print-btn" onclick="window.print()">IMPRIMIR RESULTADOS</button>
+    <script>
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        }
+    </script>
 </body>
 </html>
 @endif

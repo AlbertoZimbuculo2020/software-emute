@@ -169,14 +169,19 @@ Route::get('/hospitalar/triagem', [TriagemController::class, 'index'])->middlewa
 Route::post('/hospitalar/triagem', [TriagemController::class, 'store'])->middleware(['auth', 'verified'])->name('hospitalar.triagem.store');
 
 Route::get('/hospitalar/consultorio', [ConsultorioController::class, 'index'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio');
+Route::get('/hospitalar/consultorio/waitlist', [ConsultorioController::class, 'getWaitlist'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.waitlist');
 Route::get('/hospitalar/consultorio/paciente/{id}', [ConsultorioController::class, 'getPatientData'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.paciente');
 Route::post('/hospitalar/consultorio/store', [ConsultorioController::class, 'store'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.store');
 Route::post('/hospitalar/consultorio/solicitar-exames', [ConsultorioController::class, 'solicitarExames'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.solicitar-exames');
 Route::post('/hospitalar/consultorio/receita', [ConsultorioController::class, 'storeReceita'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.receita.store');
 Route::post('/hospitalar/consultorio/receita/remover', [ConsultorioController::class, 'destroyReceitaItem'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.receita.destroy');
 Route::post('/hospitalar/consultorio/resultado-exame', [ConsultorioController::class, 'gravarResultadoExame'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.resultado');
+Route::post('/hospitalar/consultorio/medicina-ocupacional', [ConsultorioController::class, 'storeMedicinaOcupacional'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.medicina-ocupacional.store');
+Route::get('/hospitalar/vacinas', [ConsultorioController::class, 'getVacinas'])->middleware(['auth', 'verified'])->name('hospitalar.vacinas');
+Route::post('/hospitalar/consultorio/remover-exame', [ConsultorioController::class, 'removerExameSolicitado'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.remover-exame');
 Route::post('/hospitalar/consultorio/encaminhar', [ConsultorioController::class, 'encaminhar'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.encaminhar');
 Route::get('/hospitalar/consultorio/imprimir-ficha/{id}', [ConsultorioController::class, 'imprimirFicha'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.imprimir.ficha');
+Route::get('/hospitalar/consultorio/imprimir-medicina-ocupacional/{id}', [ConsultorioController::class, 'imprimirMedicinaOcupacional'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.imprimir.medicina-ocupacional');
 Route::get('/hospitalar/consultorio/imprimir-receita/{id}', [ConsultorioController::class, 'imprimirReceita'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.imprimir.receita');
 Route::get('/hospitalar/consultorio/imprimir-requisicao/{id}', [ConsultorioController::class, 'imprimirRequisicao'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.imprimir.requisicao');
 Route::get('/hospitalar/consultorio/imprimir-justificativo/{id}', [ConsultorioController::class, 'imprimirJustificativo'])->middleware(['auth', 'verified'])->name('hospitalar.consultorio.imprimir.justificativo');

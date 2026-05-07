@@ -102,7 +102,7 @@
         <tbody>
             @foreach($prescricoes as $pr)
             <tr>
-                <td>{{ \Carbon\Carbon::parse($pr->DataInternamento ?? $pr->CREATED_AT)->format('d/m/Y') }}</td>
+                <td>{{ ($pr->DataInternamento || $pr->CREATED_AT) ? \Carbon\Carbon::parse($pr->DataInternamento ?? $pr->CREATED_AT)->format('d/m/Y') : '---' }}</td>
                 <td>{{ $pr->Medico }}</td>
                 <td>
                     <strong>{{ $pr->Descricao }}</strong><br>
@@ -134,14 +134,14 @@
         <tbody>
             @foreach($atosMedicos as $am)
             <tr>
-                <td>{{ \Carbon\Carbon::parse($am->DataAto ?? $am->CREATED_AT)->format('d/m/Y H:i') }}</td>
+                <td>{{ ($am->DataAto || $am->CREATED_AT) ? \Carbon\Carbon::parse($am->DataAto ?? $am->CREATED_AT)->format('d/m/Y H:i') : '---' }}</td>
                 <td>Dr. {{ $am->Medico }}</td>
                 <td>{{ $am->Descricao }}</td>
             </tr>
             @endforeach
             @foreach($atosEnfermagem as $ae)
             <tr>
-                <td>{{ \Carbon\Carbon::parse($ae->DataAto ?? $ae->CREATED_AT)->format('d/m/Y H:i') }}</td>
+                <td>{{ ($ae->DataAto || $ae->CREATED_AT) ? \Carbon\Carbon::parse($ae->DataAto ?? $ae->CREATED_AT)->format('d/m/Y H:i') : '---' }}</td>
                 <td>Enf. {{ $ae->Infermeiro ?? $ae->Enfermeiro ?? '---' }}</td>
                 <td>{{ $ae->Descricao }}</td>
             </tr>
@@ -155,7 +155,7 @@
 <div class="info-section">
     <div class="section-title">Resumo de Alta</div>
     <div style="border: 1px solid #ddd; padding: 10px; background: #fff;">
-        <p><span class="label">Data da Alta:</span> {{ \Carbon\Carbon::parse($alta->DataAlta)->format('d/m/Y H:i') }}</p>
+        <p><span class="label">Data da Alta:</span> {{ $alta->DataAlta ? \Carbon\Carbon::parse($alta->DataAlta)->format('d/m/Y H:i') : 'N/D' }}</p>
         <p><span class="label">Procedimento:</span> {{ $alta->Operado ?? 'N/A' }}</p>
         <p><span class="label">Complicações:</span> {{ $alta->Complicacoes ?? 'Nenhuma' }}</p>
         <p><span class="label">Recomendações:</span> {{ $alta->Repouso ?? 'Repouso absoluto' }}</p>

@@ -17,6 +17,7 @@ class RecepcaoController extends Controller
         $medicos = DB::table('tb_medico')
             ->join('tb_tipoentidade', 'tb_medico.IdTipoEntidade', '=', 'tb_tipoentidade.Codigo')
             ->select('tb_medico.IdTipoEntidade as Id', 'tb_tipoentidade.Nome')
+            ->whereIn('tb_tipoentidade.TipoEntidade', ['Medico', 'Medicos'])
             ->where('tb_medico.Estado', 'Ativo')
             ->get();
 

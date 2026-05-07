@@ -85,5 +85,12 @@
             </td>
         </tr>
     </table>
+    <script>
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        }
+    </script>
 </body>
 </html>
