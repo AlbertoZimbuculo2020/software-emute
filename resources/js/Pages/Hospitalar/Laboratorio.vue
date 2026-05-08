@@ -1,12 +1,15 @@
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
 import { 
-    Search, Save, Printer, CheckCircle, 
-    Trash2, Plus, AlertCircle
+    Search, User, Calendar, Clock, Activity, 
+    FileText, Check, X, FlaskConical, Stethoscope,
+    ChevronRight, Save, Printer, Trash2, Plus, 
+    Microscope, Radiation, History, Package
 } from 'lucide-vue-next';
+import debounce from 'lodash/debounce';
 
 const props = defineProps({
     aguardando: Array,
@@ -14,642 +17,569 @@ const props = defineProps({
     materiais: Array
 });
 
-const page = usePage();
-const flash = computed(() => page.props.flash);
+const activePatient = ref(null);
+const activeExames = ref([]);
+const historico = ref([]);
+const materiaisUsados = ref([]);
+const loading = ref(false);
+const saving = ref({});
+const notification = ref({ show: false, message: '', type: 'success' });
+const activeTab = ref('exames'); // 'exames', 'historico', 'materiais'
 
-const searchTerm = ref('');
-const histSearchTerm = ref('');
-const selectedPaciente = ref(null);
-const details = ref({ exames: [], historico: [], paciente: {}, materiaisUsados: [] });
-const isLoading = ref(false);
-const selectedDeposito = ref('');
-
-// Custom Confirm Modal State
-const confirmModal = ref({
-    isOpen: false,
-    title: '',
-    message: '',
-    onConfirm: null
-});
-
-const openConfirm = (title, message, onConfirm) => {
-    confirmModal.value = { isOpen: true, title, message, onConfirm };
+const showNotification = (message, type = 'success') => {
+    notification.value = { show: true, message, type };
+    setTimeout(() => notification.value.show = false, 4000);
 };
 
-const closeConfirm = () => {
-    confirmModal.value.isOpen = false;
-};
-
-let pollingInterval = null;
-
-onMounted(() => {
-    // Passo 1: Simular SignalR / Timer do WinForms para Fila em tempo real
-    pollingInterval = setInterval(() => {
-        router.reload({ only: ['aguardando'], preserveScroll: true, preserveState: true });
-    }, 15000); // Polling a cada 15 segundos
-    
-    if (props.depositos && props.depositos.length > 0) {
-        selectedDeposito.value = props.depositos[0].Codigo;
-    }
-});
-
-onUnmounted(() => {
-    if (pollingInterval) clearInterval(pollingInterval);
-});
-
-const unidadesLaboratorio = [
-    "mg/dl", "mmHg", "U/L", "%", "g/dl", "IU/L", "umol/L",
-    "ng/ml", "mEq/L", "ml/min", "mMol/L", "cells/mm3"
-];
-
-const filteredAguardando = computed(() => {
-    if (!searchTerm.value) return props.aguardando;
-    const term = searchTerm.value.toLowerCase();
-    return props.aguardando.filter(a => 
-        a.PacienteNome?.toLowerCase().includes(term) ||
-        a.Codigo?.toLowerCase().includes(term)
-    );
-});
-
-const filteredHistorico = computed(() => {
-    if (!histSearchTerm.value) return details.value.historico;
-    const term = histSearchTerm.value.toLowerCase();
-    return details.value.historico.filter(h => 
-        h.Descricao?.toLowerCase().includes(term)
-    );
-});
-
-// Dynamic Exam Parsing
-const parsedExames = ref([]);
-
-watch(() => details.value.exames, (newExames) => {
-    parsedExames.value = newExames.map(e => {
-        let campos = e.Filhos ? e.Filhos.split('|').filter(x => x.trim()) : [];
-        let refs = e.Referencia ? e.Referencia.split('|').filter(x => x.trim()) : [];
-        let resultados = e.Resultado ? e.Resultado.split('|').filter(x => x.trim()) : [];
-
-        if(campos.length === 0) {
-            return {
-                ...e,
-                isSingle: true,
-                singleResultado: e.Resultado || '',
-                singleObs: e.Obs || '',
-                fillMode: 'manual'
-            };
-        }
-
-        let rows = campos.map((campo, index) => {
-            let fullResult = resultados[index] || '';
-            let val = fullResult;
-            let unit = '';
-            
-            for (let u of unidadesLaboratorio) {
-                if (fullResult.endsWith(u)) {
-                    unit = u;
-                    val = fullResult.replace(u, '').trim();
-                    break;
-                }
-            }
-
-            return {
-                dado: campo,
-                resultado: val,
-                unidade: unit,
-                referencia: refs[index] || ''
-            };
-        });
-
-        return {
-            ...e,
-            isSingle: false,
-            rows: rows,
-            fillMode: 'manual'
-        };
-    });
-}, { deep: true });
-
-const selecionarPaciente = async (paciente) => {
-    selectedPaciente.value = paciente;
-    isLoading.value = true;
-
+const selectPatient = async (patient) => {
+    loading.value = true;
     try {
-        const response = await axios.get(route('hospitalar.laboratorio.details', paciente.Codigo));
-        details.value = response.data;
+        const response = await axios.get(route('hospitalar.laboratorio.details', patient.Codigo));
+        activePatient.value = response.data.paciente;
+        activeExames.value = response.data.exames.map(ex => {
+            // Se tiver filhos, inicializar o objeto de resultados
+            let resultados = {};
+            if (ex.MetaFilhos) {
+                const campos = ex.MetaFilhos.split('|');
+                const valoresAtuais = ex.Resultado ? ex.Resultado.split('|') : [];
+                campos.forEach((campo, idx) => {
+                    if (campo.trim()) {
+                        resultados[campo.trim()] = valoresAtuais[idx] ? valoresAtuais[idx].trim() : '';
+                    }
+                });
+            }
+            return { ...ex, resultadosForm: resultados };
+        });
+        historico.value = response.data.historico;
+        materiaisUsados.value = response.data.materiaisUsados;
+        activeTab.value = 'exames';
     } catch (error) {
-        console.error('Erro ao carregar detalhes:', error);
+        showNotification('Erro ao carregar detalhes do paciente', 'error');
     } finally {
-        isLoading.value = false;
+        loading.value = false;
     }
 };
 
-const gravarResultadoExame = (exam, soSugestoes = false) => {
-    let finalResult = '';
-    
-    if (exam.isSingle) {
-        finalResult = exam.singleResultado || '';
-    } else {
-        finalResult = exam.rows.map(r => `${r.resultado || ''} ${r.unidade || ''}`.trim()).join('|');
-    }
+const saveExameResult = async (exame) => {
+    saving.value[exame.Id] = true;
+    try {
+        let finalResult = exame.Resultado;
+        
+        if (exame.MetaFilhos) {
+            // Concatenar resultados dos campos filhos
+            const campos = exame.MetaFilhos.split('|').filter(c => c.trim());
+            finalResult = campos.map(c => exame.resultadosForm[c.trim()] || '').join(' | ');
+        }
 
-    router.post(route('hospitalar.laboratorio.resultado'), {
-        idExame: exam.Id,
-        resultado: finalResult,
-        nrAmostra: exam.nrAmostra || exam.Referencia || '',
-        obs: exam.singleObs || ''
-    }, {
-        preserveScroll: true,
+        await axios.post(route('hospitalar.laboratorio.resultado'), {
+            idExame: exame.Id,
+            resultado: finalResult,
+            obs: exame.Obs
+        });
+        
+        exame.Estado = 'Finalizado';
+        exame.Resultado = finalResult;
+        showNotification(`${exame.Descricao} gravado com sucesso!`);
+    } catch (error) {
+        showNotification('Erro ao salvar resultado', 'error');
+    } finally {
+        saving.value[exame.Id] = false;
+    }
+};
+
+const finalizeAtendimento = () => {
+    if (!activePatient.value) return;
+    
+    router.post(route('hospitalar.laboratorio.finalizar', activePatient.value.Codigo), {}, {
         onSuccess: () => {
-            selecionarPaciente(selectedPaciente.value);
+            activePatient.value = null;
+            showNotification('Atendimento laboratorial finalizado!');
+        },
+        onError: (errors) => {
+            showNotification(errors.error || 'Erro ao finalizar atendimento', 'error');
         }
     });
 };
 
-const gravarTodosDados = () => {
-    if (!parsedExames.value || parsedExames.value.length === 0) return;
-    openConfirm(
-        'Gravar Todos os Dados', 
-        'Deseja gravar simultaneamente os resultados de todos os exames preenchidos deste paciente?',
-        () => {
-            parsedExames.value.forEach(exam => {
-                gravarResultadoExame(exam);
-            });
-            closeConfirm();
-        }
-    );
+const printResult = () => {
+    if (!activePatient.value) return;
+    window.open(route('hospitalar.laboratorio.imprimir', activePatient.value.Codigo), '_blank');
 };
 
-const imprimirResultados = () => {
-    if (!selectedPaciente.value) return;
-    window.open(route('hospitalar.laboratorio.imprimir', selectedPaciente.value.Codigo), '_blank');
+// Polling para novos pacientes
+onMounted(() => {
+    setInterval(() => {
+        router.reload({ only: ['aguardando'], preserveState: true });
+    }, 30000);
+});
+
+// Helpers para UI
+const getStatusColor = (situacao) => {
+    switch (situacao) {
+        case 'Laboratorio': return 'bg-blue-500';
+        case 'RAIO X': return 'bg-purple-500';
+        case 'Internado': return 'bg-orange-500';
+        default: return 'bg-gray-500';
+    }
 };
 
-const finalizarLaboratorio = () => {
-    if (!selectedPaciente.value) return;
-    openConfirm(
-        'Finalizar Atendimento',
-        'Deseja finalizar o atendimento laboratorial para este paciente? O material gasto será abatido do armazém selecionado.',
-        () => {
-            router.post(route('hospitalar.laboratorio.finalizar', selectedPaciente.value.Codigo), {
-                deposito: selectedDeposito.value
-            }, {
-                onSuccess: () => {
-                    selectedPaciente.value = null;
-                    details.value = { exames: [], historico: [], paciente: {}, materiaisUsados: [] };
-                    closeConfirm();
-                }
-            });
-        }
-    );
-};
-
-const calcularIdade = (nascimento) => {
-    if (!nascimento) return 'N/D';
-    const birthDate = new Date(nascimento);
+const calculateAge = (date) => {
+    if (!date) return '';
+    const birth = new Date(date);
     const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
     return age;
 };
 
-// Materiais Usados Logic
+// Gerenciamento de Materiais
 const showMaterialModal = ref(false);
 const materialForm = useForm({
+    idAgenda: '',
+    idPaciente: '',
     produto: '',
     descricao: '',
     quantidade: 1,
     preco: 0
 });
 
-const openMaterialModal = () => showMaterialModal.value = true;
-const closeMaterialModal = () => { showMaterialModal.value = false; materialForm.reset(); };
-
-const selectMaterial = (event) => {
-    const selected = props.materiais.find(m => m.CODIGO === event.target.value);
-    if (selected) {
-        materialForm.descricao = selected.DESCRICAO;
-        materialForm.preco = selected.PRECO_VENDA || 0;
-    }
-};
-
-const salvarMaterial = () => {
-    router.post(route('hospitalar.laboratorio.material.store'), {
-        idAgenda: selectedPaciente.value.Codigo,
-        produto: materialForm.produto,
-        descricao: materialForm.descricao,
-        quantidade: materialForm.quantidade,
-        preco: materialForm.preco
-    }, {
+const addMaterial = (material) => {
+    materialForm.idAgenda = activePatient.value.Codigo;
+    materialForm.idPaciente = activePatient.value.IdPaciente;
+    materialForm.produto = material.CODIGO;
+    materialForm.descricao = material.DESCRICAO;
+    materialForm.preco = material.PV;
+    
+    materialForm.post(route('hospitalar.laboratorio.material.store'), {
         onSuccess: () => {
-            closeMaterialModal();
-            selecionarPaciente(selectedPaciente.value);
+            showMaterialModal.value = false;
+            // Recarregar detalhes para atualizar lista
+            selectPatient(activePatient.value);
         }
     });
 };
 
-const removerMaterial = (id) => {
-    if (confirm('Remover este material?')) {
-        router.delete(route('hospitalar.laboratorio.material.destroy', id), {
-            onSuccess: () => { selecionarPaciente(selectedPaciente.value); }
-        });
-    }
+const removeMaterial = (id) => {
+    router.delete(route('hospitalar.laboratorio.material.destroy', id), {
+        onSuccess: () => selectPatient(activePatient.value)
+    });
 };
 
-const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(value);
-};
 </script>
 
 <template>
-    <Head title="Laboratório Clínico" />
+    <Head title="Laboratório & Diagnóstico" />
 
     <DashboardLayout>
-        <!-- Main Application Wrapper: Exact layout matching WinForms with clean styles -->
-        <div class="lg:h-[calc(100vh-64px)] h-auto flex flex-col lg:flex-row bg-[#f0f0f0] font-sans text-xs text-slate-800 overflow-visible lg:overflow-hidden">
-            
-            <!-- LEFT SIDEBAR -->
-            <div class="w-full lg:w-[350px] flex flex-col border-b lg:border-b-0 lg:border-r border-slate-300 bg-white shrink-0 h-[500px] lg:h-full">
-                
-                <!-- Lista de Espera Header -->
-                <div class="bg-[#000080] text-white text-center py-1.5 font-bold text-sm tracking-wide shadow-sm z-10">
-                    Lista de Espera
-                </div>
-                
-                <div class="bg-slate-100 text-slate-500 text-[10px] p-1.5 border-b border-slate-300">
-                    Drag a column header here to group by that column
-                </div>
-
-                <!-- Lista de Espera Grid -->
-                <div class="flex-1 overflow-y-auto border-b border-slate-300 bg-white">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="sticky top-0 bg-slate-100 border-b border-slate-300 z-10">
-                            <tr>
-                                <th class="p-1.5 border-r border-slate-300 font-normal text-slate-600">Nome</th>
-                                <th class="p-1.5 border-r border-slate-300 font-normal text-slate-600">Data Exame</th>
-                                <th class="p-1.5 font-normal text-slate-600">Medico</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="pac in filteredAguardando" :key="pac.Id" 
-                                @click="selecionarPaciente(pac)"
-                                :class="[
-                                    'border-b border-slate-200 cursor-pointer transition-colors',
-                                    selectedPaciente?.Codigo === pac.Codigo 
-                                        ? 'bg-[#1976d2] text-white' 
-                                        : 'hover:bg-blue-50 text-slate-800'
-                                ]">
-                                <td class="p-1.5 border-r border-slate-200/50 truncate max-w-[120px]">
-                                    <div class="flex items-center gap-1">
-                                        <span v-if="selectedPaciente?.Codigo === pac.Codigo" class="text-white text-[10px]">→</span>
-                                        {{pac.PacienteNome}}
-                                    </div>
-                                </td>
-                                <td class="p-1.5 border-r border-slate-200/50">{{pac.DataAgendamento}}</td>
-                                <td class="p-1.5 truncate max-w-[90px]">{{pac.MedicoNome}}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Histórico do Paciente Header -->
-                <div class="bg-[#e0e0e0] text-slate-800 text-center py-1.5 font-bold text-sm border-b border-slate-300 shadow-sm z-10">
-                    Histórico do Paciente
-                </div>
-                
-                <!-- Search Histórico -->
-                <div class="p-1.5 flex gap-1 border-b border-slate-300 bg-[#f8f8f8]">
-                    <input type="text" v-model="histSearchTerm" class="flex-1 border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none" />
-                    <button class="bg-[#2196F3] hover:bg-[#1976d2] text-white px-3 py-1 text-xs font-bold flex items-center gap-1 transition-colors shadow-sm">
-                        <Search class="w-3 h-3" /> BUSCAR PACIENTE
-                    </button>
-                </div>
-
-                <div class="bg-slate-100 text-slate-500 text-[10px] p-1.5 border-b border-slate-300">
-                    Drag a column header here to group by that column
-                </div>
-
-                <!-- Histórico Grid -->
-                <div class="h-[200px] overflow-y-auto bg-white">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="sticky top-0 bg-slate-100 border-b border-slate-300 z-10">
-                            <tr>
-                                <th class="p-1.5 border-r border-slate-300 font-normal text-slate-600">Data</th>
-                                <th class="p-1.5 border-r border-slate-300 font-normal text-slate-600">Consulta</th>
-                                <th class="p-1.5 border-r border-slate-300 font-normal text-slate-600">Paciente</th>
-                                <th class="p-1.5 border-r border-slate-300 font-normal text-slate-600">Medico</th>
-                                <th class="p-1.5 border-r border-slate-300 font-normal text-slate-600">Situacao</th>
-                                <th class="p-1.5 font-normal text-slate-600">Visualizar</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="hist in filteredHistorico" :key="hist.Id" class="border-b border-slate-200 hover:bg-slate-50 text-slate-800">
-                                <td class="p-1.5 border-r border-slate-200/50">{{ hist.DataAgendamento }}</td>
-                                <td class="p-1.5 border-r border-slate-200/50 truncate max-w-[60px]">{{ hist.DescricaoConsulta || 'N/D' }}</td>
-                                <td class="p-1.5 border-r border-slate-200/50 truncate max-w-[60px]">{{ hist.PacienteNome }}</td>
-                                <td class="p-1.5 border-r border-slate-200/50 truncate max-w-[60px]">{{ hist.MedicoNome }}</td>
-                                <td class="p-1.5 border-r border-slate-200/50">{{ hist.Situacao || 'Finalizado' }}</td>
-                                <td class="p-1.5 text-center">
-                                    <button class="bg-slate-200 hover:bg-slate-300 border border-slate-400 px-2 py-0.5 text-[10px] text-slate-700">Selecionar</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- RIGHT MAIN AREA -->
-            <div class="flex-1 flex flex-col min-w-0 bg-[#f0f0f0]">
-                
-                <!-- Main Header -->
-                <div class="bg-[#000080] text-white text-center py-2 font-bold text-sm tracking-widest shadow-sm z-10 w-full">
-                    LABORATÓRIO DE EXAMES NORMAIS
-                </div>
-
-                <div v-if="selectedPaciente" class="flex-1 flex flex-col overflow-hidden print-report-container">
-                    
-                    <!-- Print Only Header -->
-                    <div class="hidden print:block text-center mb-8 border-b-2 border-black pb-4">
-                        <h1 class="text-2xl font-bold uppercase tracking-widest">Relatório de Análises Clínicas</h1>
-                        <p class="text-sm">Emute ERP Hospitalar - Departamento de Laboratório</p>
-                        <p class="text-xs mt-1">Data de Emissão: {{ new Date().toLocaleDateString('pt-PT') }}</p>
+        <div class="h-[calc(100vh-4rem)] flex overflow-hidden bg-slate-50">
+            <!-- Sidebar: Lista de Espera -->
+            <div class="w-80 bg-white border-r flex flex-col shadow-sm">
+                <div class="p-4 border-b bg-slate-50/50">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <Clock class="w-5 h-5 text-blue-600" />
+                            Fila de Espera
+                        </h2>
+                        <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
+                            {{ aguardando.length }}
+                        </span>
                     </div>
-
-                    <!-- Patient Name Banner -->
-                    <div class="bg-[#000080] text-white text-center py-1.5 font-bold text-sm tracking-widest mx-2 mt-2 shadow-sm print:hidden">
-                        {{ details.paciente.PacienteNome }}
+                    <div class="relative">
+                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input 
+                            type="text" 
+                            placeholder="Buscar paciente..."
+                            class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                        />
                     </div>
+                </div>
 
-                    <!-- Patient Details Grid -->
-                    <div class="bg-[#e8e8e8] mx-2 p-2 border border-slate-300 shadow-sm print:bg-white print:border-black print:mb-8 print:mx-0">
-                        <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto_1fr] gap-x-4 gap-y-1 items-center">
-                            
-                            <label class="text-right pr-2 text-slate-700">Código</label>
-                            <input type="text" :value="details.paciente.Codigo" disabled class="w-full border border-slate-300 px-2 py-1 bg-white text-slate-800 focus:outline-none" />
-                            
-                            <div class="col-span-2 flex items-center gap-6 pl-4 text-slate-700">
-                                <label class="flex items-center gap-1"><input type="radio" :checked="!details.paciente.Asseguradora" disabled class="accent-blue-600"/> Particular</label>
-                                <label class="flex items-center gap-1"><input type="radio" :checked="!!details.paciente.Asseguradora" disabled class="accent-blue-600"/> Assegurado</label>
-                            </div>
-
-                            <label class="text-right pr-2 text-slate-700">Nome</label>
-                            <input type="text" :value="details.paciente.PacienteNome" disabled class="w-full border border-slate-300 px-2 py-1 bg-white text-slate-800 focus:outline-none" />
-
-                            <label class="text-right pr-2 text-slate-700">Asseguradora</label>
-                            <input type="text" :value="details.paciente.Asseguradora || 'N/A'" disabled class="w-full border border-slate-300 px-2 py-1 bg-white text-slate-800 focus:outline-none" />
-
-                            <label class="text-right pr-2 text-slate-700">Data de Nascimento</label>
-                            <input type="text" :value="details.paciente.DataNascimento" disabled class="w-full border border-slate-300 px-2 py-1 bg-white text-slate-800 focus:outline-none" />
-
-                            <label class="text-right pr-2 text-slate-700">Idade</label>
-                            <input type="text" :value="calcularIdade(details.paciente.DataNascimento)" disabled class="w-full border border-slate-300 px-2 py-1 bg-white text-slate-800 focus:outline-none" />
-
-                            <label class="text-right pr-2 text-slate-700">Telefone</label>
-                            <input type="text" :value="details.paciente.Telefone" disabled class="w-full border border-slate-300 px-2 py-1 bg-white text-slate-800 focus:outline-none" />
-
-                            <label class="text-right pr-2 text-slate-700">Sexo</label>
-                            <input type="text" :value="details.paciente.Genero" disabled class="w-full border border-slate-300 px-2 py-1 bg-white text-slate-800 focus:outline-none" />
-
-                            <label class="text-right pr-2 text-slate-700">Morada</label>
-                            <input type="text" :value="details.paciente.Morada" disabled class="w-full border border-slate-300 px-2 py-1 bg-white text-slate-800 focus:outline-none" />
-
-                            <label class="text-right pr-2 text-slate-700">Consulta</label>
-                            <input type="text" :value="details.paciente.DescricaoConsulta || 'Clinica Geral'" disabled class="w-full border border-slate-300 px-2 py-1 bg-white text-slate-800 focus:outline-none" />
-
-                            <label class="text-right pr-2 text-slate-700">Médico</label>
-                            <input type="text" :value="details.paciente.MedicoNome" disabled class="w-full border border-slate-300 px-2 py-1 bg-white text-slate-800 focus:outline-none" />
+                <div class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
+                    <div 
+                        v-for="p in aguardando" 
+                        :key="p.Id"
+                        @click="selectPatient(p)"
+                        class="p-3 rounded-xl border border-slate-100 cursor-pointer transition-all hover:shadow-md hover:border-blue-200 group"
+                        :class="[activePatient?.Codigo === p.Codigo ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-500/10' : 'bg-white']"
+                    >
+                        <div class="flex items-start justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-400">#{{ p.Codigo }}</span>
+                            <span 
+                                class="px-2 py-0.5 rounded text-[10px] font-bold text-white uppercase tracking-wider"
+                                :class="getStatusColor(p.Situacao)"
+                            >
+                                {{ p.Situacao }}
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 truncate group-hover:text-blue-600 transition-colors">
+                            {{ p.PacienteNome }}
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                            <Stethoscope class="w-3 h-3" />
+                            {{ p.MedicoNome || 'Médico não atribuído' }}
+                        </p>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                <Calendar class="w-2.5 h-2.5" />
+                                {{ new Date(p.DataAgendamento).toLocaleDateString() }}
+                            </span>
                         </div>
                     </div>
 
-                    <!-- Exames Solicitados Header -->
-                    <div class="bg-[#000080] text-white py-1.5 mx-2 mt-2 shadow-sm flex items-center justify-center relative">
-                        <h2 class="font-bold text-sm tracking-widest uppercase">Exames Solicitados</h2>
-                        <!-- Elegant minimal button for materials on the right side -->
-                        <button @click="openMaterialModal" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white px-3 py-0.5 border border-white/40 text-[10px] font-bold flex items-center gap-1 transition-colors">
-                            <Plus class="w-3 h-3" /> Materiais ({{ details.materiaisUsados?.length || 0 }})
-                        </button>
+                    <div v-if="aguardando.length === 0" class="flex flex-col items-center justify-center h-40 text-slate-400 opacity-50">
+                        <Activity class="w-12 h-12 mb-2" />
+                        <p class="text-sm">Nenhum paciente aguardando</p>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Exames Grid Area -->
-                    <div class="flex-1 overflow-y-auto p-2 mx-2 border-x border-b border-slate-300 bg-[#f8f8f8] mb-2 shadow-inner">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <!-- Main Workspace -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar relative p-6 bg-[#f8fafc]">
+                <div v-if="activePatient" class="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-300">
+                    <!-- Patient Profile Header -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/60 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-8 opacity-5">
+                            <Microscope class="w-32 h-32" />
+                        </div>
+                        
+                        <div class="relative flex flex-wrap items-center gap-6">
+                            <div class="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                                <User class="w-10 h-10" />
+                            </div>
                             
-                            <!-- Exame Cards -->
-                            <div v-for="(exam, idx) in parsedExames" :key="exam.Id" class="bg-[#f0f0f0] border border-slate-300 p-2 shadow-sm flex flex-col">
-                                
-                                <!-- Card Header -->
-                                <div class="flex justify-between items-center border-b border-slate-300 pb-1 mb-2">
-                                    <h3 class="font-bold text-slate-800 text-sm">{{ idx + 1 }}) {{ exam.Descricao }}</h3>
-                                    <span :class="exam.Estado === 'N_PAGO' ? 'bg-red-600' : 'bg-green-600'" class="text-white text-[10px] font-bold px-1.5 py-0.5 uppercase">
-                                        {{ exam.Estado || 'PAGO' }}
+                            <div class="flex-1 min-w-[200px]">
+                                <div class="flex items-center gap-3 mb-1">
+                                    <h1 class="text-2xl font-black text-slate-900 tracking-tight">{{ activePatient.PacienteNome }}</h1>
+                                    <span v-if="activePatient.Seguradora" class="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded uppercase border border-indigo-100">
+                                        {{ activePatient.Seguradora }}
                                     </span>
                                 </div>
-                                
-                                <!-- Fill Options -->
-                                <div class="flex items-center gap-4 mb-2 text-slate-700">
-                                    <label class="flex items-center gap-1 cursor-pointer">
-                                        <input type="radio" value="manual" v-model="exam.fillMode" class="accent-blue-600" />
-                                        Preencher Manualmente
-                                    </label>
-                                    <label class="flex items-center gap-1 cursor-pointer">
-                                        <input type="radio" value="anexo" disabled class="accent-blue-600" />
-                                        Anexar (PDF, Imagem)
-                                    </label>
-                                </div>
-
-                                <!-- Rows Table -->
-                                <div v-if="exam.fillMode === 'manual'" class="flex-1">
-                                    <div v-if="!exam.isSingle" class="border border-slate-300 bg-white">
-                                        <table class="w-full text-left">
-                                            <thead class="border-b border-slate-300 bg-slate-100">
-                                                <tr>
-                                                    <th class="p-1 border-r border-slate-300 font-bold text-slate-700 w-2/5">Dado</th>
-                                                    <th class="p-1 border-r border-slate-300 font-bold text-slate-700">Resultado</th>
-                                                    <th class="p-1 font-bold text-slate-700">Unidade</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr v-for="(row, rIdx) in exam.rows" :key="rIdx" class="border-b border-slate-200 last:border-0 hover:bg-slate-50">
-                                                    <td class="p-1 border-r border-slate-300 text-slate-800 truncate">{{ row.dado }}</td>
-                                                    <td class="p-1 border-r border-slate-300">
-                                                        <input type="text" v-model="row.resultado" class="w-full border border-slate-300 px-1 py-0.5 text-xs focus:border-blue-500 focus:outline-none" />
-                                                    </td>
-                                                    <td class="p-1">
-                                                        <select v-model="row.unidade" class="w-full border border-slate-300 px-1 py-0.5 text-xs focus:border-blue-500 focus:outline-none bg-white">
-                                                            <option value=""></option>
-                                                            <option v-for="u in unidadesLaboratorio" :key="u" :value="u">{{ u }}</option>
-                                                        </select>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <div v-else class="space-y-2 bg-white p-2 border border-slate-300">
-                                        <div>
-                                            <label class="font-bold text-slate-700">Resultado</label>
-                                            <input type="text" v-model="exam.singleResultado" class="w-full border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none" />
-                                        </div>
-                                        <div>
-                                            <label class="font-bold text-slate-700">Observação</label>
-                                            <textarea v-model="exam.singleObs" rows="2" class="w-full border border-slate-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none resize-none"></textarea>
-                                        </div>
-                                    </div>
-
-                                    <!-- Buttons -->
-                                    <div class="flex gap-2 mt-2">
-                                        <button @click="gravarResultadoExame(exam)" class="flex-1 bg-white border border-slate-300 hover:bg-slate-100 py-1.5 text-slate-800 font-bold shadow-sm transition-colors">
-                                            Gravar Resultado
-                                        </button>
-                                        <button @click="gravarResultadoExame(exam, true)" class="flex-1 bg-white border border-slate-300 hover:bg-slate-100 py-1.5 text-slate-800 font-bold shadow-sm transition-colors">
-                                            Gravar Sugestões
-                                        </button>
-                                    </div>
+                                <div class="flex flex-wrap items-center gap-y-2 gap-x-4 text-sm text-slate-500">
+                                    <span class="flex items-center gap-1.5 font-medium">
+                                        <Calendar class="w-4 h-4 text-blue-500" />
+                                        {{ calculateAge(activePatient.DataNascimento) }} Anos ({{ new Date(activePatient.DataNascimento).toLocaleDateString() }})
+                                    </span>
+                                    <span class="flex items-center gap-1.5 font-medium">
+                                        <Activity class="w-4 h-4 text-blue-500" />
+                                        {{ activePatient.Genero }}
+                                    </span>
+                                    <span v-if="activePatient.Telefone" class="flex items-center gap-1.5 font-medium">
+                                        <Clock class="w-4 h-4 text-blue-500" />
+                                        {{ activePatient.Telefone }}
+                                    </span>
                                 </div>
                             </div>
 
-                        </div>
-                    </div>
-
-                    <!-- Bottom Action Bar -->
-                    <div class="p-4 flex flex-wrap justify-center gap-2 lg:gap-4 bg-[#f8f8f8] border-t border-slate-300 shadow-[0_-4px_6px_-6px_rgba(0,0,0,0.1)]">
-                        <button @click="gravarTodosDados" class="flex-1 lg:flex-none bg-[#2196F3] hover:bg-[#1976d2] text-white px-4 lg:px-6 py-2 lg:py-2.5 font-bold shadow-md flex items-center justify-center gap-2 transition-colors">
-                            <Save class="w-4 h-4" /> GRAVAR DADOS
-                        </button>
-                        <button @click="imprimirResultados" class="flex-1 lg:flex-none bg-[#FF9800] hover:bg-[#F57C00] text-white px-4 lg:px-6 py-2 lg:py-2.5 font-bold shadow-md flex items-center justify-center gap-2 transition-colors">
-                            <Printer class="w-4 h-4" /> IMPRIMIR
-                        </button>
-                        <button @click="finalizarLaboratorio" class="w-full lg:w-auto bg-[#4CAF50] hover:bg-[#388E3C] text-white px-8 py-2 lg:py-2.5 font-bold shadow-md flex items-center justify-center gap-2 transition-colors">
-                            <CheckCircle class="w-4 h-4" /> FINALIZAR
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Empty State Full Right -->
-                <div v-else class="flex-1 flex flex-col items-center justify-center bg-[#f8f8f8]">
-                </div>
-
-            </div>
-        </div>
-
-        <!-- Material Selection Modal -->
-        <div v-if="showMaterialModal" class="fixed inset-0 z-[100] flex items-center justify-center">
-            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="closeMaterialModal"></div>
-            <div class="relative bg-white shadow-2xl w-full max-w-2xl border border-slate-400">
-                <div class="bg-[#000080] p-3 text-white flex items-center justify-between">
-                    <h3 class="text-sm font-bold uppercase tracking-widest">Registro de Materiais Usados</h3>
-                    <button @click="closeMaterialModal" class="text-white hover:text-slate-200 transition-colors">
-                        <Plus class="w-5 h-5 rotate-45" />
-                    </button>
-                </div>
-                
-                <div class="p-4 space-y-4">
-                    <!-- Armazém Selector -->
-                    <div class="bg-blue-50 border border-blue-200 p-3 flex items-center gap-4">
-                        <label class="font-bold text-blue-900 text-xs uppercase tracking-widest shrink-0">Armazém (Stock):</label>
-                        <select v-model="selectedDeposito" class="w-full bg-white border border-blue-300 focus:border-blue-500 py-1.5 px-2 text-xs font-bold text-slate-700">
-                            <option v-for="dep in props.depositos" :key="dep.Codigo" :value="dep.Codigo">{{ dep.Descricao }}</option>
-                        </select>
-                    </div>
-
-                    <div class="bg-slate-50 border border-slate-300 p-4 space-y-3">
-                        <div>
-                            <label class="block font-bold text-slate-700 mb-1">Produto Consumido</label>
-                            <select v-model="materialForm.produto" @change="selectMaterial" class="w-full bg-white border border-slate-300 focus:border-blue-500 focus:outline-none py-1.5 px-2">
-                                <option value="">-- Selecionar Material --</option>
-                                <option v-for="mat in props.materiais" :key="mat.CODIGO" :value="mat.CODIGO">{{ mat.DESCRICAO }} ({{ formatCurrency(mat.PRECO_VENDA) }})</option>
-                            </select>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block font-bold text-slate-700 mb-1">Quantidade Usada</label>
-                                <input type="number" min="1" v-model="materialForm.quantidade" class="w-full bg-white border border-slate-300 focus:border-blue-500 focus:outline-none py-1.5 px-2" />
-                            </div>
-                            <div>
-                                <label class="block font-bold text-slate-700 mb-1">Custo Unitário</label>
-                                <input type="text" :value="formatCurrency(materialForm.preco)" disabled class="w-full bg-slate-100 border border-slate-300 py-1.5 px-2 text-slate-500" />
+                            <div class="flex items-center gap-2">
+                                <button 
+                                    @click="printResult"
+                                    class="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-all text-sm"
+                                >
+                                    <Printer class="w-4 h-4" />
+                                    Imprimir
+                                </button>
+                                <button 
+                                    @click="finalizeAtendimento"
+                                    class="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all text-sm"
+                                >
+                                    <Check class="w-4 h-4" />
+                                    Finalizar Atendimento
+                                </button>
                             </div>
                         </div>
-                        
-                        <div class="flex justify-end pt-2">
-                            <button @click="salvarMaterial" :disabled="!materialForm.produto" class="bg-[#2196F3] text-white px-4 py-1.5 font-bold hover:bg-[#1976d2] transition-colors disabled:opacity-50">
-                                Adicionar
-                            </button>
+                    </div>
+
+                    <!-- Tabs Navigation -->
+                    <div class="flex items-center gap-2 bg-white p-1 rounded-2xl border border-slate-200 shadow-sm w-fit">
+                        <button 
+                            @click="activeTab = 'exames'"
+                            :class="[activeTab === 'exames' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-50']"
+                            class="px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+                        >
+                            <FlaskConical class="w-4 h-4" />
+                            Exames Ativos
+                        </button>
+                        <button 
+                            @click="activeTab = 'historico'"
+                            :class="[activeTab === 'historico' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-50']"
+                            class="px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+                        >
+                            <History class="w-4 h-4" />
+                            Histórico
+                        </button>
+                        <button 
+                            @click="activeTab = 'materiais'"
+                            :class="[activeTab === 'materiais' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-50']"
+                            class="px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+                        >
+                            <Package class="w-4 h-4" />
+                            Materiais Usados
+                        </button>
+                    </div>
+
+                    <!-- Tab Content: Exames Ativos -->
+                    <div v-if="activeTab === 'exames'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div 
+                            v-for="ex in activeExames" 
+                            :key="ex.Id"
+                            class="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden flex flex-col group"
+                        >
+                            <div class="p-5 border-b bg-slate-50/50 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
+                                        <Radiation v-if="ex.MetaTipo === 'RAIO X'" class="w-5 h-5" />
+                                        <Microscope v-else class="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-slate-800 tracking-tight">{{ ex.Descricao }}</h3>
+                                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{{ ex.MetaTipo || 'NORMAL' }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span 
+                                        :class="[ex.Estado === 'Finalizado' ? 'bg-emerald-500' : 'bg-orange-500']"
+                                        class="w-2.5 h-2.5 rounded-full"
+                                    ></span>
+                                    <span class="text-[10px] font-black text-slate-500 uppercase">{{ ex.Estado }}</span>
+                                </div>
+                            </div>
+
+                            <div class="p-5 flex-1 space-y-4">
+                                <!-- Multi-field Inputs (Filhos) -->
+                                <div v-if="ex.MetaFilhos" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div v-for="campo in ex.MetaFilhos.split('|').filter(c => c.trim())" :key="campo" class="space-y-1.5">
+                                        <label class="text-[10px] font-black text-slate-500 uppercase px-1">{{ campo.trim() }}</label>
+                                        <input 
+                                            type="text" 
+                                            v-model="ex.resultadosForm[campo.trim()]"
+                                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                            placeholder="Inserir resultado..."
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- Simple Result Input -->
+                                <div v-else class="space-y-1.5">
+                                    <label class="text-[10px] font-black text-slate-500 uppercase px-1">Resultado Final</label>
+                                    <textarea 
+                                        v-model="ex.Resultado"
+                                        rows="3"
+                                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none"
+                                        placeholder="Descreva o diagnóstico ou resultado..."
+                                    ></textarea>
+                                </div>
+
+                                <!-- Observations -->
+                                <div class="space-y-1.5">
+                                    <label class="text-[10px] font-black text-slate-500 uppercase px-1">Observações / Notas</label>
+                                    <input 
+                                        type="text" 
+                                        v-model="ex.Obs"
+                                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm italic"
+                                        placeholder="Opcional..."
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="px-5 py-4 bg-slate-50/50 border-t flex items-center justify-between">
+                                <div class="flex items-center gap-1.5">
+                                    <span v-if="ex.MetaReferencia" class="text-[10px] font-medium text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200">
+                                        Ref: {{ ex.MetaReferencia }}
+                                    </span>
+                                </div>
+                                <button 
+                                    @click="saveExameResult(ex)"
+                                    :disabled="saving[ex.Id]"
+                                    class="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-blue-600 transition-all disabled:opacity-50"
+                                >
+                                    <Save v-if="!saving[ex.Id]" class="w-3.5 h-3.5" />
+                                    <Activity v-else class="w-3.5 h-3.5 animate-spin" />
+                                    {{ saving[ex.Id] ? 'Gravando...' : 'Gravar Resultado' }}
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- List of added materials -->
-                    <div v-if="details.materiaisUsados?.length > 0" class="border border-slate-300">
-                        <table class="w-full text-left">
-                            <thead class="bg-slate-100 border-b border-slate-300">
-                                <tr>
-                                    <th class="p-2 font-bold text-slate-700 border-r border-slate-300">Material</th>
-                                    <th class="p-2 font-bold text-slate-700 border-r border-slate-300 text-center">Qtd</th>
-                                    <th class="p-2 font-bold text-slate-700 border-r border-slate-300 text-right">Total</th>
-                                    <th class="p-2"></th>
+                    <!-- Tab Content: Histórico -->
+                    <div v-if="activeTab === 'historico'" class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b">
+                                    <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase">Data</th>
+                                    <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase">Exame</th>
+                                    <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase">Resultado</th>
+                                    <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase text-right">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="mat in details.materiaisUsados" :key="mat.Id" class="border-b border-slate-200 last:border-0 hover:bg-slate-50">
-                                    <td class="p-2 border-r border-slate-300 text-slate-800">{{ mat.Descricao }}</td>
-                                    <td class="p-2 border-r border-slate-300 text-center">{{ mat.Quantidade }}</td>
-                                    <td class="p-2 border-r border-slate-300 text-right">{{ formatCurrency(mat.Total) }}</td>
-                                    <td class="p-2 text-center">
-                                        <button @click="removerMaterial(mat.Id)" class="text-red-600 hover:text-red-800 transition-colors">
-                                            <Trash2 class="w-4 h-4" />
+                                <tr v-for="h in historico" :key="h.Id" class="border-b last:border-0 hover:bg-slate-50 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-col">
+                                            <span class="text-sm font-bold text-slate-700">{{ new Date(h.DataAgendamento).toLocaleDateString() }}</span>
+                                            <span class="text-[10px] text-slate-400 uppercase font-bold">{{ new Date(h.DataAgendamento).toLocaleTimeString() }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="text-sm font-black text-blue-600">{{ h.Descricao }}</span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="text-sm text-slate-600 truncate max-w-xs">{{ h.Resultado }}</p>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <button class="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                                            <Printer class="w-4 h-4" />
                                         </button>
                                     </td>
+                                </tr>
+                                <tr v-if="historico.length === 0">
+                                    <td colspan="4" class="px-6 py-12 text-center text-slate-400 italic">Nenhum histórico encontrado para este paciente.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Tab Content: Materiais -->
+                    <div v-if="activeTab === 'materiais'" class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-lg font-bold text-slate-800">Materiais Consumidos</h2>
+                            <button 
+                                @click="showMaterialModal = true"
+                                class="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
+                            >
+                                <Plus class="w-4 h-4" />
+                                Adicionar Material
+                            </button>
+                        </div>
+
+                        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b">
+                                        <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase">Descrição</th>
+                                        <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase">Qtd</th>
+                                        <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase">Preço Unit.</th>
+                                        <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase">Total</th>
+                                        <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="m in materiaisUsados" :key="m.Id" class="border-b last:border-0 hover:bg-slate-50">
+                                        <td class="px-6 py-4">
+                                            <span class="text-sm font-bold text-slate-700">{{ m.Descricao }}</span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-black">{{ m.Quantidade }}</span>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-slate-600">
+                                            {{ Number(m.Preco).toLocaleString('pt-AO', { style: 'currency', currency: 'AOA' }) }}
+                                        </td>
+                                        <td class="px-6 py-4 text-sm font-black text-slate-900">
+                                            {{ Number(m.Total).toLocaleString('pt-AO', { style: 'currency', currency: 'AOA' }) }}
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button 
+                                                @click="removeMaterial(m.Id)"
+                                                class="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                                            >
+                                                <Trash2 class="w-4 h-4" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div v-else class="h-full flex flex-col items-center justify-center text-slate-300">
+                    <div class="w-40 h-40 rounded-full bg-white flex items-center justify-center mb-6 shadow-xl shadow-slate-200/50">
+                        <Microscope class="w-20 h-20 text-slate-100" />
+                    </div>
+                    <h2 class="text-2xl font-black text-slate-400 tracking-tight">Painel de Diagnóstico</h2>
+                    <p class="text-slate-400/60 font-medium">Selecione um paciente na lista para iniciar os lançamentos</p>
                 </div>
             </div>
         </div>
 
-        <!-- Elegant Confirm Modal -->
-        <Transition enter-active-class="duration-300 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="duration-200 ease-in" leave-to-class="opacity-0 scale-95">
-            <div v-if="confirmModal.isOpen" class="fixed inset-0 z-[2000] flex items-center justify-center p-4">
-                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" @click="closeConfirm"></div>
-                <div class="relative bg-white rounded-[2.5rem] shadow-2xl p-10 max-w-md w-full border border-white/20 animate-fadeIn text-center">
-                    <div class="flex flex-col items-center">
-                        <div class="w-20 h-20 bg-blue-50 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner">
-                            <AlertCircle class="w-10 h-10 text-blue-600" />
-                        </div>
-                        <h3 class="text-lg font-black text-slate-900 uppercase tracking-tight mb-2">{{ confirmModal.title }}</h3>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-8 px-4">
-                            {{ confirmModal.message }}
-                        </p>
-                        
-                        <div class="grid grid-cols-2 gap-4 w-full text-[10px] font-black uppercase tracking-widest">
-                            <button @click="closeConfirm" class="py-4 bg-slate-100 text-slate-500 rounded-2xl hover:bg-slate-200 transition-all">
-                                Cancelar
-                            </button>
-                            <button @click="confirmModal.onConfirm" class="py-4 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-200">
-                                Confirmar
-                            </button>
+        <!-- Material Selection Modal -->
+        <div v-if="showMaterialModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+            <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
+                <div class="p-8 border-b bg-slate-50/50 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xl font-black text-slate-900">Registrar Material Consumido</h3>
+                        <p class="text-sm text-slate-500">Selecione os reagentes ou insumos utilizados</p>
+                    </div>
+                    <button @click="showMaterialModal = false" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                        <X class="w-6 h-6 text-slate-400" />
+                    </button>
+                </div>
+                
+                <div class="p-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    <div class="grid grid-cols-1 gap-3">
+                        <div 
+                            v-for="mat in materiais" 
+                            :key="mat.CODIGO"
+                            @click="addMaterial(mat)"
+                            class="p-4 rounded-2xl border border-slate-100 hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-all flex items-center justify-between group"
+                        >
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors border">
+                                    <Package class="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p class="font-bold text-slate-800">{{ mat.DESCRICAO }}</p>
+                                    <p class="text-xs text-slate-400 font-medium">Cód: {{ mat.CODIGO }}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-black text-slate-900">{{ Number(mat.PV).toLocaleString('pt-AO', { style: 'currency', currency: 'AOA' }) }}</p>
+                                <span class="text-[10px] text-blue-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase">Clique para Adicionar</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </Transition>
+        </div>
 
+        <!-- Notification Toast -->
+        <div 
+            v-if="notification.show" 
+            class="fixed bottom-8 right-8 z-[100] animate-in slide-in-from-bottom-5 duration-300"
+        >
+            <div 
+                :class="[notification.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white']"
+                class="px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/10"
+            >
+                <Check v-if="notification.type === 'success'" class="w-5 h-5 text-emerald-400" />
+                <X v-else class="w-5 h-5 text-white" />
+                <span class="font-bold text-sm">{{ notification.message }}</span>
+            </div>
+        </div>
     </DashboardLayout>
 </template>
 
 <style scoped>
-/* Scoped styles for scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-    background: #f1f5f9; 
+    background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #cbd5e1; 
-    border-radius: 4px;
+    background: #e2e8f0;
+    border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8; 
+    background: #cbd5e1;
+}
+
+input[type="text"], textarea {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-in {
+    animation-fill-mode: forwards;
 }
 </style>

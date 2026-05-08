@@ -46,16 +46,21 @@ class RaioXController extends Controller
             ->where('tb_agendamento.Codigo', $idAgenda)
             ->first();
 
+        if (!$agendamento) {
+            return response()->json(['error' => 'Agendamento não encontrado'], 404);
+        }
+
         $exames = DB::table('tb_resultado_exame')
-            ->where('Codigo', $idAgenda)
+            ->where('IdAgenda', $idAgenda)
             ->get();
 
         $historico = DB::table('tb_resultado_exame')
-            ->join('tb_agendamento', 'tb_resultado_exame.Codigo', '=', 'tb_agendamento.Codigo')
+            ->join('tb_agendamento', 'tb_resultado_exame.IdAgenda', '=', 'tb_agendamento.Codigo')
             ->where('tb_agendamento.IdPaciente', $agendamento->IdPaciente)
             ->where('tb_resultado_exame.Estado', 'Finalizado')
             ->select('tb_resultado_exame.*', 'tb_agendamento.DataAgendamento')
-            ->orderBy('tb_agendamento.DataAgendamento', 'desc')
+            ->orderBy('tb_resultado_exame.Id', 'desc')
+            ->limit(20)
             ->get();
 
         return response()->json([

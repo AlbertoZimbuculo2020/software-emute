@@ -12,7 +12,7 @@ class LaboratorioController extends Controller
 {
     public function index()
     {
-        // Pacientes aguardando exames (Situação = 'Laboratorio')
+        // Pacientes aguardando exames (Situação = 'Laboratorio' ou 'RAIO X')
         $aguardando = DB::table('tb_agendamento')
             ->join('tb_tipoentidade as paciente', 'tb_agendamento.IdPaciente', '=', 'paciente.Codigo')
             ->leftJoin('tb_tipoentidade as medico', 'tb_agendamento.IdMedico', '=', 'medico.Codigo')
@@ -21,12 +21,17 @@ class LaboratorioController extends Controller
                 'paciente.Nome as PacienteNome',
                 'medico.Nome as MedicoNome'
             )
-            ->where('tb_agendamento.Situacao', 'Laboratorio')
+            ->whereIn('tb_agendamento.Situacao', ['Laboratorio', 'RAIO X', 'Internado'])
             ->where('tb_agendamento.Estado', 'Ativo')
+            ->orderBy('tb_agendamento.Id', 'desc')
             ->get();
 
         $depositos = DB::table('tb_deposito')->where('ESTADO', 'Ativo')->get();
-        $materiais = DB::table('tb_artigo')->where('TIPO', 'PRODUTO')->where('ESTADO', 'Activado')->get();
+        $materiais = DB::table('tb_artigo')
+            ->where('TIPO', 'PRODUTO')
+            ->where('ESTADO', 'Activado')
+            ->select('CODIGO', 'DESCRICAO', 'PV')
+            ->get();
 
         return Inertia::render('Hospitalar/Laboratorio', [
             'aguardando' => $aguardando,
@@ -40,32 +45,52 @@ class LaboratorioController extends Controller
         $agendamento = DB::table('tb_agendamento')
             ->join('tb_tipoentidade as paciente', 'tb_agendamento.IdPaciente', '=', 'paciente.Codigo')
             ->leftJoin('tb_entidade as ent', 'paciente.IdEntidade', '=', 'ent.Codigo')
+            ->leftJoin('tb_paciente as p', 'paciente.Codigo', '=', 'p.IdTipoEntidade')
             ->select(
                 'tb_agendamento.*', 
                 'paciente.Nome as PacienteNome',
                 'paciente.Telefone',
                 'paciente.Rua as Morada',
                 'ent.DataNascimento',
-                'ent.Genero'
+                'ent.Genero',
+                'p.IdSegura'
             )
             ->where('tb_agendamento.Codigo', $idAgenda)
             ->first();
 
+        if (!$agendamento) {
+            return response()->json(['error' => 'Agendamento não encontrado'], 404);
+        }
+
+        if ($agendamento->IdSegura) {
+            $agendamento->Seguradora = DB::table('tb_tipoentidade')
+                ->where('Codigo', $agendamento->IdSegura)
+                ->value('Nome');
+        }
+
         $exames = DB::table('tb_resultado_exame')
-            ->where('Codigo', $idAgenda)
+            ->leftJoin('tb_exames', 'tb_resultado_exame.CodExame', '=', 'tb_exames.Codigo')
+            ->where('tb_resultado_exame.IdAgenda', $idAgenda)
+            ->select(
+                'tb_resultado_exame.*',
+                'tb_exames.Filhos as MetaFilhos',
+                'tb_exames.Referencia as MetaReferencia',
+                'tb_exames.Tipo as MetaTipo'
+            )
             ->get();
 
         $historico = DB::table('tb_resultado_exame')
-            ->join('tb_agendamento', 'tb_resultado_exame.Codigo', '=', 'tb_agendamento.Codigo')
+            ->join('tb_agendamento', 'tb_resultado_exame.IdAgenda', '=', 'tb_agendamento.Codigo')
             ->where('tb_agendamento.IdPaciente', $agendamento->IdPaciente)
             ->where('tb_resultado_exame.Estado', 'Finalizado')
             ->select('tb_resultado_exame.*', 'tb_agendamento.DataAgendamento')
-            ->orderBy('tb_agendamento.DataAgendamento', 'desc')
+            ->orderBy('tb_resultado_exame.Id', 'desc')
+            ->limit(20)
             ->get();
 
         $materiaisUsados = DB::table('tb_carrinho_hospitalar')
             ->where('ID_AGENDA', $idAgenda)
-            ->where('Tipo', 'Laboratorio')
+            ->where('TIPO', 'Laboratorio')
             ->get();
 
         return response()->json([
@@ -81,7 +106,6 @@ class LaboratorioController extends Controller
         $request->validate([
             'idExame' => 'required',
             'resultado' => 'nullable|string',
-            'nrAmostra' => 'nullable|string',
             'obs' => 'nullable|string'
         ]);
 
@@ -89,26 +113,25 @@ class LaboratorioController extends Controller
             ->where('Id', $request->idExame)
             ->update([
                 'Resultado' => $request->resultado ?? '',
-                'Referencia' => $request->nrAmostra, 
                 'Obs' => $request->obs,
                 'Utilizador' => Auth::user()->name ?? 'Laboratório',
+                'DataExame' => now(),
                 'Estado' => 'Finalizado'
             ]);
 
-        return redirect()->back()->with('message', 'Resultado do exame gravado com sucesso!');
+        return response()->json(['message' => 'Resultado gravado com sucesso!']);
     }
 
     public function storeMaterial(Request $request)
     {
         $request->validate([
             'idAgenda' => 'required',
+            'idPaciente' => 'required',
             'produto' => 'required',
             'descricao' => 'required',
             'quantidade' => 'required|integer|min:1',
             'preco' => 'required|numeric'
         ]);
-
-        $idEntidade = DB::table('tb_agendamento')->where('Codigo', $request->idAgenda)->value('IdPaciente');
 
         DB::table('tb_carrinho_hospitalar')->insert([
             'Produto' => $request->produto,
@@ -119,7 +142,7 @@ class LaboratorioController extends Controller
             'Iva' => 0,
             'Desconto' => 0,
             'ID_AGENDA' => $request->idAgenda,
-            'ID_ENTIDADE' => $idEntidade,
+            'ID_ENTIDADE' => $request->idPaciente,
             'Data_' => now(),
             'Tipo' => 'Laboratorio',
             'ESTADO' => 'Ativo'
