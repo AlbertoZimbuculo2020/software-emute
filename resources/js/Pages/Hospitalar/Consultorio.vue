@@ -117,6 +117,8 @@ const addCid = (cid) => {
     searchCidTerm.value = '';
 };
 
+
+
 const removeCid = (index) => {
     selectedCids.value.splice(index, 1);
 };
@@ -167,7 +169,7 @@ const examesList = computed(() => {
             id: 'cat_' + e.Id, dbId: null, codigo: e.Codigo, nome: e.Descricao, resultado: '', selected: false, isRequested: false
         }));
     } else if (activeExamFilter.value === 'RAIOX') {
-        result = (props.catalogoExames || []).filter(e => e.Tipo === 'RAIO X').map(e => ({
+        result = (props.catalogoExames || []).filter(e => e.Tipo === 'RAIO X' || e.Tipo === 'IMAGEM').map(e => ({
             id: 'cat_' + e.Id, dbId: null, codigo: e.Codigo, nome: e.Descricao, resultado: '', selected: false, isRequested: false
         }));
     } else if (activeExamFilter.value === 'FORA') {
@@ -935,11 +937,11 @@ const changeFontSize = (type) => {
                     </div>
                     <div class="flex flex-col flex-grow min-h-0 bg-slate-50">
                         <div class="flex gap-1 p-1 bg-slate-200 overflow-x-auto custom-scrollbar">
-                            <button v-for="f in ['SOLICITADOS', 'LABORATORIO', 'RAIOX']" :key="f"
+                            <button v-for="f in ['SOLICITADOS', 'LABORATORIO', 'RAIOX', 'FORA']" :key="f"
                                 @click="activeExamFilter = f"
                                 :class="activeExamFilter === f ? 'bg-white shadow text-blue-600' : 'text-slate-500'"
                                 class="px-2 py-1 rounded text-[8px] font-black uppercase flex-shrink-0">
-                                {{ f }}
+                                {{ f.replace('SOLICITADOS', 'Solicitados').replace('LABORATORIO', 'Laboratório').replace('RAIOX', 'Raio-X').replace('FORA', 'Exames Fora') }}
                             </button>
                         </div>
                         <div class="p-1 shrink-0">
@@ -954,9 +956,24 @@ const changeFontSize = (type) => {
                                 </div>
                                 <div class="flex items-center gap-1 shrink-0">
                                     <span v-if="ex.resultado" class="text-[8px] text-blue-600 font-black italic">{{ ex.resultado }}</span>
+                                    <button v-if="ex.isRequested" @click="selectedExameToLancar = ex; showLancarResultadosModal = true" class="text-blue-600 font-black text-[8px] uppercase hover:underline">Lançar</button>
                                     <button v-if="ex.isRequested" @click="removerExameSolicitado(ex)" class="text-red-500 opacity-0 group-hover:opacity-100"><Trash2 class="w-3 h-3" /></button>
                                 </div>
                             </div>
+                        </div>
+                        <div class="p-1 grid grid-cols-2 gap-1 bg-slate-100 shrink-0 border-t border-slate-300">
+                            <button @click="enviarExamesAoLaboratorio" :disabled="isReadOnly" class="bg-blue-600 text-white py-1.5 font-black uppercase flex items-center justify-center gap-1 hover:bg-blue-700 text-[8px] shadow-sm disabled:opacity-50 rounded">
+                                <SendHorizontal class="w-3 h-3" /> LABORATÓRIO
+                            </button>
+                            <button @click="showLancarResultadosModal = true" class="bg-slate-800 text-white py-1.5 font-black uppercase flex items-center justify-center gap-1 hover:bg-slate-900 shadow-sm rounded text-[8px]">
+                                <Activity class="w-3 h-3" /> LANÇAR RESULTADOS
+                            </button>
+                            <button @click="imprimirRequisicao" class="bg-orange-500 text-white py-1.5 font-black uppercase flex items-center justify-center gap-1 hover:bg-orange-600 text-[8px] shadow-sm rounded">
+                                <Printer class="w-3 h-3" /> REQUISIÇÃO
+                            </button>
+                            <button @click="imprimirResultadosLab" class="bg-orange-500 text-white py-1.5 font-black uppercase flex items-center justify-center gap-1 hover:bg-orange-600 text-[8px] shadow-sm rounded">
+                                <Printer class="w-3 h-3" /> RESULTADOS
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -977,18 +994,29 @@ const changeFontSize = (type) => {
                         <div class="border border-slate-300 rounded overflow-hidden bg-white">
                             <textarea v-model="hdaNotes" placeholder="História da Doença Atual (HDA)..." class="w-full text-[10px] p-2 border-b border-slate-200 h-16 font-medium outline-none resize-none custom-scrollbar"></textarea>
                             <div class="p-1 bg-slate-100 flex flex-col gap-1">
+                                <label class="text-[8px] font-black text-slate-400 uppercase ml-1">Hipótese Diagnóstica (CID-10)</label>
                                 <div class="relative">
-                                    <input v-model="searchCidTerm" placeholder="Pesquisar CID-10..." class="w-full text-[9px] p-1 border border-slate-300 rounded focus:border-blue-500 outline-none font-bold" />
+                                    <input v-model="searchCidTerm" placeholder="Pesquisar CID ou Código..." class="w-full text-[9px] p-1.5 border border-slate-300 rounded focus:border-blue-500 outline-none font-bold" />
                                     <div v-if="filteredCidCatalog.length > 0" class="absolute z-50 bg-white border border-slate-300 w-full mt-1 max-h-32 overflow-y-auto shadow-xl rounded custom-scrollbar">
-                                        <div v-for="c in filteredCidCatalog" :key="c.codigo" @click="addCid(c)" class="p-1 text-[9px] hover:bg-blue-100 cursor-pointer font-bold border-b border-slate-100">
-                                            <span class="text-blue-600">{{ c.Indicador }}</span> - {{ c.Descricao }}
+                                        <div v-for="c in filteredCidCatalog" :key="c.codigo" @click="addCid(c)" class="p-1.5 text-[9px] hover:bg-blue-600 hover:text-white cursor-pointer font-bold border-b border-slate-100 transition-colors">
+                                            <span class="font-black">{{ c.Indicador }}</span> - {{ c.Descricao }}
                                         </div>
                                     </div>
                                 </div>
-                                <div class="flex flex-wrap gap-1">
-                                    <span v-for="(cid, idx) in selectedCids" :key="idx" class="bg-blue-100 text-blue-800 text-[8px] font-black px-1.5 py-0.5 rounded flex items-center gap-1">
-                                        {{ cid }} <button @click="removeCid(idx)" class="text-red-500">×</button>
-                                    </span>
+                                <div class="flex gap-1">
+                                    <button @click="adicionarCidDaPesquisa" :disabled="isReadOnly" class="flex-1 bg-blue-600 text-white py-1 font-black flex items-center justify-center gap-1 text-[8px] uppercase rounded shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-all">
+                                        <Plus class="w-3 h-3" /> Adicionar
+                                    </button>
+                                    <button :disabled="isReadOnly" class="flex-1 bg-blue-500 text-white py-1 font-black text-[8px] uppercase rounded shadow-sm disabled:opacity-50 hover:bg-blue-600 transition-all">
+                                        Cadastrar
+                                    </button>
+                                </div>
+                                <div class="flex flex-col gap-0.5 mt-1 bg-white border border-slate-200 rounded p-1 min-h-[40px] max-h-24 overflow-y-auto custom-scrollbar">
+                                    <div v-for="(cid, idx) in selectedCids" :key="idx" class="flex justify-between items-center bg-blue-50 hover:bg-red-50 p-1 rounded group transition-colors">
+                                        <span class="text-[9px] font-bold text-slate-700 truncate pr-2">{{ cid }}</span>
+                                        <button @click="removeCid(idx)" class="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+                                    </div>
+                                    <div v-if="selectedCids.length === 0" class="text-[8px] text-slate-300 italic text-center py-2 uppercase">Nenhum diagnóstico selecionado</div>
                                 </div>
                             </div>
                         </div>
