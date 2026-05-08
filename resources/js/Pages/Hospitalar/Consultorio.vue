@@ -502,9 +502,15 @@ const selecionarPaciente = async (paciente, readOnly = false) => {
     form.Codigo = paciente.Codigo;
     form.qp = paciente.QP || '';
     form.obj = paciente.OBJ || '';
+    form.hda = paciente.HDA || ''; // Initialize HDA correctly
     form.complementares = paciente.COMPLEMENTARES || '';
     form.recomendacoes = paciente.RECOMENDACOES || '';
-    form.situacao = 'Finalizado';
+    form.situacao = paciente.Situacao; // Keep original situation
+    
+    // Parse HDA if it contains CID pipe
+    const parsed = parsingHDA(paciente.HDA);
+    hdaNotes.value = parsed.notes;
+    selectedCids.value = parsed.cids;
     novaReceita.value = [];
     tipoPaciente.value = (paciente.Seguradora || paciente.Convenio) ? 'Assegurado' : 'Particular';
 
@@ -564,7 +570,7 @@ watch([() => form.qp, () => hdaNotes, () => form.obj, () => form.complementares,
 const salvarConsultaSilenciosa = async () => {
     if (!selectedPaciente.value) return;
     form.hda = hdaNotes.value + '\n|' + selectedCids.value.join('\n');
-    form.situacao = 'Pendente'; // Don't finalize on silent save
+    // form.situacao stays as the current situation (Consultorio/Reconsulta)
     
     try {
         await axios.post(route('hospitalar.consultorio.store'), form.data());
