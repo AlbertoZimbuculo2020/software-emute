@@ -8,7 +8,7 @@ $kernel->bootstrap();
 
 use Illuminate\Support\Facades\DB;
 
-$sqlPath = 'c:/Users/PC2/Documents/emute/emute.sql';
+$sqlPath = __DIR__ . '/EMUUUUUUU.sql';
 
 if (!file_exists($sqlPath)) {
     die("File not found: $sqlPath\n");
