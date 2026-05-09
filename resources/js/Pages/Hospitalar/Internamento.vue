@@ -164,6 +164,12 @@ const submitPrescricao = async () => {
 };
 
 const togglePrescricaoStatus = async (prescricao, campo) => {
+    // Validação da Farmácia
+    if (prescricao.FarmaciaStatus && prescricao.FarmaciaStatus !== 'Dispensado' && prescricao[campo] !== 'True') {
+        showToast('Bloqueado: Farmácia ainda não dispensou esta medicação.', 'error');
+        return;
+    }
+
     try {
         const novoValor = prescricao[campo] !== 'True';
         await axios.post(route('hospitalar.internamento.prescricao.toggle', prescricao.Id), {
@@ -198,6 +204,21 @@ const submitAto = async () => {
 
 const submitSinais = async () => {
     if (!selectedPaciente.value) return;
+
+    // Regras de Alerta Clínico
+    const pressaoStr = sinaisForm.value.PressaoArterial || '';
+    if (pressaoStr.includes('/')) {
+        const [sis, dia] = pressaoStr.split('/');
+        if (parseInt(sis) >= 180 || parseInt(dia) >= 110) {
+            showToast('ALERTA: Pressão Arterial crítica (' + pressaoStr + ')! Médico será notificado.', 'error');
+        }
+    }
+
+    const oxigenio = parseInt(sinaisForm.value.SituacaoOxigenio || '100');
+    if (oxigenio <= 85 && oxigenio > 0) {
+        showToast('ALERTA: SpO2 crítico (' + oxigenio + '%). Necessidade de O2 imediata.', 'error');
+    }
+
     try {
         await axios.post(route('hospitalar.internamento.sinais.store'), {
             ...sinaisForm.value,
@@ -266,8 +287,42 @@ const openSinaisModal = () => {
 };
 
 const imprimirProcesso = () => {
-    if (!selectedPaciente.value) return;
+    if (!selectedPaciente.value) {
+        showToast('Selecione primeiro um paciente para imprimir o processo.', 'error');
+        return;
+    }
     window.open(route('hospitalar.internamento.imprimir.processo', selectedPaciente.value.Codigo), '_blank');
+};
+
+const imprimirHistorico = (historicoItem) => {
+    window.open(route('hospitalar.internamento.imprimir.processo', historicoItem.Codigo), '_blank');
+};
+
+const validarAlta = () => {
+    if (!selectedPaciente.value) {
+        showToast('Selecione um paciente.', 'error');
+        return;
+    }
+
+    // Regra 1: Verificar prescrições ativas pendentes (Cumprimento == False num dos turnos não é impeditivo se a medicação já não for necessária, mas vamos validar se há alguma do dia atual não cumprida)
+    const prescricoesAtivas = details.value.prescricoes.filter(p => p.Estado === 'Ativo');
+    // ... simplificado para o alerta
+    if (prescricoesAtivas.some(p => p.Cumprimento === 'False' && p.Cumprimento1 === 'False' && p.Cumprimento2 === 'False' && p.Cumprimento3 === 'False')) {
+        showToast('Aviso: Existem prescrições sem nenhum registo de cumprimento.', 'error');
+        // Não bloqueia totalmente, é um aviso forte (ou poderia bloquear)
+    }
+
+    // Regra 2: Evolução do dia atual
+    const hoje = new Date().toISOString().split('T')[0];
+    const temEvolucaoHoje = details.value.atosMedicos.some(a => (a.DataAto || a.CREATED_AT || '').startsWith(hoje));
+    
+    if (!temEvolucaoHoje) {
+        showToast('Erro: Não é possível dar alta sem a nota de evolução médica do dia atual.', 'error');
+        return;
+    }
+
+    // Se passar
+    showAltaModal.value = true;
 };
 
 const imprimirAtosEnfermagem = () => {
@@ -402,7 +457,7 @@ const finalizarSaidaFarmaco = async () => {
                     <button @click="recarregar" class="bg-slate-100 text-slate-600 px-4 py-2 font-black uppercase text-[9px] tracking-widest hover:bg-slate-200 transition-all rounded shadow-sm flex items-center gap-2">
                         <Activity class="w-3.5 h-3.5" /> Atualizar Registos
                     </button>
-                    <button @click="imprimirProcesso" :disabled="!selectedPaciente" class="bg-blue-600 text-white px-4 py-2 font-black uppercase text-[9px] tracking-widest hover:bg-blue-700 transition-all rounded shadow-sm flex items-center gap-2 disabled:opacity-50">
+                    <button @click="imprimirProcesso" class="bg-blue-600 text-white px-4 py-2 font-black uppercase text-[9px] tracking-widest hover:bg-blue-700 transition-all rounded shadow-sm flex items-center gap-2 disabled:opacity-50">
                         <Printer class="w-3.5 h-3.5" /> Imprimir Processo Clínico
                     </button>
                 </div>
@@ -413,7 +468,7 @@ const finalizarSaidaFarmaco = async () => {
                     <div class="flex gap-2">
                         <button @click="requireMedico(() => showPrescricaoModal = true)" class="flex-1 bg-white border border-slate-200 text-slate-600 py-1.5 font-black uppercase text-[9px] hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all rounded shadow-sm">Prescrições Médicas</button>
                         <button @click="requireMedico(() => openAtoModal('medico'))" class="flex-1 bg-white border border-slate-200 text-slate-600 py-1.5 font-black uppercase text-[9px] hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all rounded shadow-sm">Registo de Actos Médicos</button>
-                        <button @click="requireMedico(() => showAltaModal = true)" class="flex-1 bg-white border border-slate-200 text-slate-600 py-1.5 font-black uppercase text-[9px] hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all rounded shadow-sm">Título de Alta</button>
+                        <button @click="requireMedico(validarAlta)" class="flex-1 bg-white border border-slate-200 text-slate-600 py-1.5 font-black uppercase text-[9px] hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all rounded shadow-sm">Título de Alta</button>
                     </div>
                 </div>
 
@@ -462,9 +517,11 @@ const finalizarSaidaFarmaco = async () => {
                                 <thead class="sticky top-0 bg-slate-50 border-b border-slate-200 z-10 font-black uppercase text-slate-500">
                                     <tr>
                                         <th class="p-2 border-r border-slate-200">Codigo</th>
+                                        <th class="p-2 border-r border-slate-200 w-8 text-center">Est.</th>
                                         <th class="p-2 border-r border-slate-200">Paciente</th>
-                                        <th class="p-2 border-r border-slate-200">Consulta</th>
-                                        <th class="p-2 border-r border-slate-200">Data Internamento</th>
+                                        <th class="p-2 border-r border-slate-200">Cama/Serviço</th>
+                                        <th class="p-2 border-r border-slate-200">Data Ent.</th>
+                                        <th class="p-2 border-r border-slate-200">Dur. (Dias)</th>
                                         <th class="p-2 border-r border-slate-200">Tipo</th>
                                         <th class="p-2">Medico</th>
                                     </tr>
@@ -475,9 +532,15 @@ const finalizarSaidaFarmaco = async () => {
                                         class="border-b border-slate-100 hover:bg-blue-50 cursor-pointer transition-colors"
                                         :class="{'bg-blue-50 border-l-4 border-l-blue-600': selectedPaciente?.Codigo === p.Codigo, 'border-l-4 border-l-transparent': selectedPaciente?.Codigo !== p.Codigo}">
                                         <td class="p-2 border-r border-slate-100/50 text-[9px] font-black text-blue-600">{{ p.Codigo }}</td>
+                                        <td class="p-2 border-r border-slate-100/50 text-center">
+                                            <div class="w-2.5 h-2.5 rounded-full mx-auto" :class="p.Criticidade === 'Crítico' ? 'bg-red-500' : (p.Criticidade === 'Vigilância' ? 'bg-amber-400' : 'bg-emerald-500')"></div>
+                                        </td>
                                         <td class="p-2 border-r border-slate-100/50 font-bold text-slate-700 uppercase">{{ p.PacienteNome }}</td>
-                                        <td class="p-2 border-r border-slate-100/50">{{ p.DescricaoConsulta || 'N/D' }}</td>
-                                        <td class="p-2 border-r border-slate-100/50">{{ p.DataInternamento }}</td>
+                                        <td class="p-2 border-r border-slate-100/50 text-slate-600 font-bold">{{ p.Cama || 'N/A' }} - {{ p.Servico || 'Geral' }}</td>
+                                        <td class="p-2 border-r border-slate-100/50">{{ p.DataInternamento ? p.DataInternamento.substring(0, 10) : '' }}</td>
+                                        <td class="p-2 border-r border-slate-100/50 font-black text-center text-slate-600">
+                                            {{ p.DataInternamento ? Math.floor((new Date() - new Date(p.DataInternamento)) / (1000 * 60 * 60 * 24)) : 0 }}
+                                        </td>
                                         <td class="p-2 border-r border-slate-100/50">
                                             <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[8px] font-bold uppercase">{{ p.Tipo || 'Internamento' }}</span>
                                         </td>
@@ -517,7 +580,7 @@ const finalizarSaidaFarmaco = async () => {
                                         <td class="p-2 border-r border-slate-50"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[8px] font-bold uppercase">Histórico</span></td>
                                         <td class="p-2 border-r border-slate-50 font-bold text-slate-700 uppercase">{{ h.PacienteNome }}</td>
                                         <td class="p-2 border-r border-slate-50">{{ h.DataEntrada }}</td>
-                                        <td class="p-2 text-blue-600 font-bold uppercase text-[8px] hover:underline cursor-pointer">Visualizar</td>
+                                        <td @click="imprimirHistorico(h)" class="p-2 text-blue-600 font-bold uppercase text-[8px] hover:underline cursor-pointer">Visualizar</td>
                                     </tr>
                                 </tbody>
                             </table>

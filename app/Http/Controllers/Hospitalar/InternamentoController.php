@@ -265,8 +265,11 @@ class InternamentoController extends Controller
             ->first();
 
         $empresa = DB::table('tb_empresa')->first();
+        if ($empresa && isset($empresa->IMAGEM)) {
+            $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
+        }
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.processo_clinico', [
+        return view('pdf.processo_clinico', [
             'agendamento' => $agendamento,
             'prescricoes' => $prescricoes,
             'atosMedicos' => $atosMedicos,
@@ -275,8 +278,6 @@ class InternamentoController extends Controller
             'alta' => $alta,
             'empresa' => $empresa
         ]);
-
-        return $pdf->stream("Processo_Clinico_{$id}.pdf");
     }
 
     public function imprimirAtosEnfermagem($id)
@@ -298,13 +299,11 @@ class InternamentoController extends Controller
             $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
         }
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.atos_enfermagem', [
+        return view('pdf.atos_enfermagem', [
             'agendamento' => $agendamento,
             'atosEnfermagem' => $atosEnfermagem,
             'empresa' => $empresa
         ]);
-
-        return $pdf->stream("Atos_Enfermagem_{$id}.pdf");
     }
 
     public function imprimirVitais($id)
@@ -326,13 +325,11 @@ class InternamentoController extends Controller
             $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
         }
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.triagem_report', [
+        return view('pdf.triagem_report', [
             'agendamento' => $agendamento,
             'sinaisVitais' => $sinaisVitais,
             'empresa' => $empresa
         ]);
-
-        return $pdf->stream("Controlo_Vitais_{$id}.pdf");
     }
 
     // ─── Cumprimento (Enfermagem) ─────────────────────────────────────────────
@@ -412,13 +409,11 @@ class InternamentoController extends Controller
             $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
         }
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.cumprimento_prescricoes', [
+        return view('pdf.cumprimento_prescricoes', [
             'agendamento' => $agendamento,
             'prescricoes' => $prescricoes,
             'empresa' => $empresa
         ]);
-
-        return $pdf->stream("Cumprimento_Prescricoes_{$id}.pdf");
     }
 
     public function finalizarSaidaFarmaco(Request $request)

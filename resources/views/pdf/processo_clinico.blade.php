@@ -24,8 +24,11 @@
 <body>
 
 <div class="header">
+    @if(isset($empresa->IMAGEM) && $empresa->IMAGEM)
+        <img src="{{ $empresa->IMAGEM }}" alt="Logo" style="max-height: 60px; margin-bottom: 5px;">
+    @endif
     <h1>{{ $empresa->Nome ?? 'CENTRO MÉDICO' }}</h1>
-    <p>{{ $empresa->Endereco ?? '' }} | Tel: {{ $empresa->Telefone ?? '' }}</p>
+    <p>{{ $empresa->Endereco ?? '' }} | NIF: {{ $empresa->NIF ?? '' }} | Tel: {{ $empresa->Telefone ?? '' }} | Email: {{ $empresa->Email ?? '' }}</p>
     <div style="font-size: 14px; font-weight: bold; margin-top: 10px;">PROCESSO CLÍNICO DE INTERNAMENTO</div>
 </div>
 
@@ -155,7 +158,7 @@
 <div class="info-section">
     <div class="section-title">Resumo de Alta</div>
     <div style="border: 1px solid #ddd; padding: 10px; background: #fff;">
-        <p><span class="label">Data da Alta:</span> {{ $alta->DataAlta ? \Carbon\Carbon::parse($alta->DataAlta)->format('d/m/Y H:i') : 'N/D' }}</p>
+        <p><span class="label">Data da Alta:</span> {{ isset($alta->DataAlta) && $alta->DataAlta ? \Carbon\Carbon::parse($alta->DataAlta)->format('d/m/Y H:i') : (isset($alta->CREATED_AT) ? \Carbon\Carbon::parse($alta->CREATED_AT)->format('d/m/Y H:i') : 'N/D') }}</p>
         <p><span class="label">Procedimento:</span> {{ $alta->Operado ?? 'N/A' }}</p>
         <p><span class="label">Complicações:</span> {{ $alta->Complicacoes ?? 'Nenhuma' }}</p>
         <p><span class="label">Recomendações:</span> {{ $alta->Repouso ?? 'Repouso absoluto' }}</p>
@@ -163,7 +166,7 @@
         <br>
         <div style="text-align: right; margin-top: 20px;">
             _________________________________<br>
-            {{ $alta->Medico }}<br>
+            {{ $alta->Medico ?? $agendamento->MedicoNome ?? 'Médico' }}<br>
             <small>Assinatura e Carimbo</small>
         </div>
     </div>
@@ -171,8 +174,14 @@
 @endif
 
 <div class="footer">
-    Emitido em: {{ date('d/m/Y H:i') }} | Gerado por: {{ auth()->user()->name }}
+    Emitido em: {{ date('d/m/Y H:i') }} | Gerado por: {{ auth()->user()->name ?? 'Sistema' }}
 </div>
+
+<script>
+    window.onload = function() {
+        window.print();
+    }
+</script>
 
 </body>
 </html>
