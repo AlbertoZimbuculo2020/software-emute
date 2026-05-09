@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import axios from 'axios';
-import { Search, CheckCircle2, AlertCircle, Printer, PlusCircle, ClipboardCheck, Plus, LayoutGrid, Users, Stethoscope, Syringe, Activity, X, Package2, Minus } from 'lucide-vue-next';
+import { Search, CheckCircle2, AlertCircle, Printer, PlusCircle, ClipboardCheck, Plus, LayoutGrid, Users, Stethoscope, Syringe, Activity, X, Package2, Minus, ClipboardList, FileCheck, History } from 'lucide-vue-next';
 
 const props = defineProps({
     internados: { type: Array, default: () => [] },
@@ -393,87 +393,95 @@ const finalizarSaidaFarmaco = async () => {
             </div>
         </Transition>
 
-        <div class="h-[calc(100vh-64px)] flex flex-col bg-[#f4f4f4] text-[11px] text-slate-800 overflow-hidden font-sans">
+        <div class="h-[calc(100vh-64px)] flex flex-col bg-slate-100 text-[11px] text-slate-800 overflow-hidden font-sans relative">
 
             <!-- Segmented Top Action Bar (Matches Screenshot) -->
-            <div class="flex items-center gap-1 p-1 bg-white border-b border-slate-300 shrink-0 h-14">
+            <div class="flex items-center gap-2 p-2 bg-white border-b border-slate-200 shrink-0 h-[72px] shadow-sm z-10">
                 <!-- Group 1: General -->
-                <div class="flex gap-1 pr-2 border-r border-slate-200">
-                    <button @click="recarregar" class="bg-[#2196F3] text-white px-3 py-2 font-bold hover:bg-[#1976D2] text-[10px] min-w-[120px]">
-                        Atualizar Registos
+                <div class="flex gap-2 pr-4 border-r border-slate-200 h-full items-center">
+                    <button @click="recarregar" class="bg-slate-100 text-slate-600 px-4 py-2 font-black uppercase text-[9px] tracking-widest hover:bg-slate-200 transition-all rounded shadow-sm flex items-center gap-2">
+                        <Activity class="w-3.5 h-3.5" /> Atualizar Registos
                     </button>
-                    <button @click="imprimirProcesso" :disabled="!selectedPaciente" class="bg-[#2196F3] text-white px-3 py-2 font-bold hover:bg-[#1976D2] text-[10px] min-w-[120px] disabled:opacity-50">
-                        Imprimir Processo Clínico
+                    <button @click="imprimirProcesso" :disabled="!selectedPaciente" class="bg-blue-600 text-white px-4 py-2 font-black uppercase text-[9px] tracking-widest hover:bg-blue-700 transition-all rounded shadow-sm flex items-center gap-2 disabled:opacity-50">
+                        <Printer class="w-3.5 h-3.5" /> Imprimir Processo Clínico
                     </button>
                 </div>
 
                 <!-- Group 2: Área dos Médicos -->
-                <div class="flex flex-col flex-1 mx-1 border border-blue-200 rounded-sm">
-                    <div class="bg-[#f0f7ff] text-[#2196F3] text-center font-black text-[9px] uppercase py-0.5 border-b border-blue-100">Área dos Médicos</div>
-                    <div class="flex gap-0.5 p-0.5">
-                        <button @click="requireMedico(() => showPrescricaoModal = true)" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Prescrições Médicas</button>
-                        <button @click="requireMedico(() => openAtoModal('medico'))" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Registo de Actos Médicos</button>
-                        <button @click="requireMedico(() => showAltaModal = true)" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Título de Alta</button>
+                <div class="flex flex-col flex-1 mx-2 h-full justify-center">
+                    <div class="text-blue-600 font-black text-[9px] uppercase mb-1.5 tracking-widest flex items-center gap-1.5"><Stethoscope class="w-3 h-3" /> Área dos Médicos</div>
+                    <div class="flex gap-2">
+                        <button @click="requireMedico(() => showPrescricaoModal = true)" class="flex-1 bg-white border border-slate-200 text-slate-600 py-1.5 font-black uppercase text-[9px] hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all rounded shadow-sm">Prescrições Médicas</button>
+                        <button @click="requireMedico(() => openAtoModal('medico'))" class="flex-1 bg-white border border-slate-200 text-slate-600 py-1.5 font-black uppercase text-[9px] hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all rounded shadow-sm">Registo de Actos Médicos</button>
+                        <button @click="requireMedico(() => showAltaModal = true)" class="flex-1 bg-white border border-slate-200 text-slate-600 py-1.5 font-black uppercase text-[9px] hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all rounded shadow-sm">Título de Alta</button>
                     </div>
                 </div>
 
                 <!-- Group 3: Área dos Enfermeiros -->
-                <div v-if="isEnfermeiro" class="flex flex-col flex-1 mx-1 border border-blue-200 rounded-sm">
-                    <div class="bg-[#f0f7ff] text-[#2196F3] text-center font-black text-[9px] uppercase py-0.5 border-b border-blue-100">Área dos Enfermeiros</div>
-                    <div class="flex gap-0.5 p-0.5">
-                        <button @click="openCumprimentoModal" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Cumprimento (Enfermagem)</button>
-                        <button @click="openSinaisModal" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Controlo de Sinais Vitais</button>
-                        <button @click="openAtoModal('enfermagem')" class="flex-1 bg-[#2196F3] text-white py-1.5 font-bold hover:bg-[#1976D2] text-[9px]">Registo de Actos da Enfermaria</button>
+                <div v-if="isEnfermeiro" class="flex flex-col flex-1 mx-2 h-full justify-center">
+                    <div class="text-emerald-600 font-black text-[9px] uppercase mb-1.5 tracking-widest flex items-center gap-1.5"><Syringe class="w-3 h-3" /> Área dos Enfermeiros</div>
+                    <div class="flex gap-2">
+                        <button @click="openCumprimentoModal" class="flex-1 bg-white border border-slate-200 text-slate-600 py-1.5 font-black uppercase text-[9px] hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-all rounded shadow-sm">Cumprimento (Enfermagem)</button>
+                        <button @click="openSinaisModal" class="flex-1 bg-white border border-slate-200 text-slate-600 py-1.5 font-black uppercase text-[9px] hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-all rounded shadow-sm">Controlo de Sinais Vitais</button>
+                        <button @click="openAtoModal('enfermagem')" class="flex-1 bg-white border border-slate-200 text-slate-600 py-1.5 font-black uppercase text-[9px] hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-all rounded shadow-sm">Registo de Actos da Enfermaria</button>
                     </div>
                 </div>
             </div>
 
             <!-- Dashboard Sub-Header (Blue Bar) -->
-            <div class="bg-[#000080] h-6 flex items-center px-4 shrink-0 shadow-md">
-                <div class="text-white font-bold text-[10px] tracking-widest flex items-center gap-2">
-                    <Users class="w-3.5 h-3.5" />
-                    GESTÃO DE INTERNAMENTO HOSPITALAR
-                    <span v-if="selectedPaciente" class="ml-4 bg-white/20 px-2 py-0.5 rounded">PACIENTE ATUAL: {{ selectedPaciente.PacienteNome }}</span>
+            <div class="bg-slate-800 h-8 flex items-center px-4 shrink-0 shadow-md z-10">
+                <div class="text-white font-black text-[10px] tracking-widest flex items-center gap-2 uppercase">
+                    <Users class="w-3.5 h-3.5 text-blue-400" />
+                    Gestão de Internamento Hospitalar
+                    <div v-if="selectedPaciente" class="ml-4 flex items-center gap-2 animate-fadeIn">
+                        <span class="bg-blue-500/20 text-blue-100 px-3 py-0.5 rounded-full text-[9px] border border-blue-400/30 font-black uppercase">Paciente Atual: {{ selectedPaciente.PacienteNome }}</span>
+                    </div>
                 </div>
             </div>
 
             <!-- Main Layout (Matches Screenshot) -->
-            <div class="flex-1 flex overflow-hidden p-1 gap-1">
+            <div class="flex-1 flex overflow-hidden p-2 gap-2">
                 
                 <!-- Left Column: Patient Lists (Large Area) -->
-                <div class="w-[65%] flex flex-col gap-1 overflow-hidden">
+                <div class="w-[65%] flex flex-col gap-2 overflow-hidden">
                     
                     <!-- Top: Pacientes Internados -->
-                    <div class="flex-[3] bg-white border border-slate-300 flex flex-col overflow-hidden">
-                        <div class="bg-[#f8f9fa] border-b border-slate-200 p-1 flex items-center">
-                             <div class="relative flex-1 max-w-sm">
-                                <Search class="w-3 h-3 absolute left-2 top-1.5 text-slate-400" />
-                                <input v-model="searchTerm" type="text" placeholder="Drag a column header here to group by that column" class="w-full pl-7 pr-2 py-1 text-[10px] bg-white border border-slate-200 outline-none focus:border-blue-400" />
+                    <div class="flex-[3] bg-white rounded shadow-sm border border-slate-300 flex flex-col overflow-hidden">
+                        <div class="bg-slate-100 border-b border-slate-200 px-3 py-2 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <Users class="w-4 h-4 text-slate-600" />
+                                <span class="font-black text-slate-700 uppercase text-[10px] tracking-widest">Pacientes Internados</span>
+                            </div>
+                            <div class="relative max-w-sm flex-1">
+                                <Search class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input v-model="searchTerm" type="text" placeholder="Pesquisar..." class="w-full pl-9 pr-3 py-1.5 text-[10px] bg-white border border-slate-200 rounded outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 font-bold transition-all shadow-sm" />
                             </div>
                         </div>
                         <div class="flex-1 overflow-y-auto custom-scrollbar">
-                            <table class="w-full text-left border-collapse border-slate-200">
-                                <thead class="sticky top-0 bg-[#eef2f7] border-b border-slate-300 z-10 text-[10px] text-slate-600">
+                            <table class="w-full text-left border-collapse text-[10px]">
+                                <thead class="sticky top-0 bg-slate-50 border-b border-slate-200 z-10 font-black uppercase text-slate-500">
                                     <tr>
-                                        <th class="p-2 border-r border-slate-200 font-bold">Codigo</th>
-                                        <th class="p-2 border-r border-slate-200 font-bold">Paciente</th>
-                                        <th class="p-2 border-r border-slate-200 font-bold">Consulta</th>
-                                        <th class="p-2 border-r border-slate-200 font-bold">Data Internamento</th>
-                                        <th class="p-2 border-r border-slate-200 font-bold">Tipo</th>
-                                        <th class="p-2 font-bold">Medico</th>
+                                        <th class="p-2 border-r border-slate-200">Codigo</th>
+                                        <th class="p-2 border-r border-slate-200">Paciente</th>
+                                        <th class="p-2 border-r border-slate-200">Consulta</th>
+                                        <th class="p-2 border-r border-slate-200">Data Internamento</th>
+                                        <th class="p-2 border-r border-slate-200">Tipo</th>
+                                        <th class="p-2">Medico</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-for="p in filteredInternados" :key="p.Codigo" 
                                         @click="selecionarPaciente(p)"
-                                        class="border-b border-slate-100 hover:bg-blue-50 cursor-pointer text-[10px] transition-colors"
-                                        :class="{'bg-[#e3f2fd] border-l-4 border-l-[#2196F3]': selectedPaciente?.Codigo === p.Codigo}">
-                                        <td class="p-2 border-r border-slate-100/50">{{ p.Codigo }}</td>
-                                        <td class="p-2 border-r border-slate-100/50 font-bold">{{ p.PacienteNome }}</td>
+                                        class="border-b border-slate-100 hover:bg-blue-50 cursor-pointer transition-colors"
+                                        :class="{'bg-blue-50 border-l-4 border-l-blue-600': selectedPaciente?.Codigo === p.Codigo, 'border-l-4 border-l-transparent': selectedPaciente?.Codigo !== p.Codigo}">
+                                        <td class="p-2 border-r border-slate-100/50 text-[9px] font-black text-blue-600">{{ p.Codigo }}</td>
+                                        <td class="p-2 border-r border-slate-100/50 font-bold text-slate-700 uppercase">{{ p.PacienteNome }}</td>
                                         <td class="p-2 border-r border-slate-100/50">{{ p.DescricaoConsulta || 'N/D' }}</td>
                                         <td class="p-2 border-r border-slate-100/50">{{ p.DataInternamento }}</td>
-                                        <td class="p-2 border-r border-slate-100/50">{{ p.Tipo || 'Internamento' }}</td>
-                                        <td class="p-2">{{ p.MedicoNome }}</td>
+                                        <td class="p-2 border-r border-slate-100/50">
+                                            <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[8px] font-bold uppercase">{{ p.Tipo || 'Internamento' }}</span>
+                                        </td>
+                                        <td class="p-2 text-slate-600 font-bold">{{ p.MedicoNome }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -481,29 +489,35 @@ const finalizarSaidaFarmaco = async () => {
                     </div>
 
                     <!-- Bottom: Histórico -->
-                    <div class="flex-1 bg-white border border-slate-300 flex flex-col overflow-hidden min-h-[150px]">
-                        <div class="bg-[#f0f0f0] px-2 py-1 font-bold text-slate-600 border-b border-slate-300 text-[10px]">Histórico de Pacientes Internados</div>
-                        <div class="p-1 bg-white border-b border-slate-200">
-                            <input v-model="histSearchTerm" type="text" placeholder="Enter text to search..." class="w-64 border border-slate-200 px-2 py-1 text-[10px]" />
+                    <div class="flex-1 bg-white rounded shadow-sm border border-slate-300 flex flex-col overflow-hidden min-h-[150px]">
+                        <div class="bg-slate-100 border-b border-slate-200 px-3 py-2 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <History class="w-4 h-4 text-slate-600" />
+                                <span class="font-black text-slate-700 uppercase text-[10px] tracking-widest">Histórico de Pacientes Internados</span>
+                            </div>
+                            <div class="relative max-w-xs flex-1">
+                                <Search class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input v-model="histSearchTerm" type="text" placeholder="Pesquisar histórico..." class="w-full pl-9 pr-3 py-1.5 text-[10px] bg-white border border-slate-200 rounded outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 font-bold transition-all shadow-sm" />
+                            </div>
                         </div>
                         <div class="flex-1 overflow-y-auto custom-scrollbar">
                             <table class="w-full text-left border-collapse text-[9px]">
-                                <thead class="sticky top-0 bg-[#f8f8f8] border-b border-slate-200 z-10 text-slate-500">
+                                <thead class="sticky top-0 bg-slate-50 border-b border-slate-200 z-10 font-black uppercase text-slate-500">
                                     <tr>
-                                        <th class="p-1.5 border-r border-slate-200">Codigo</th>
-                                        <th class="p-1.5 border-r border-slate-200">Tipo</th>
-                                        <th class="p-1.5 border-r border-slate-200">Paciente</th>
-                                        <th class="p-1.5 border-r border-slate-200">Data Entrada</th>
-                                        <th class="p-1.5">Relatorio Processo...</th>
+                                        <th class="p-2 border-r border-slate-200">Codigo</th>
+                                        <th class="p-2 border-r border-slate-200">Tipo</th>
+                                        <th class="p-2 border-r border-slate-200">Paciente</th>
+                                        <th class="p-2 border-r border-slate-200">Data Entrada</th>
+                                        <th class="p-2">Relatorio Processo</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-for="h in filteredHistorico" :key="h.Codigo" class="border-b border-slate-50 hover:bg-slate-50">
-                                        <td class="p-1.5 border-r border-slate-50">{{ h.Codigo }}</td>
-                                        <td class="p-1.5 border-r border-slate-50">Histórico</td>
-                                        <td class="p-1.5 border-r border-slate-50">{{ h.PacienteNome }}</td>
-                                        <td class="p-1.5 border-r border-slate-50">{{ h.DataEntrada }}</td>
-                                        <td class="p-1.5 text-blue-600 underline cursor-pointer">Visualizar</td>
+                                        <td class="p-2 border-r border-slate-50 text-[9px] font-black text-blue-600">{{ h.Codigo }}</td>
+                                        <td class="p-2 border-r border-slate-50"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[8px] font-bold uppercase">Histórico</span></td>
+                                        <td class="p-2 border-r border-slate-50 font-bold text-slate-700 uppercase">{{ h.PacienteNome }}</td>
+                                        <td class="p-2 border-r border-slate-50">{{ h.DataEntrada }}</td>
+                                        <td class="p-2 text-blue-600 font-bold uppercase text-[8px] hover:underline cursor-pointer">Visualizar</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -512,25 +526,30 @@ const finalizarSaidaFarmaco = async () => {
                 </div>
 
                 <!-- Right Column: Vertical Clinical Records (Matches Screenshot Stack) -->
-                <div class="w-[35%] flex flex-col gap-1 overflow-hidden">
+                <div class="w-[35%] flex flex-col gap-2 overflow-hidden">
                     
                     <!-- 1. Prescrições Médicas -->
-                    <div class="flex-[1.5] bg-white border border-slate-300 flex flex-col overflow-hidden">
-                        <div class="bg-[#f0f0f0] px-2 py-1 font-bold text-slate-700 border-b border-slate-300 flex justify-between items-center text-[10px]">
-                            <span>Prescrições Médicas</span>
+                    <div class="flex-[1.5] bg-white rounded shadow-sm border border-slate-300 flex flex-col overflow-hidden">
+                        <div class="bg-slate-100 px-3 py-2 border-b border-slate-200 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <ClipboardList class="w-4 h-4 text-blue-600" />
+                                <span class="font-black text-slate-700 uppercase text-[10px] tracking-widest">Prescrições Médicas</span>
+                            </div>
                         </div>
-                        <div class="p-1.5 bg-white border-b border-slate-200 flex gap-1">
-                            <input v-model="prescricoesSearchTerm" type="text" placeholder="Enter text to search..." class="flex-1 border border-slate-200 px-2 py-1 text-[10px]" />
-                            <button class="bg-[#f8f8f8] border border-slate-300 px-3 py-1 hover:bg-slate-100 text-[10px]">Find</button>
+                        <div class="p-2 bg-slate-50 border-b border-slate-200 flex gap-2">
+                            <div class="relative flex-1">
+                                <Search class="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input v-model="prescricoesSearchTerm" type="text" placeholder="Pesquisar..." class="w-full pl-8 pr-2 py-1.5 text-[10px] bg-white border border-slate-200 rounded outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 font-bold transition-all shadow-sm" />
+                            </div>
                         </div>
                         <div class="flex-1 overflow-y-auto custom-scrollbar">
-                            <table class="w-full text-left border-collapse text-[10px]">
-                                <thead class="sticky top-0 bg-[#f4f4f4] border-b border-slate-200 z-10 text-slate-500">
+                            <table class="w-full text-left border-collapse text-[9px]">
+                                <thead class="sticky top-0 bg-white border-b border-slate-200 z-10 font-black uppercase text-slate-500 text-[8px]">
                                     <tr>
                                         <th class="p-1 border-r border-slate-200 text-center w-6">F</th>
-                                        <th class="p-1.5 border-r border-slate-200">Medico</th>
-                                        <th class="p-1.5 border-r border-slate-200">Descricao</th>
-                                        <th class="p-1.5 border-r border-slate-200">Enfermeiro</th>
+                                        <th class="p-2 border-r border-slate-200">Medico</th>
+                                        <th class="p-2 border-r border-slate-200">Descricao</th>
+                                        <th class="p-2 border-r border-slate-200">Enfermeiro</th>
                                         <th class="p-1 border-r border-slate-200 text-center w-6">M</th>
                                         <th class="p-1 border-r border-slate-200 text-center w-6">T</th>
                                         <th class="p-1 border-r border-slate-200 text-center w-6">N</th>
@@ -538,13 +557,13 @@ const finalizarSaidaFarmaco = async () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="p in filteredPrescricoes" :key="p.Id" class="border-b border-slate-50">
+                                    <tr v-for="p in filteredPrescricoes" :key="p.Id" class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                                         <td class="p-1 border-r border-slate-50 text-center">
                                             <input type="checkbox" :checked="p.Cumprimento === 'True'" @change="togglePrescricaoStatus(p, 'Cumprimento')" />
                                         </td>
-                                        <td class="p-1.5 border-r border-slate-50 truncate max-w-[80px]" :title="p.Medico">{{ p.Medico }}</td>
-                                        <td class="p-1.5 border-r border-slate-50 truncate max-w-[120px]" :title="p.Descricao">{{ p.Descricao }}</td>
-                                        <td class="p-1.5 border-r border-slate-50 italic text-slate-400">{{ p.Infermeiro || '---' }}</td>
+                                        <td class="p-2 border-r border-slate-50 truncate max-w-[80px] font-bold text-slate-600" :title="p.Medico">{{ p.Medico }}</td>
+                                        <td class="p-2 border-r border-slate-50 truncate max-w-[120px] text-slate-700" :title="p.Descricao">{{ p.Descricao }}</td>
+                                        <td class="p-2 border-r border-slate-50 italic text-slate-400">{{ p.Infermeiro || '---' }}</td>
                                         <td class="p-1 border-r border-slate-50 text-center">
                                             <input type="checkbox" :checked="p.Cumprimento1 === 'True'" @change="togglePrescricaoStatus(p, 'Cumprimento1')" />
                                         </td>
@@ -554,7 +573,7 @@ const finalizarSaidaFarmaco = async () => {
                                         <td class="p-1 border-r border-slate-50 text-center">
                                             <input type="checkbox" :checked="p.Cumprimento3 === 'True'" @change="togglePrescricaoStatus(p, 'Cumprimento3')" />
                                         </td>
-                                        <td class="p-1.5 whitespace-nowrap">{{ p.DataInternamento || p.CREATED_AT }}</td>
+                                        <td class="p-2 whitespace-nowrap text-slate-500">{{ p.DataInternamento || p.CREATED_AT }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -562,28 +581,27 @@ const finalizarSaidaFarmaco = async () => {
                     </div>
 
                     <!-- 2. Registo de Visitas e Actos Médicos -->
-                    <div class="flex-1 bg-white border border-slate-300 flex flex-col overflow-hidden">
-                        <div class="bg-[#f0f0f0] px-2 py-1 font-bold text-slate-700 border-b border-slate-300 text-[10px]">Registo de Visitas e Actos Médicos</div>
-                        <div class="p-1 bg-white border-b border-slate-200">
-                             <div class="relative">
-                                <Search class="w-3 h-3 absolute left-2 top-1.5 text-slate-400" />
-                                <input type="text" placeholder="Drag a column header here to group by that column" class="w-full pl-7 pr-2 py-1 text-[9px] bg-white border border-slate-200 outline-none" />
+                    <div class="flex-1 bg-white rounded shadow-sm border border-slate-300 flex flex-col overflow-hidden">
+                        <div class="bg-slate-100 px-3 py-2 border-b border-slate-200 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <Stethoscope class="w-4 h-4 text-emerald-600" />
+                                <span class="font-black text-slate-700 uppercase text-[10px] tracking-widest">Registo de Visitas e Actos Médicos</span>
                             </div>
                         </div>
                         <div class="flex-1 overflow-y-auto custom-scrollbar">
                             <table class="w-full text-left border-collapse text-[9px]">
-                                <thead class="sticky top-0 bg-[#f8f8f8] border-b border-slate-200 z-10 text-slate-500">
+                                <thead class="sticky top-0 bg-slate-50 border-b border-slate-200 z-10 font-black uppercase text-slate-500 text-[8px]">
                                     <tr>
-                                        <th class="p-1.5 border-r border-slate-200">Data</th>
-                                        <th class="p-1.5 border-r border-slate-200">Medico</th>
-                                        <th class="p-1.5">Descrição</th>
+                                        <th class="p-2 border-r border-slate-200">Data</th>
+                                        <th class="p-2 border-r border-slate-200">Medico</th>
+                                        <th class="p-2">Descrição</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="a in details.atosMedicos" :key="a.Id" class="border-b border-slate-50">
-                                        <td class="p-1.5 border-r border-slate-50 whitespace-nowrap">{{ a.DataAto || a.CREATED_AT }}</td>
-                                        <td class="p-1.5 border-r border-slate-50">{{ a.Medico }}</td>
-                                        <td class="p-1.5 italic text-slate-500">{{ a.Descricao }}</td>
+                                    <tr v-for="a in details.atosMedicos" :key="a.Id" class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                        <td class="p-2 border-r border-slate-50 whitespace-nowrap text-slate-500">{{ a.DataAto || a.CREATED_AT }}</td>
+                                        <td class="p-2 border-r border-slate-50 font-bold text-slate-600">{{ a.Medico }}</td>
+                                        <td class="p-2 italic text-slate-600">{{ a.Descricao }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -591,34 +609,33 @@ const finalizarSaidaFarmaco = async () => {
                     </div>
 
                     <!-- 3. Controlo de Sinais Vitais -->
-                    <div class="flex-1 bg-white border border-slate-300 flex flex-col overflow-hidden">
-                        <div class="bg-[#f0f0f0] px-2 py-1 font-bold text-slate-700 border-b border-slate-300 text-[10px]">Controlo de Sinais Vitais</div>
-                        <div class="p-1 bg-white border-b border-slate-200">
-                             <div class="relative">
-                                <Search class="w-3 h-3 absolute left-2 top-1.5 text-slate-400" />
-                                <input type="text" placeholder="Drag a column header here to group by that column" class="w-full pl-7 pr-2 py-1 text-[9px] bg-white border border-slate-200 outline-none" />
+                    <div class="flex-1 bg-white rounded shadow-sm border border-slate-300 flex flex-col overflow-hidden">
+                        <div class="bg-slate-100 px-3 py-2 border-b border-slate-200 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <Activity class="w-4 h-4 text-orange-500" />
+                                <span class="font-black text-slate-700 uppercase text-[10px] tracking-widest">Controlo de Sinais Vitais</span>
                             </div>
                         </div>
                         <div class="flex-1 overflow-y-auto custom-scrollbar">
                             <table class="w-full text-left border-collapse text-[9px]">
-                                <thead class="sticky top-0 bg-[#f8f8f8] border-b border-slate-200 z-10 text-slate-500">
+                                <thead class="sticky top-0 bg-slate-50 border-b border-slate-200 z-10 font-black uppercase text-slate-500 text-[8px]">
                                     <tr>
-                                        <th class="p-1.5 border-r border-slate-200">Cod. Paciente</th>
-                                        <th class="p-1.5 border-r border-slate-200">Data</th>
-                                        <th class="p-1.5 border-r border-slate-200">Medico</th>
-                                        <th class="p-1.5 border-r border-slate-200 text-center w-8">Temp.</th>
-                                        <th class="p-1.5 border-r border-slate-200 text-center w-8">Peso</th>
-                                        <th class="p-1.5 text-center w-12">Pressao</th>
+                                        <th class="p-2 border-r border-slate-200">Cod. Paciente</th>
+                                        <th class="p-2 border-r border-slate-200">Data</th>
+                                        <th class="p-2 border-r border-slate-200">Medico</th>
+                                        <th class="p-2 border-r border-slate-200 text-center w-8">Temp.</th>
+                                        <th class="p-2 border-r border-slate-200 text-center w-8">Peso</th>
+                                        <th class="p-2 text-center w-12">Pressao</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="v in details.sinaisVitais" :key="v.Id" class="border-b border-slate-50">
-                                        <td class="p-1.5 border-r border-slate-50">{{ selectedPaciente?.Codigo }}</td>
-                                        <td class="p-1.5 border-r border-slate-50 whitespace-nowrap">{{ v.DataAgendamento || v.CREATED_AT }}</td>
-                                        <td class="p-1.5 border-r border-slate-50">{{ selectedPaciente?.PacienteNome }}</td>
-                                        <td class="p-1.5 border-r border-slate-50 text-center font-bold text-red-600">{{ v.Temperatura }}°</td>
-                                        <td class="p-1.5 border-r border-slate-50 text-center">{{ v.Peso }}kg</td>
-                                        <td class="p-1.5 text-center">{{ v.PressaoArterial }}</td>
+                                    <tr v-for="v in details.sinaisVitais" :key="v.Id" class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                        <td class="p-2 border-r border-slate-50 text-blue-600 font-black">{{ selectedPaciente?.Codigo }}</td>
+                                        <td class="p-2 border-r border-slate-50 whitespace-nowrap text-slate-500">{{ v.DataAgendamento || v.CREATED_AT }}</td>
+                                        <td class="p-2 border-r border-slate-50 font-bold text-slate-700">{{ selectedPaciente?.PacienteNome }}</td>
+                                        <td class="p-2 border-r border-slate-50 text-center font-black text-red-600">{{ v.Temperatura }}°</td>
+                                        <td class="p-2 border-r border-slate-50 text-center font-bold">{{ v.Peso }}kg</td>
+                                        <td class="p-2 text-center font-bold">{{ v.PressaoArterial }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -631,71 +648,69 @@ const finalizarSaidaFarmaco = async () => {
         <!-- Modals -->
         
         <!-- Nursing Modal (Refined to be unified but opened via button) -->
-        <div v-if="showAtoModal && atoType === 'enfermagem'" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[500] p-4">
-            <div class="bg-white w-full max-w-5xl shadow-2xl border-4 border-[#000080] flex flex-col h-[700px] rounded-sm overflow-hidden animate-in zoom-in duration-200">
-                <div class="bg-[#000080] text-white p-2.5 font-bold text-xs text-center uppercase tracking-widest relative">
-                    REGISTO DE VISITAS E ATOS DA ENFERMARIA
-                    <button @click="showAtoModal = false" class="absolute right-3 top-2 hover:bg-red-600 rounded px-2 transition-colors">&times;</button>
+        <div v-if="showAtoModal && atoType === 'enfermagem'" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center z-[500] p-4">
+            <div class="bg-slate-50 w-full max-w-5xl shadow-2xl border border-white flex flex-col h-[700px] rounded-xl overflow-hidden animate-in zoom-in duration-200">
+                <div class="bg-slate-800 text-white p-4 font-black text-sm text-center uppercase tracking-widest relative flex justify-between items-center shadow-lg">
+                    <div class="flex items-center gap-3">
+                        <Syringe class="w-5 h-5 text-emerald-400" />
+                        REGISTO DE VISITAS E ATOS DA ENFERMARIA
+                    </div>
+                    <button @click="showAtoModal = false" class="hover:bg-red-500/20 text-white/80 hover:text-white rounded-full w-8 h-8 flex items-center justify-center transition-all">&times;</button>
                 </div>
                 
-                <div class="flex-1 flex flex-col bg-[#e9e9e9] p-6 overflow-hidden">
-                    <div class="text-center text-slate-800 font-bold text-2xl mb-6">Registo de Visitas e Atos da Enfermagem</div>
+                <div class="flex-1 flex flex-col bg-slate-50 p-6 overflow-hidden">
                     
                     <div class="flex gap-4 mb-6 shrink-0">
-                        <button @click="submitAto" class="bg-white border-2 border-slate-400 p-3 flex flex-col items-center min-w-[130px] hover:bg-green-50 hover:border-green-500 transition-all rounded shadow-md group">
-                            <Plus class="w-12 h-12 text-green-600 mb-1" />
-                            <span class="text-[11px] font-black uppercase text-slate-700">Adicionar</span>
+                        <button @click="submitAto" class="bg-white border border-slate-200 p-3 flex items-center justify-center gap-3 min-w-[130px] hover:bg-emerald-50 hover:border-emerald-500 transition-all rounded-lg shadow-sm group">
+                            <Plus class="w-6 h-6 text-emerald-600" />
+                            <span class="text-[11px] font-black uppercase text-slate-700">Adicionar Registo</span>
                         </button>
-                        <button @click="imprimirAtosEnfermagem" class="bg-white border-2 border-slate-400 p-3 flex flex-col items-center min-w-[130px] hover:bg-blue-50 hover:border-blue-500 transition-all rounded shadow-md group">
-                            <Printer class="w-12 h-12 text-slate-600 mb-1" />
-                            <span class="text-[11px] font-black uppercase text-slate-700">Imprimir</span>
+                        <button @click="imprimirAtosEnfermagem" class="bg-white border border-slate-200 p-3 flex items-center justify-center gap-3 min-w-[130px] hover:bg-blue-50 hover:border-blue-500 transition-all rounded-lg shadow-sm group">
+                            <Printer class="w-6 h-6 text-blue-600" />
+                            <span class="text-[11px] font-black uppercase text-slate-700">Imprimir Atos</span>
                         </button>
                     </div>
 
-                    <div class="flex gap-8 mb-6 shrink-0 bg-white/50 p-4 border border-slate-300 rounded">
+                    <div class="flex gap-6 mb-6 shrink-0 bg-white p-5 border border-slate-200 rounded-xl shadow-sm">
                         <div class="w-1/3 space-y-4">
                             <div>
-                                <label class="block text-xs font-black text-slate-500 uppercase mb-1">Data e Hora</label>
-                                <div class="w-full border-2 border-slate-300 p-2 text-xs bg-white font-bold">{{ new Date().toLocaleString() }}</div>
+                                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Data e Hora</label>
+                                <div class="w-full border border-slate-200 p-2.5 rounded-lg text-xs font-black text-slate-700 bg-slate-50">{{ new Date().toLocaleString() }}</div>
                             </div>
                             <div>
-                                <label class="block text-xs font-black text-slate-500 uppercase mb-1">Paciente</label>
-                                <div class="w-full border-2 border-slate-300 p-2 text-xs bg-[#f0f0f0] font-black">{{ selectedPaciente?.PacienteNome }}</div>
+                                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Paciente</label>
+                                <div class="w-full border border-slate-200 p-2.5 rounded-lg text-xs font-black text-slate-700 bg-blue-50/50">{{ selectedPaciente?.PacienteNome }}</div>
                             </div>
                             <div>
-                                <label class="block text-xs font-black text-slate-500 uppercase mb-1">Enfermeiro</label>
-                                <div class="w-full border-2 border-slate-300 p-2 text-xs bg-white font-bold">{{ $page.props.auth.user.name }}</div>
+                                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Enfermeiro</label>
+                                <div class="w-full border border-slate-200 p-2.5 rounded-lg text-xs font-black text-slate-700 bg-slate-50">{{ $page.props.auth.user.name }}</div>
                             </div>
                         </div>
                         <div class="flex-1 flex flex-col">
-                            <label class="block text-xs font-black text-slate-500 uppercase mb-1">Atos Realizados</label>
-                            <textarea v-model="atoForm.descricao" class="flex-1 border-2 border-slate-300 p-3 text-sm focus:border-blue-500 outline-none resize-none bg-white rounded shadow-inner" placeholder="Descreva as intervenções..."></textarea>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Atos Realizados</label>
+                            <textarea v-model="atoForm.descricao" class="flex-1 border border-slate-200 p-4 text-xs font-bold text-slate-700 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none resize-none bg-slate-50/50 rounded-lg transition-all" placeholder="Descreva as intervenções de enfermagem..."></textarea>
                         </div>
                     </div>
 
-                    <div class="flex-1 bg-white border-2 border-slate-400 flex flex-col overflow-hidden rounded shadow-xl">
-                        <div class="bg-white text-slate-400 text-[10px] p-2 border-b border-slate-200 flex justify-between items-center italic font-bold">
-                            <span>Drag a column header here to group by that column</span>
-                            <Search class="w-4 h-4" />
-                        </div>
+                    <div class="flex-1 bg-white border border-slate-200 flex flex-col overflow-hidden rounded-xl shadow-sm">
                         <div class="flex-1 overflow-y-auto custom-scrollbar">
-                            <table class="w-full text-left border-collapse text-xs">
-                                <thead class="sticky top-0 bg-[#f4f4f4] border-b-2 border-slate-300 z-10 font-black uppercase text-slate-600">
+                            <table class="w-full text-left border-collapse text-[10px]">
+                                <thead class="sticky top-0 bg-slate-50 border-b border-slate-200 z-10 font-black uppercase text-slate-500 text-[9px]">
                                     <tr>
-                                        <th class="p-3 border-r border-slate-300 w-24">AGENDA</th>
-                                        <th class="p-3 border-r border-slate-300 w-44">DATA_HORA</th>
-                                        <th class="p-3 border-r border-slate-300">DESCRICAO</th>
-                                        <th class="p-3 border-r border-slate-300 w-56">PACIENTE</th>
-                                        <th class="p-3 w-56">ENFERMEIRO</th>
+                                        <th class="p-3 border-r border-slate-200 w-24">Agenda</th>
+                                        <th class="p-3 border-r border-slate-200 w-44">Data Hora</th>
+                                        <th class="p-3 border-r border-slate-200">Descricao</th>
+                                        <th class="p-3 border-r border-slate-200 w-56">Paciente</th>
+                                        <th class="p-3 w-56">Enfermeiro</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="a in details.atosEnfermagem" :key="a.Id" class="border-b border-slate-100 hover:bg-blue-50 transition-colors">
-                                        <td class="p-3 border-r border-slate-100 text-slate-400 font-mono">{{ selectedPaciente?.Codigo }}</td>
-                                        <td class="p-3 border-r border-slate-100">{{ a.DataAto || a.CREATED_AT }}</td>
-                                        <td class="p-3 border-r border-slate-100 text-blue-800 italic">{{ a.Descricao }}</td>
-                                        <td class="p-3 border-r border-slate-100">{{ selectedPaciente?.PacienteNome }}</td>
-                                        <td class="p-3 font-bold text-slate-500 uppercase text-[10px]">{{ a.Enfermeiro }}</td>
+                                    <tr v-for="a in details.atosEnfermagem" :key="a.Id" class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                        <td class="p-3 border-r border-slate-50 text-blue-600 font-black">{{ selectedPaciente?.Codigo }}</td>
+                                        <td class="p-3 border-r border-slate-50 text-slate-500">{{ a.DataAto || a.CREATED_AT }}</td>
+                                        <td class="p-3 border-r border-slate-50 text-slate-700 font-bold">{{ a.Descricao }}</td>
+                                        <td class="p-3 border-r border-slate-50 font-bold uppercase text-slate-600">{{ selectedPaciente?.PacienteNome }}</td>
+                                        <td class="p-3 font-bold text-slate-500 uppercase">{{ a.Enfermeiro }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -706,19 +721,22 @@ const finalizarSaidaFarmaco = async () => {
         </div>
 
         <!-- Medical Ato Modal -->
-        <div v-if="showAtoModal && atoType === 'medico'" class="fixed inset-0 bg-black/70 flex items-center justify-center z-[500] p-4">
-            <div class="bg-white w-full max-w-lg shadow-2xl rounded-sm overflow-hidden border-2 border-blue-900 animate-in zoom-in duration-200">
-                <div class="bg-[#000080] text-white p-4 font-bold text-center uppercase tracking-widest relative">
-                    Registo de Visita Médica
-                    <button @click="showAtoModal = false" class="absolute right-4 top-3 hover:bg-red-600 rounded px-2 transition-colors">&times;</button>
+        <div v-if="showAtoModal && atoType === 'medico'" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center z-[500] p-4">
+            <div class="bg-white w-full max-w-lg shadow-2xl rounded-xl overflow-hidden border border-white animate-in zoom-in duration-200">
+                <div class="bg-slate-800 text-white p-4 font-black flex justify-between items-center uppercase tracking-widest relative">
+                    <div class="flex items-center gap-3">
+                        <Stethoscope class="w-5 h-5 text-blue-400" />
+                        Registo de Visita Médica
+                    </div>
+                    <button @click="showAtoModal = false" class="hover:bg-red-500/20 text-white/80 hover:text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors">&times;</button>
                 </div>
                 <div class="p-6">
                     <label class="block text-[11px] font-black uppercase text-slate-500 mb-2">Evolução Clínica / Ato Médico</label>
-                    <textarea v-model="atoForm.descricao" rows="10" class="w-full border-2 border-slate-300 p-4 text-sm font-bold focus:border-blue-600 outline-none resize-none rounded bg-slate-50 shadow-inner" placeholder="Registe a evolução do paciente..."></textarea>
+                    <textarea v-model="atoForm.descricao" rows="10" class="w-full border border-slate-200 p-4 text-xs font-bold text-slate-700 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none resize-none rounded-lg bg-slate-50/50 transition-all" placeholder="Registe a evolução do paciente..."></textarea>
                 </div>
-                <div class="p-4 bg-slate-100 border-t border-slate-200 flex justify-end gap-2">
-                    <button @click="showAtoModal = false" class="px-6 py-2 border-2 border-slate-300 hover:bg-slate-200 text-xs font-black uppercase rounded transition-all">Cancelar</button>
-                    <button @click="submitAto" class="px-6 py-2 bg-blue-600 text-white hover:bg-blue-800 text-xs font-black uppercase rounded shadow-lg transition-all">Gravar Registo</button>
+                <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                    <button @click="showAtoModal = false" class="px-6 py-2.5 border border-slate-200 hover:bg-white text-xs font-black uppercase rounded-lg transition-all text-slate-500">Cancelar</button>
+                    <button @click="submitAto" class="px-6 py-2.5 bg-blue-600 text-white hover:bg-blue-700 text-xs font-black uppercase rounded-lg shadow-md transition-all">Gravar Registo</button>
                 </div>
             </div>
         </div>
@@ -727,7 +745,7 @@ const finalizarSaidaFarmaco = async () => {
         <div v-if="showSinaisModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[500] p-4">
             <div class="bg-slate-50 w-full max-w-6xl shadow-2xl rounded-xl overflow-hidden flex flex-col h-[750px] border border-white animate-in zoom-in duration-300">
                 <!-- Premium Header -->
-                <div class="bg-gradient-to-r from-[#000080] to-blue-800 text-white p-4 flex justify-between items-center shadow-lg relative">
+                <div class="bg-gradient-to-r from-slate-800 to-blue-900 text-white p-4 flex justify-between items-center shadow-lg relative">
                     <div class="flex items-center gap-3">
                         <Activity class="w-5 h-5 text-blue-300" />
                         <span class="font-black uppercase text-sm tracking-widest">Controlo de Sinais Vitais</span>
@@ -885,7 +903,7 @@ const finalizarSaidaFarmaco = async () => {
         <div v-if="showCumprimentoModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[500] p-4">
             <div class="bg-slate-50 w-full max-w-7xl shadow-2xl rounded-xl overflow-hidden flex flex-col h-[850px] border border-white animate-in zoom-in duration-300">
                 <!-- Header -->
-                <div class="bg-gradient-to-r from-[#000080] to-blue-800 text-white p-4 flex justify-between items-center shadow-lg relative">
+                <div class="bg-gradient-to-r from-slate-800 to-blue-900 text-white p-4 flex justify-between items-center shadow-lg relative">
                     <div class="flex items-center gap-3">
                         <ClipboardCheck class="w-5 h-5 text-blue-300" />
                         <span class="font-black uppercase text-sm tracking-widest">PRESCRIÇÕES MÉDICAS - Cumprimento da Enfermagem</span>
@@ -1074,64 +1092,70 @@ const finalizarSaidaFarmaco = async () => {
             </div>
         </div>
 
-        <div v-if="showAltaModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-[500] p-4">
-            <div class="bg-white w-full max-w-md shadow-2xl rounded-sm overflow-hidden border border-slate-200 scale-in-center">
-                <div class="bg-green-700 text-white p-5 font-black text-center uppercase tracking-widest relative">
-                    Título de Alta Hospitalar
-                    <button @click="showAltaModal = false" class="absolute right-4 top-4 hover:bg-green-900 rounded-full w-8 h-8 flex items-center justify-center">&times;</button>
+        <div v-if="showAltaModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center z-[500] p-4">
+            <div class="bg-white w-full max-w-md shadow-2xl rounded-xl overflow-hidden border border-white scale-in-center">
+                <div class="bg-emerald-700 text-white p-4 font-black flex justify-between items-center uppercase tracking-widest relative">
+                    <div class="flex items-center gap-3">
+                        <ClipboardCheck class="w-5 h-5 text-emerald-200" />
+                        Título de Alta Hospitalar
+                    </div>
+                    <button @click="showAltaModal = false" class="hover:bg-emerald-900 rounded-full w-8 h-8 flex items-center justify-center">&times;</button>
                 </div>
-                <div class="p-8 space-y-6 bg-white">
+                <div class="p-6 space-y-5 bg-white">
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-slate-500 mb-1.5">Procedimento Operado</label>
-                        <input v-model="altaForm.Operado" type="text" class="w-full border-2 border-slate-200 p-3 text-sm rounded-lg outline-none focus:border-green-600 bg-slate-50" />
+                        <label class="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Procedimento Operado</label>
+                        <input v-model="altaForm.Operado" type="text" class="w-full border border-slate-200 p-3 text-xs font-bold text-slate-700 rounded-lg outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 bg-slate-50/50 transition-all" />
                     </div>
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-slate-500 mb-1.5">Complicações</label>
-                        <textarea v-model="altaForm.Complicacoes" rows="2" class="w-full border-2 border-slate-200 p-3 text-sm rounded-lg outline-none focus:border-green-600 bg-slate-50 resize-none"></textarea>
+                        <label class="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Complicações</label>
+                        <textarea v-model="altaForm.Complicacoes" rows="2" class="w-full border border-slate-200 p-3 text-xs font-bold text-slate-700 rounded-lg outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 bg-slate-50/50 resize-none transition-all"></textarea>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-slate-500 mb-1.5">Repouso e Recomendações</label>
-                        <input v-model="altaForm.Repouso" type="text" class="w-full border-2 border-slate-200 p-3 text-sm rounded-lg outline-none focus:border-green-600 bg-slate-50" />
+                        <label class="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Repouso e Recomendações</label>
+                        <input v-model="altaForm.Repouso" type="text" class="w-full border border-slate-200 p-3 text-xs font-bold text-slate-700 rounded-lg outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 bg-slate-50/50 transition-all" />
                     </div>
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-slate-500 mb-1.5">Notas de Alta Finais</label>
-                        <textarea v-model="altaForm.Obs" rows="3" class="w-full border-2 border-slate-200 p-3 text-sm rounded-lg outline-none focus:border-green-600 bg-slate-50 resize-none"></textarea>
+                        <label class="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Notas de Alta Finais</label>
+                        <textarea v-model="altaForm.Obs" rows="3" class="w-full border border-slate-200 p-3 text-xs font-bold text-slate-700 rounded-lg outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 bg-slate-50/50 resize-none transition-all"></textarea>
                     </div>
                 </div>
                 <div class="p-4 bg-slate-50 flex gap-3 border-t border-slate-100">
-                    <button @click="showAltaModal = false" class="flex-1 py-4 border-2 border-slate-200 text-xs font-black uppercase rounded-lg hover:bg-white transition-all">Cancelar</button>
-                    <button @click="handleAltaConfirm" class="flex-[2] py-4 bg-green-600 text-white text-xs font-black uppercase rounded-lg hover:bg-green-700 shadow-xl transition-all">Confirmar Alta</button>
+                    <button @click="showAltaModal = false" class="flex-1 py-3.5 border border-slate-200 text-[10px] font-black uppercase rounded-lg hover:bg-white transition-all text-slate-500">Cancelar</button>
+                    <button @click="handleAltaConfirm" class="flex-[2] py-3.5 bg-emerald-600 text-white text-[10px] font-black uppercase rounded-lg hover:bg-emerald-700 shadow-md transition-all">Confirmar Alta</button>
                 </div>
             </div>
         </div>
 
         <!-- Prescrição Modal -->
-        <div v-if="showPrescricaoModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-[500] p-4">
-            <div class="bg-white w-full max-w-md shadow-2xl rounded-sm overflow-hidden border border-slate-200 scale-in-center">
-                <div class="bg-[#000080] text-white p-5 font-black text-center uppercase tracking-widest relative">
-                    Nova Prescrição Médica
-                    <button @click="showPrescricaoModal = false" class="absolute right-5 top-4 hover:bg-blue-900 rounded-full w-8 h-8 flex items-center justify-center">&times;</button>
+        <div v-if="showPrescricaoModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center z-[500] p-4">
+            <div class="bg-white w-full max-w-md shadow-2xl rounded-xl overflow-hidden border border-white scale-in-center">
+                <div class="bg-slate-800 text-white p-4 font-black flex justify-between items-center uppercase tracking-widest relative">
+                    <div class="flex items-center gap-3">
+                        <ClipboardList class="w-5 h-5 text-blue-400" />
+                        Nova Prescrição Médica
+                    </div>
+                    <button @click="showPrescricaoModal = false" class="hover:bg-red-500/20 text-white/80 hover:text-white rounded-full w-8 h-8 flex items-center justify-center transition-all">&times;</button>
                 </div>
-                <div class="p-8 space-y-6">
+                <div class="p-6 space-y-5">
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-slate-500 mb-1.5">Tipo</label>
-                        <select v-model="prescricaoForm.Tipo" class="w-full border-2 border-slate-200 p-3 text-sm rounded-lg outline-none focus:border-blue-600 font-black bg-slate-50">
+                        <label class="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Tipo</label>
+                        <select v-model="prescricaoForm.Tipo" class="w-full border border-slate-200 p-3 text-xs font-black text-slate-700 rounded-lg outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 bg-slate-50/50 transition-all">
                             <option value="Internamento">Internamento</option>
                             <option value="Observacao">Observação</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-slate-500 mb-1.5">Prescrição / Medicamento</label>
-                        <textarea v-model="prescricaoForm.Descricao" rows="6" class="w-full border-2 border-slate-200 p-3 text-sm font-bold rounded-lg outline-none focus:border-blue-600 resize-none bg-slate-50 shadow-inner" placeholder="Ex: Ciprofloxacina 400mg..."></textarea>
+                        <label class="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Prescrição / Medicamento</label>
+                        <textarea v-model="prescricaoForm.Descricao" rows="6" class="w-full border border-slate-200 p-3 text-xs font-bold text-slate-700 rounded-lg outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 resize-none bg-slate-50/50 transition-all" placeholder="Ex: Ciprofloxacina 400mg..."></textarea>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-slate-500 mb-1.5">Observações para Enfermagem</label>
-                        <input v-model="prescricaoForm.Observacao" type="text" class="w-full border-2 border-slate-200 p-3 text-sm rounded-lg outline-none focus:border-blue-600 bg-slate-50" />
+                        <label class="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Observações para Enfermagem</label>
+                        <input v-model="prescricaoForm.Observacao" type="text" class="w-full border border-slate-200 p-3 text-xs font-bold text-slate-700 rounded-lg outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 bg-slate-50/50 transition-all" />
                     </div>
                 </div>
                 <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-3">
-                    <button @click="showPrescricaoModal = false" class="flex-1 py-4 border-2 border-slate-200 text-xs font-black uppercase rounded-lg hover:bg-white transition-all text-slate-400">Descartar</button>
-                    <button @click="submitPrescricao" class="flex-[2] py-4 bg-[#2196F3] text-white text-xs font-black uppercase rounded-lg hover:bg-blue-700 shadow-xl transition-all">Gravar Plano</button>
+                    <button @click="showPrescricaoModal = false" class="flex-1 py-3.5 border border-slate-200 text-[10px] font-black uppercase text-slate-500 rounded-lg hover:bg-white transition-all">Descartar</button>
+                    <button @click="submitPrescricao" class="flex-[2] py-3.5 bg-blue-600 text-white text-[10px] font-black uppercase rounded-lg hover:bg-blue-700 shadow-md transition-all">Gravar Plano</button>
                 </div>
             </div>
         </div>
