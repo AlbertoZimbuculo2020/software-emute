@@ -16,7 +16,6 @@ const props = defineProps({
     catalogoFarmacos: { type: Array, default: () => [] },
     catalogoCid:      { type: Array, default: () => [] },
     listaMedicos:     { type: Array, default: () => [] },
-    empresa: Object,
     config: { type: Object, default: () => ({ triageEnabled: true, fontSize: '10px' }) }
 });
 

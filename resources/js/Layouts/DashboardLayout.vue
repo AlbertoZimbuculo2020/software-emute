@@ -93,7 +93,7 @@ const toggleMenu = (menu) => {
     openMenus.value[menu] = !openMenus.value[menu];
 };
 
-const empresa = computed(() => usePage().props.empresa);
+const clinicData = computed(() => usePage().props.clinicData);
 </script>
 
 <template>
@@ -285,18 +285,15 @@ const empresa = computed(() => usePage().props.empresa);
             </div>
 
             <!-- Footer Sidebar -->
-            <div class="mt-auto border-t border-white/10">
-                <div v-if="showingSidebar" class="p-4 flex flex-col items-center">
-                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-2">Clínica</p>
-                    <div v-if="empresa?.logo" class="mb-3 bg-white p-2 rounded-lg shadow-inner">
-                        <img :src="empresa.logo" class="h-10 w-auto object-contain mx-auto" alt="Logo Clínica" />
+            <div class="mt-auto border-t border-white/10 bg-blue-800/10 backdrop-blur-sm">
+                <div class="p-4 flex flex-col items-center">
+                    <p v-if="showingSidebar" class="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-2">Clínica</p>
+                    <div v-if="clinicData?.logo" class="bg-white p-1.5 rounded-lg shadow-lg mb-2">
+                        <img :src="clinicData.logo" :class="showingSidebar ? 'h-10' : 'h-6'" class="w-auto object-contain mx-auto" alt="Logo Clínica" />
                     </div>
-                    <p class="text-xs font-black text-white uppercase tracking-tight text-center leading-tight">
-                        {{ empresa?.nome || 'EMUTE' }}
+                    <p v-if="showingSidebar" class="text-[10px] font-black text-white uppercase tracking-tight text-center leading-tight max-w-[140px]">
+                        {{ clinicData?.nome || 'EMUTE' }}
                     </p>
-                </div>
-                <div class="p-4 bg-blue-900/20 text-center hidden">
-                     <!-- Botão movido para o topo -->
                 </div>
             </div>
         </aside>
@@ -355,14 +352,7 @@ const empresa = computed(() => usePage().props.empresa);
                 </div>
             </header>
 
-            <!-- Breadcrumbs / Dashboard Tabs -->
-            <div class="bg-white px-6 py-2 border-b border-gray-100 flex items-center space-x-2 shadow-sm">
-                <div class="bg-gray-50 px-4 py-1.5 rounded-lg border border-gray-200 flex items-center space-x-2">
-                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                    <span class="text-[10px] font-black uppercase tracking-widest text-gray-600">Dashboard</span>
-                    <button class="text-gray-400 hover:text-red-500">×</button>
-                </div>
-            </div>
+
 
             <!-- Page Slots -->
             <div class="p-6 overflow-y-auto">

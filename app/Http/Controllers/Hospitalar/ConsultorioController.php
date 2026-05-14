@@ -59,11 +59,6 @@ class ConsultorioController extends Controller
             ->select('Codigo', 'Nome')
             ->get();
 
-        $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
-        if ($empresa && $empresa->IMAGEM) {
-            $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
-        }
-
         $catalogoCid = DB::table('tb_ciddez')
             ->where('ESTADO', 'Activado')
             ->select('codigo', 'Indicador', 'Descricao')
@@ -74,8 +69,7 @@ class ConsultorioController extends Controller
             'catalogoExames'  => $catalogoExames,
             'catalogoFarmacos'=> $catalogoFarmacos,
             'catalogoCid'     => $catalogoCid,
-            'listaMedicos'    => $listaMedicos,
-            'empresa'         => $empresa
+            'listaMedicos'    => $listaMedicos
         ]);
     }
     public function getWaitlist()

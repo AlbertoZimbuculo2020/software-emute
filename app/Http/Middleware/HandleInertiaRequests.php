@@ -59,7 +59,7 @@ class HandleInertiaRequests extends Middleware
                 'message' => session('message'),
                 'error' => session('error'),
             ],
-            'empresa' => (function() {
+            'clinicData' => (function() {
                 $empresa = \Illuminate\Support\Facades\DB::table('tb_empresa')->first();
                 if (!$empresa) return null;
                 return [
