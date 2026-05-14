@@ -38,7 +38,8 @@ import {
     Package,
     CheckCircle2,
     AlertCircle,
-    X
+    X,
+    Menu
 } from 'lucide-vue-next';
 
 const showingSidebar = ref(true);
@@ -91,6 +92,8 @@ const toggleMenu = (menu) => {
     });
     openMenus.value[menu] = !openMenus.value[menu];
 };
+
+const empresa = computed(() => usePage().props.empresa);
 </script>
 
 <template>
@@ -124,16 +127,23 @@ const toggleMenu = (menu) => {
         <aside 
             :class="[
                 showingSidebar ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0 lg:w-20',
-                'bg-[#2D82E3] text-white flex flex-col transition-all duration-300 shadow-2xl z-50 fixed inset-y-0 lg:static'
+                'bg-[#2D82E3] text-white flex flex-col transition-all duration-300 shadow-2xl z-50 fixed inset-y-0 lg:sticky lg:top-0 lg:h-screen'
             ]"
         >
             <!-- Logo area -->
-            <Link :href="route('dashboard')" class="h-16 flex items-center px-4 bg-blue-700/30 border-b border-white/10 overflow-hidden hover:bg-blue-800/40 transition-colors">
-                <div class="min-w-[40px] h-10 flex items-center justify-center mr-3">
-                    <img src="/images/logo.png" class="h-8 w-auto object-contain" alt="Logo" />
-                </div>
-                <span v-if="showingSidebar" class="font-black text-lg tracking-tighter uppercase truncate">EMUTE</span>
-            </Link>
+            <div :class="showingSidebar ? 'justify-between px-4' : 'justify-center'" class="h-16 flex items-center bg-blue-700/30 border-b border-white/10 overflow-hidden transition-all">
+                <Link v-if="showingSidebar" :href="route('dashboard')" class="flex items-center hover:opacity-80 transition-opacity">
+                    <div class="min-w-[40px] h-10 flex items-center justify-center mr-3">
+                        <img src="/images/logo.png" class="h-8 w-auto object-contain" alt="Logo" />
+                    </div>
+                    <span class="font-black text-lg tracking-tighter uppercase truncate">EMUTE</span>
+                </Link>
+                
+                <!-- Toggle Button at Top -->
+                <button @click="showingSidebar = !showingSidebar" class="p-2 hover:bg-white/10 rounded-lg transition-all hidden lg:flex items-center justify-center">
+                    <Menu class="w-5 h-5" />
+                </button>
+            </div>
 
             <!-- Menu Scrollable -->
             <div class="flex-grow overflow-y-auto py-4 custom-scrollbar">
@@ -141,8 +151,8 @@ const toggleMenu = (menu) => {
                     
                     <!-- Configurações Dropdown -->
                     <div v-if="canSeeModule(['btnEmpresa', 'accordionUtilizadores', 'accordionDefinicoes', 'accordionPermissoes', 'accordionBackup'])" class="space-y-1">
-                        <button @click="toggleMenu('config')" class="w-full flex items-center px-3 py-2 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">
-                            <Settings class="w-4 h-4 mr-3 opacity-80" />
+                        <button @click="toggleMenu('config')" :class="showingSidebar ? 'px-3 justify-start' : 'px-0 justify-center'" class="w-full flex items-center py-2 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">
+                            <Settings :class="showingSidebar ? 'mr-3' : 'mr-0'" class="w-4 h-4 opacity-80" />
                             <span v-if="showingSidebar" class="flex-grow text-left uppercase">Configurações</span>
                             <ChevronDown v-if="showingSidebar" :class="openMenus.config ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" />
                         </button>
@@ -170,8 +180,8 @@ const toggleMenu = (menu) => {
 
                     <!-- Entidades Dropdown -->
                     <div v-if="canSeeModule(['btnCliente', 'accordionPacientes', 'accordionMedicos', 'accordionSeguradora'])" class="space-y-1">
-                        <button @click="toggleMenu('entidades')" class="w-full flex items-center px-3 py-2 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">
-                            <UserSquare2 class="w-4 h-4 mr-3 opacity-80" />
+                        <button @click="toggleMenu('entidades')" :class="showingSidebar ? 'px-3 justify-start' : 'px-0 justify-center'" class="w-full flex items-center py-2 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">
+                            <UserSquare2 :class="showingSidebar ? 'mr-3' : 'mr-0'" class="w-4 h-4 opacity-80" />
                             <span v-if="showingSidebar" class="flex-grow text-left uppercase">Entidades</span>
                             <ChevronDown v-if="showingSidebar" :class="openMenus.entidades ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" />
                         </button>
@@ -193,8 +203,8 @@ const toggleMenu = (menu) => {
 
                     <!-- Outros Cadastros Dropdown -->
                     <div v-if="canSeeModule(['accordionExames', 'accordionConsultas', 'accordionServicos'])" class="space-y-1">
-                        <button @click="toggleMenu('outros')" class="w-full flex items-center px-3 py-2 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">
-                            <FileText class="w-4 h-4 mr-3 opacity-80" />
+                        <button @click="toggleMenu('outros')" :class="showingSidebar ? 'px-3 justify-start' : 'px-0 justify-center'" class="w-full flex items-center py-2 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">
+                            <FileText :class="showingSidebar ? 'mr-3' : 'mr-0'" class="w-4 h-4 opacity-80" />
                             <span v-if="showingSidebar" class="flex-grow text-left uppercase">Outros Cadastros</span>
                             <ChevronDown v-if="showingSidebar" :class="openMenus.outros ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" />
                         </button>
@@ -213,8 +223,8 @@ const toggleMenu = (menu) => {
 
                     <!-- Hospitalar Dropdown -->
                     <div v-if="canSeeModule(['btnRecepcao', 'accordionTriagem', 'accordionEnfermaria', 'accordionInternamento', 'accordionConsultorio', 'accordionLaboratorio', 'accordionRaioX'])" class="space-y-1">
-                        <button @click="toggleMenu('hospitalar')" class="w-full flex items-center px-3 py-2 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">
-                            <Hospital class="w-4 h-4 mr-3 opacity-80" />
+                        <button @click="toggleMenu('hospitalar')" :class="showingSidebar ? 'px-3 justify-start' : 'px-0 justify-center'" class="w-full flex items-center py-2 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">
+                            <Hospital :class="showingSidebar ? 'mr-3' : 'mr-0'" class="w-4 h-4 opacity-80" />
                             <span v-if="showingSidebar" class="flex-grow text-left uppercase">Hospitalar</span>
                             <ChevronDown v-if="showingSidebar" :class="openMenus.hospitalar ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" />
                         </button>
@@ -245,8 +255,8 @@ const toggleMenu = (menu) => {
 
                     <!-- Gestão de Stock Dropdown -->
                     <div v-if="canSeeModule(['accordionProdutos', 'accordionDepositos', 'accordionEntrada', 'accordionBaixa', 'accordionDocumentos', 'accordionRelatorios'])" class="space-y-1">
-                        <button @click="toggleMenu('stock')" class="w-full flex items-center px-3 py-2 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">
-                            <Boxes class="w-4 h-4 mr-3 opacity-80" />
+                        <button @click="toggleMenu('stock')" :class="showingSidebar ? 'px-3 justify-start' : 'px-0 justify-center'" class="w-full flex items-center py-2 text-xs font-bold rounded-lg hover:bg-white/10 transition-colors">
+                            <Boxes :class="showingSidebar ? 'mr-3' : 'mr-0'" class="w-4 h-4 opacity-80" />
                             <span v-if="showingSidebar" class="flex-grow text-left uppercase">Gestão de Stock</span>
                             <ChevronDown v-if="showingSidebar" :class="openMenus.stock ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" />
                         </button>
@@ -275,11 +285,19 @@ const toggleMenu = (menu) => {
             </div>
 
             <!-- Footer Sidebar -->
-            <div class="p-4 bg-blue-900/20 text-center">
-                 <button @click="showingSidebar = !showingSidebar" class="p-2 hover:bg-white/10 rounded-full transition-all">
-                    <ChevronLeft v-if="showingSidebar" class="w-5 h-5" />
-                    <ChevronRight v-else class="w-5 h-5" />
-                 </button>
+            <div class="mt-auto border-t border-white/10">
+                <div v-if="showingSidebar" class="p-4 flex flex-col items-center">
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-2">Clínica</p>
+                    <div v-if="empresa?.logo" class="mb-3 bg-white p-2 rounded-lg shadow-inner">
+                        <img :src="empresa.logo" class="h-10 w-auto object-contain mx-auto" alt="Logo Clínica" />
+                    </div>
+                    <p class="text-xs font-black text-white uppercase tracking-tight text-center leading-tight">
+                        {{ empresa?.nome || 'EMUTE' }}
+                    </p>
+                </div>
+                <div class="p-4 bg-blue-900/20 text-center hidden">
+                     <!-- Botão movido para o topo -->
+                </div>
             </div>
         </aside>
 

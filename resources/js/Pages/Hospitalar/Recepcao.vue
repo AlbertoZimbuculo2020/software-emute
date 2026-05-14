@@ -483,7 +483,7 @@ onUnmounted(() => {
                                                 </span>
                                             </td>
                                             <td class="px-4 py-3 last:rounded-r-2xl border-y border-r border-transparent text-right">
-                                                <div class="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div class="flex justify-end gap-1.5 transition-opacity">
                                                     <button v-if="agenda.Situacao === 'Agendada'" @click="enviarParaTriagem(agenda)" class="p-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-lg transition-all shadow-sm" title="Enviar para Triagem">
                                                         <Activity class="w-3.5 h-3.5" />
                                                     </button>
