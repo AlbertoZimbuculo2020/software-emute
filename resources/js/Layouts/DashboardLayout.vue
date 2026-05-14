@@ -321,11 +321,6 @@ const clinicData = computed(() => usePage().props.clinicData);
                         </span>
                         <span class="font-bold tracking-wide uppercase text-[10px]">Online</span>
                     </div>
-                    <span class="hidden sm:inline bg-gray-100 px-2 py-1 rounded-md text-[10px] font-bold text-gray-600 tracking-wider">v1.0.0</span>
-                    <div class="hidden lg:flex items-center space-x-4 border-l border-gray-200 pl-4">
-                        <Link href="#" class="hover:text-blue-600 transition-colors flex items-center"><Settings class="w-3.5 h-3.5 mr-1.5"/> Servidor</Link>
-                        <Link href="#" class="hover:text-blue-600 transition-colors flex items-center"><ArrowUpFromLine class="w-3.5 h-3.5 mr-1.5"/> Atualizações</Link>
-                    </div>
                 </div>
 
                 <!-- Direita: Perfil e Ações -->
@@ -336,8 +331,11 @@ const clinicData = computed(() => usePage().props.clinicData);
                     
                     <!-- User Dropdown/Pill -->
                     <div class="flex items-center bg-white border border-gray-200 rounded-full p-1 pr-4 shadow-sm hover:shadow-md transition-all cursor-pointer group">
-                        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white shadow-inner mr-3 group-hover:scale-105 transition-transform">
-                            <span class="text-xs font-bold">{{ (user.NOME_UTILIZADOR || user.name || 'E').charAt(0).toUpperCase() }}</span>
+                        <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-inner mr-3 group-hover:scale-105 transition-transform overflow-hidden border border-slate-100">
+                            <img v-if="clinicData?.logo" :src="clinicData.logo" class="w-full h-full object-contain p-1" alt="Logo" />
+                            <div v-else class="w-full h-full bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white">
+                                <span class="text-xs font-bold">{{ (user.NOME_UTILIZADOR || user.name || 'E').charAt(0).toUpperCase() }}</span>
+                            </div>
                         </div>
                         <div class="hidden sm:flex flex-col justify-center">
                             <span class="text-xs font-bold text-gray-700 leading-tight truncate max-w-[100px]">{{ user.NOME_UTILIZADOR || user.name || 'EMUTE' }}</span>
