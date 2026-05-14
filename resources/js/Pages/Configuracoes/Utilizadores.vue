@@ -126,6 +126,8 @@ const submit = () => {
 
     if (editingId.value) {
         form.put(route('configuracoes.utilizadores.update', editingId.value), {
+            preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
                 isModalOpen.value = false;
                 form.reset();
@@ -135,6 +137,8 @@ const submit = () => {
         });
     } else {
         form.post(route('configuracoes.utilizadores.store'), {
+            preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
                 isModalOpen.value = false;
                 form.reset();

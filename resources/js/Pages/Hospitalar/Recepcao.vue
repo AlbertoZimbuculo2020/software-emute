@@ -6,7 +6,7 @@ import axios from 'axios';
 import { 
     Search, UserPlus, Plus, ClipboardList, Stethoscope, 
     Calendar, MousePointer2, RotateCcw, FileText, Activity, 
-    CreditCard, Users, User, ChevronDown, Check, X
+    CreditCard, Users, User, ChevronDown, Check, X, Printer, Download
 } from 'lucide-vue-next';
 import { watch } from 'vue';
 import debounce from 'lodash/debounce';
@@ -152,6 +152,7 @@ const admitirPaciente = (situacao = 'Agendada') => {
     form.situacao = situacao;
 
     form.post(route('hospitalar.recepcao.store'), {
+        preserveScroll: true,
         onSuccess: () => {
             showNotification(`Paciente ${situacao === 'Triagem' ? 'enviado para triagem' : 'admitido'} com sucesso!`);
             limparForm();
@@ -493,6 +494,18 @@ onUnmounted(() => {
                                                     })" class="p-1.5 bg-white text-slate-600 hover:bg-blue-600 hover:text-white rounded-lg transition-all shadow-sm border border-slate-200" title="Editar">
                                                         <FileText class="w-3.5 h-3.5" />
                                                     </button>
+                                                    <a :href="route('hospitalar.consultorio.imprimir.ficha', agenda.Codigo)" 
+                                                       target="_blank"
+                                                       class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-all shadow-sm border border-slate-200" 
+                                                       title="Imprimir Ficha Médica">
+                                                        <Printer class="w-3.5 h-3.5" />
+                                                    </a>
+                                                    <a :href="route('hospitalar.consultorio.imprimir.ficha', { id: agenda.Codigo, download: 1 })" 
+                                                       target="_blank"
+                                                       class="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all shadow-sm border border-slate-200" 
+                                                       title="Baixar Ficha (PDF)">
+                                                        <Download class="w-3.5 h-3.5" />
+                                                    </a>
                                                 </div>
                                             </td>
                                         </tr>

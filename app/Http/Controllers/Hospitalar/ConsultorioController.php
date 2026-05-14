@@ -378,14 +378,11 @@ class ConsultorioController extends Controller
         $view = 'pdf.ficha_medica';
         $data = compact('paciente', 'triagem', 'exames', 'receita', 'empresa', 'idade', 'medicina');
 
-        if (request('modo') === 'economico') {
-            $data['is_economico'] = true;
-            $data['is_duplicate'] = request('duplicado') !== '0';
-            $data['original_view'] = $view;
-            $data['data'] = $data;
-            return view('pdf.layout_economico', $data);
+        if (request('download') === '1') {
+            $pdf = Pdf::loadView($view, $data);
+            return $pdf->setPaper('a4')->download('Ficha_Medica_' . $paciente->PacienteNome . '.pdf');
         }
-        
+
         return view($view, $data);
     }
 

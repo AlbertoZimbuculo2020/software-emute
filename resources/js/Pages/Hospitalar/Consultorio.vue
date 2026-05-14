@@ -5,7 +5,7 @@ import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import axios from 'axios';
 import { 
     Users, Search, Activity, History, Clock,
-    Weight, Thermometer, HeartPulse, ClipboardList, Stethoscope, Pill, Printer, User, Camera,
+    Weight, Thermometer, HeartPulse, ClipboardList, Stethoscope, Pill, Printer, User, Camera, Download,
     ChevronDown, Save, Info, ChevronRight, Plus, Trash2, X, CheckCircle, AlertCircle, FileText, 
     SendHorizontal, BedDouble, UserRoundCog, ArrowRightLeft, Database, Building2, Settings2, Heart
 } from 'lucide-vue-next';
@@ -442,6 +442,11 @@ const visualizarRelatorio = (codigoAgenda) => {
     window.open(route('hospitalar.consultorio.imprimir.ficha', codigoAgenda), '_blank');
 };
 
+const baixarRelatorio = (codigoAgenda) => {
+    if (!codigoAgenda) return;
+    window.open(route('hospitalar.consultorio.imprimir.ficha', { id: codigoAgenda, download: 1 }), '_blank');
+};
+
 const calcularIdadeFormatoDesktop = (dataNascimento) => {
     if (!dataNascimento) return 'N/D';
     const birthDate = new Date(dataNascimento);
@@ -846,6 +851,9 @@ const changeFontSize = (type) => {
                         <button @click="imprimirDadosClinico" class="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-all tooltip" title="Imprimir Ficha">
                             <Printer class="w-5 h-5" />
                         </button>
+                        <button v-if="selectedPaciente" @click="baixarRelatorio(selectedPaciente.Codigo)" class="p-2 hover:bg-slate-100 rounded-lg text-emerald-600 transition-all tooltip" title="Baixar PDF">
+                            <Download class="w-5 h-5" />
+                        </button>
                         <button class="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-all">
                             <settings-2 class="w-5 h-5" />
                         </button>
@@ -1166,9 +1174,16 @@ const changeFontSize = (type) => {
                     <div class="grid grid-cols-1 gap-2">
                         <button @click="imprimirDadosClinico(); showDocumentosModal = false" class="w-full text-left p-3 border border-slate-200 hover:bg-blue-50 rounded flex items-center gap-3 transition-all group bg-white">
                             <FileText class="w-5 h-5 text-blue-600" />
-                            <div class="flex flex-col">
+                            <div class="flex-grow flex flex-col">
                                 <span class="font-black text-slate-700 text-[11px] uppercase">Ficha Médica Geral</span>
-                                <span class="text-[9px] text-slate-400">Relatório completo da consulta atual</span>
+                                <span class="text-[9px] text-slate-400">Visualizar/Imprimir relatório completo</span>
+                            </div>
+                        </button>
+                        <button @click="baixarRelatorio(selectedPaciente.Codigo); showDocumentosModal = false" class="w-full text-left p-3 border border-slate-200 hover:bg-emerald-50 rounded flex items-center gap-3 transition-all group bg-white">
+                            <Download class="w-5 h-5 text-emerald-600" />
+                            <div class="flex-grow flex flex-col">
+                                <span class="font-black text-slate-700 text-[11px] uppercase">Baixar em PDF</span>
+                                <span class="text-[9px] text-slate-400">Download directo do arquivo PDF</span>
                             </div>
                         </button>
                         <button @click="gerarJustificativo(); showDocumentosModal = false" class="w-full text-left p-3 border border-slate-200 hover:bg-blue-50 rounded flex items-center gap-3 transition-all group bg-white">
