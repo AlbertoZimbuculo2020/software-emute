@@ -180,6 +180,20 @@ const examesList = computed(() => {
     return result;
 });
 
+// Pagination for Exams
+const exameCurrentPage = ref(1);
+const exameItemsPerPage = 5;
+const totalPagesExames = computed(() => Math.ceil(examesList.value.length / exameItemsPerPage));
+const paginatedExamesList = computed(() => {
+    const start = (exameCurrentPage.value - 1) * exameItemsPerPage;
+    return examesList.value.slice(start, start + exameItemsPerPage);
+});
+
+watch([activeExamFilter, searchExameQuery], () => {
+    exameCurrentPage.value = 1;
+});
+
+
 const notification = ref({ show: false, message: '', type: 'success' });
 const showNotification = (message, type = 'success') => {
     notification.value = { show: true, message, type };
@@ -962,7 +976,7 @@ const changeFontSize = (type) => {
                             <input v-model="searchExameQuery" placeholder="Buscar exame..." class="w-full text-[9px] p-1 border border-slate-300 rounded focus:border-blue-500 outline-none font-bold" />
                         </div>
                         <div class="flex-grow overflow-y-auto custom-scrollbar p-1">
-                            <div v-for="ex in examesList" :key="ex.id" class="flex items-center justify-between p-1.5 border-b border-slate-200 hover:bg-slate-100 group">
+                            <div v-for="ex in paginatedExamesList" :key="ex.id" class="flex items-center justify-between p-1.5 border-b border-slate-200 hover:bg-slate-100 group">
                                 <div class="flex items-center gap-2 overflow-hidden">
                                     <input v-if="!ex.isRequested" type="checkbox" :value="ex.id" v-model="selectedExams" class="w-3 h-3 text-blue-600 rounded" />
                                     <CheckCircle v-else class="w-3 h-3 text-emerald-500 shrink-0" />
@@ -973,6 +987,19 @@ const changeFontSize = (type) => {
                                     <button v-if="ex.isRequested" @click="selectedExameToLancar = ex; showLancarResultadosModal = true" class="text-blue-600 font-black text-[8px] uppercase hover:underline">Lançar</button>
                                     <button v-if="ex.isRequested" @click="removerExameSolicitado(ex)" class="text-red-500 opacity-0 group-hover:opacity-100"><Trash2 class="w-3 h-3" /></button>
                                 </div>
+                            </div>
+                            
+                            <!-- Pagination Controls -->
+                            <div v-if="totalPagesExames > 1" class="flex items-center justify-between p-2 mt-auto border-t border-slate-200 bg-white shadow-inner">
+                                <button @click="exameCurrentPage--" :disabled="exameCurrentPage === 1" class="p-1 rounded hover:bg-slate-100 disabled:opacity-30 transition-colors">
+                                    <ChevronLeft class="w-3 h-3 text-slate-600" />
+                                </button>
+                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
+                                    Página {{ exameCurrentPage }} de {{ totalPagesExames }}
+                                </span>
+                                <button @click="exameCurrentPage++" :disabled="exameCurrentPage >= totalPagesExames" class="p-1 rounded hover:bg-slate-100 disabled:opacity-30 transition-colors">
+                                    <ChevronRight class="w-3 h-3 text-slate-600" />
+                                </button>
                             </div>
                         </div>
                         <div class="p-1 grid grid-cols-2 gap-1 bg-slate-100 shrink-0 border-t border-slate-300">
