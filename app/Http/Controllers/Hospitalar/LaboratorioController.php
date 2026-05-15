@@ -71,6 +71,7 @@ class LaboratorioController extends Controller
         $exames = DB::table('tb_resultado_exame')
             ->leftJoin('tb_exames', 'tb_resultado_exame.CodExame', '=', 'tb_exames.Codigo')
             ->where('tb_resultado_exame.IdAgenda', $idAgenda)
+            ->where('tb_resultado_exame.Estado', '!=', 'Removido')
             ->select(
                 'tb_resultado_exame.*',
                 'tb_exames.Filhos as MetaFilhos',

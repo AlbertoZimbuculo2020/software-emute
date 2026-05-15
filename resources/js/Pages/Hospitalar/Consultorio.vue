@@ -486,7 +486,6 @@ const filteredAguardando = computed(() => {
 });
 
 const selecionarPaciente = async (paciente, readOnly = false) => {
-    console.log("Paciente selecionado:", paciente);
     // If it's already selected, don't reload unless force
     if (selectedPaciente.value?.Codigo === paciente.Codigo && !readOnly) return;
 
@@ -574,9 +573,7 @@ const salvarConsultaSilenciosa = async () => {
     
     try {
         await axios.post(route('hospitalar.consultorio.store'), form.data());
-        console.log("Consulta salva silenciosamente...");
     } catch (e) {
-        console.warn("Falha no salvamento automático");
     }
 };
 

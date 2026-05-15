@@ -172,414 +172,314 @@ const removeMaterial = (id) => {
     <Head title="Laboratório & Diagnóstico" />
 
     <DashboardLayout>
-        <div class="h-[calc(100vh-4rem)] flex overflow-hidden bg-slate-50">
-            <!-- Sidebar: Lista de Espera -->
-            <div class="w-80 bg-white border-r flex flex-col shadow-sm">
-                <div class="p-4 border-b bg-slate-50/50">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                            <Clock class="w-5 h-5 text-blue-600" />
-                            Fila de Espera
-                        </h2>
-                        <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
-                            {{ aguardando.length }}
-                        </span>
+        <!-- Toast Notification -->
+        <Transition enter-active-class="duration-300 ease-out" enter-from-class="translate-y-4 opacity-0" enter-to-class="translate-y-0 opacity-100" leave-active-class="duration-200 ease-in" leave-to-class="translate-y-4 opacity-0">
+            <div v-if="notification.show" class="fixed bottom-10 right-10 z-[1000] bg-white px-6 py-4 rounded shadow-2xl border-l-4 flex items-center gap-4 min-w-[300px]" :class="notification.type === 'success' ? 'border-emerald-500' : 'border-red-500'">
+                <Check v-if="notification.type === 'success'" class="w-5 h-5 text-emerald-500" />
+                <X v-else class="w-5 h-5 text-red-500" />
+                <span class="text-[11px] font-bold text-slate-800 uppercase">{{ notification.message }}</span>
+            </div>
+        </Transition>
+
+        <div class="h-[calc(100vh-64px)] flex flex-col bg-slate-100 text-[11px] text-slate-800 overflow-hidden font-sans relative">
+            
+            <!-- Segmented Top Action Bar -->
+            <div class="flex items-center gap-2 p-2 bg-white border-b border-slate-200 shrink-0 h-[72px] shadow-sm z-10 justify-between">
+                <div class="flex flex-col mx-2 justify-center h-full">
+                    <div class="text-blue-600 font-black text-[9px] uppercase mb-1.5 tracking-widest flex items-center gap-1.5">
+                        <Microscope class="w-3 h-3" /> Diagnóstico em Andamento
                     </div>
-                    <div class="relative">
-                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input 
-                            type="text" 
-                            placeholder="Buscar paciente..."
-                            class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                        />
+                    <div class="flex items-center gap-4">
+                        <span class="font-black text-xs uppercase tracking-tighter text-slate-800">{{ activePatient?.PacienteNome || 'Nenhum paciente selecionado' }}</span>
+                        <span v-if="activePatient" class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">{{ activePatient.Codigo }}</span>
                     </div>
                 </div>
 
-                <div class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
-                    <div 
-                        v-for="p in aguardando" 
-                        :key="p.Id"
-                        @click="selectPatient(p)"
-                        class="p-3 rounded-xl border border-slate-100 cursor-pointer transition-all hover:shadow-md hover:border-blue-200 group"
-                        :class="[activePatient?.Codigo === p.Codigo ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-500/10' : 'bg-white']"
-                    >
-                        <div class="flex items-start justify-between mb-2">
-                            <span class="text-xs font-bold text-slate-400">#{{ p.Codigo }}</span>
-                            <span 
-                                class="px-2 py-0.5 rounded text-[10px] font-bold text-white uppercase tracking-wider"
-                                :class="getStatusColor(p.Situacao)"
-                            >
-                                {{ p.Situacao }}
-                            </span>
-                        </div>
-                        <h3 class="font-bold text-slate-800 truncate group-hover:text-blue-600 transition-colors">
-                            {{ p.PacienteNome }}
-                        </h3>
-                        <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                            <Stethoscope class="w-3 h-3" />
-                            {{ p.MedicoNome || 'Médico não atribuído' }}
-                        </p>
-                        <div class="flex items-center gap-2 mt-2">
-                            <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded flex items-center gap-1">
-                                <Calendar class="w-2.5 h-2.5" />
-                                {{ new Date(p.DataAgendamento).toLocaleDateString() }}
-                            </span>
-                        </div>
-                    </div>
+                <div class="flex gap-4 pr-4 h-full items-center">
+                    <button @click="printResult" :disabled="!activePatient" class="bg-slate-100 text-slate-700 px-4 py-2 font-black uppercase text-[10px] tracking-widest hover:bg-slate-200 transition-all rounded shadow-sm flex items-center gap-2 disabled:opacity-50">
+                        <Printer class="w-3.5 h-3.5" /> Imprimir
+                    </button>
 
-                    <div v-if="aguardando.length === 0" class="flex flex-col items-center justify-center h-40 text-slate-400 opacity-50">
-                        <Activity class="w-12 h-12 mb-2" />
-                        <p class="text-sm">Nenhum paciente aguardando</p>
-                    </div>
+                    <button @click="showMaterialModal = true" :disabled="!activePatient" class="bg-slate-100 text-slate-700 px-4 py-2 font-black uppercase text-[10px] tracking-widest hover:bg-slate-200 transition-all rounded shadow-sm flex items-center gap-2 disabled:opacity-50 border border-slate-200">
+                        <Package class="w-3.5 h-3.5" /> Lançar Insumos
+                    </button>
+
+                    <button @click="finalizeAtendimento" :disabled="!activePatient" class="bg-emerald-600 text-white px-6 py-2 font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all rounded shadow-sm flex items-center gap-2 disabled:opacity-50">
+                        <CheckCircle class="w-3.5 h-3.5" /> Finalizar Laboratório
+                    </button>
                 </div>
             </div>
 
-            <!-- Main Workspace -->
-            <div class="flex-1 overflow-y-auto custom-scrollbar relative p-6 bg-[#f8fafc]">
-                <div v-if="activePatient" class="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-300">
-                    <!-- Patient Profile Header -->
-                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/60 relative overflow-hidden">
-                        <div class="absolute top-0 right-0 p-8 opacity-5">
-                            <Microscope class="w-32 h-32" />
-                        </div>
-                        
-                        <div class="relative flex flex-wrap items-center gap-6">
-                            <div class="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-                                <User class="w-10 h-10" />
-                            </div>
-                            
-                            <div class="flex-1 min-w-[200px]">
-                                <div class="flex items-center gap-3 mb-1">
-                                    <h1 class="text-2xl font-black text-slate-900 tracking-tight">{{ activePatient.PacienteNome }}</h1>
-                                    <span v-if="activePatient.Seguradora" class="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded uppercase border border-indigo-100">
-                                        {{ activePatient.Seguradora }}
-                                    </span>
-                                </div>
-                                <div class="flex flex-wrap items-center gap-y-2 gap-x-4 text-sm text-slate-500">
-                                    <span class="flex items-center gap-1.5 font-medium">
-                                        <Calendar class="w-4 h-4 text-blue-500" />
-                                        {{ calculateAge(activePatient.DataNascimento) }} Anos ({{ new Date(activePatient.DataNascimento).toLocaleDateString() }})
-                                    </span>
-                                    <span class="flex items-center gap-1.5 font-medium">
-                                        <Activity class="w-4 h-4 text-blue-500" />
-                                        {{ activePatient.Genero }}
-                                    </span>
-                                    <span v-if="activePatient.Telefone" class="flex items-center gap-1.5 font-medium">
-                                        <Clock class="w-4 h-4 text-blue-500" />
-                                        {{ activePatient.Telefone }}
-                                    </span>
-                                </div>
-                            </div>
+            <!-- Dashboard Sub-Header (Blue Bar) -->
+            <div class="bg-slate-800 text-slate-300 h-8 flex items-center px-4 justify-between shrink-0 shadow-sm z-10 text-[10px]">
+                <div class="flex items-center gap-4">
+                    <span class="font-bold flex items-center gap-2"><Clock class="w-3 h-3 text-blue-400" /> Data: <span class="text-white">{{ new Date().toLocaleDateString('pt-PT') }}</span></span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="font-bold">Aguardando: <span class="text-emerald-400 font-black">{{ aguardando.length }} Pacientes</span></span>
+                    <div class="w-px h-3 bg-slate-600"></div>
+                    <span class="font-bold">Módulo: <span class="text-blue-400">Laboratório e Imagiologia</span></span>
+                </div>
+            </div>
 
-                            <div class="flex items-center gap-2">
-                                <button 
-                                    @click="printResult"
-                                    class="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-all text-sm"
-                                >
-                                    <Printer class="w-4 h-4" />
-                                    Imprimir
-                                </button>
-                                <button 
-                                    @click="finalizeAtendimento"
-                                    class="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all text-sm"
-                                >
-                                    <Check class="w-4 h-4" />
-                                    Finalizar Atendimento
-                                </button>
-                            </div>
-                        </div>
+            <!-- Main Layout -->
+            <div class="flex-1 flex overflow-hidden p-2 gap-2 relative z-0">
+                
+                <!-- LEFT COLUMN: FILA DE ESPERA -->
+                <div class="w-1/3 flex flex-col bg-white rounded shadow-sm border border-slate-300 overflow-hidden shrink-0">
+                    <div class="bg-slate-100/50 p-2 border-b border-slate-200 flex items-center justify-between shrink-0">
+                        <span class="font-black text-[10px] uppercase text-slate-500 tracking-widest">Pacientes Aguardando</span>
+                        <input type="text" placeholder="Pesquisar paciente..." class="border border-slate-200 rounded px-2 py-1 text-[9px] uppercase focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none w-40" />
                     </div>
-
-                    <!-- Tabs Navigation -->
-                    <div class="flex items-center gap-2 bg-white p-1 rounded-2xl border border-slate-200 shadow-sm w-fit">
-                        <button 
-                            @click="activeTab = 'exames'"
-                            :class="[activeTab === 'exames' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-50']"
-                            class="px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
-                        >
-                            <FlaskConical class="w-4 h-4" />
-                            Exames Ativos
-                        </button>
-                        <button 
-                            @click="activeTab = 'historico'"
-                            :class="[activeTab === 'historico' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-50']"
-                            class="px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
-                        >
-                            <History class="w-4 h-4" />
-                            Histórico
-                        </button>
-                        <button 
-                            @click="activeTab = 'materiais'"
-                            :class="[activeTab === 'materiais' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-50']"
-                            class="px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
-                        >
-                            <Package class="w-4 h-4" />
-                            Materiais Usados
-                        </button>
-                    </div>
-
-                    <!-- Tab Content: Exames Ativos -->
-                    <div v-if="activeTab === 'exames'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div 
-                            v-for="ex in activeExames" 
-                            :key="ex.Id"
-                            class="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden flex flex-col group"
-                        >
-                            <div class="p-5 border-b bg-slate-50/50 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
-                                        <Radiation v-if="ex.MetaTipo === 'RAIO X'" class="w-5 h-5" />
-                                        <Microscope v-else class="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h3 class="font-bold text-slate-800 tracking-tight">{{ ex.Descricao }}</h3>
-                                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{{ ex.MetaTipo || 'NORMAL' }}</span>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <span 
-                                        :class="[ex.Estado === 'Finalizado' ? 'bg-emerald-500' : 'bg-orange-500']"
-                                        class="w-2.5 h-2.5 rounded-full"
-                                    ></span>
-                                    <span class="text-[10px] font-black text-slate-500 uppercase">{{ ex.Estado }}</span>
-                                </div>
-                            </div>
-
-                            <div class="p-5 flex-1 space-y-4">
-                                <!-- Multi-field Inputs (Filhos) -->
-                                <div v-if="ex.MetaFilhos" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div v-for="campo in ex.MetaFilhos.split('|').filter(c => c.trim())" :key="campo" class="space-y-1.5">
-                                        <label class="text-[10px] font-black text-slate-500 uppercase px-1">{{ campo.trim() }}</label>
-                                        <input 
-                                            type="text" 
-                                            v-model="ex.resultadosForm[campo.trim()]"
-                                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                                            placeholder="Inserir resultado..."
-                                        />
-                                    </div>
-                                </div>
-
-                                <!-- Simple Result Input -->
-                                <div v-else class="space-y-1.5">
-                                    <label class="text-[10px] font-black text-slate-500 uppercase px-1">Resultado Final</label>
-                                    <textarea 
-                                        v-model="ex.Resultado"
-                                        rows="3"
-                                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none"
-                                        placeholder="Descreva o diagnóstico ou resultado..."
-                                    ></textarea>
-                                </div>
-
-                                <!-- Observations -->
-                                <div class="space-y-1.5">
-                                    <label class="text-[10px] font-black text-slate-500 uppercase px-1">Observações / Notas</label>
-                                    <input 
-                                        type="text" 
-                                        v-model="ex.Obs"
-                                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm italic"
-                                        placeholder="Opcional..."
-                                    />
-                                </div>
-                            </div>
-
-                            <div class="px-5 py-4 bg-slate-50/50 border-t flex items-center justify-between">
-                                <div class="flex items-center gap-1.5">
-                                    <span v-if="ex.MetaReferencia" class="text-[10px] font-medium text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200">
-                                        Ref: {{ ex.MetaReferencia }}
-                                    </span>
-                                </div>
-                                <button 
-                                    @click="saveExameResult(ex)"
-                                    :disabled="saving[ex.Id]"
-                                    class="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-blue-600 transition-all disabled:opacity-50"
-                                >
-                                    <Save v-if="!saving[ex.Id]" class="w-3.5 h-3.5" />
-                                    <Activity v-else class="w-3.5 h-3.5 animate-spin" />
-                                    {{ saving[ex.Id] ? 'Gravando...' : 'Gravar Resultado' }}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tab Content: Histórico -->
-                    <div v-if="activeTab === 'historico'" class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                    
+                    <div class="flex-1 overflow-auto bg-slate-50 relative custom-scrollbar">
                         <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-slate-50 border-b">
-                                    <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase">Data</th>
-                                    <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase">Exame</th>
-                                    <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase">Resultado</th>
-                                    <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase text-right">Ações</th>
+                            <thead class="bg-slate-200 sticky top-0 z-10 shadow-sm">
+                                <tr class="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                                    <th class="p-2 border-r border-slate-300">Agenda</th>
+                                    <th class="p-2 border-r border-slate-300">Paciente</th>
+                                    <th class="p-2 text-center w-10">...</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="h in historico" :key="h.Id" class="border-b last:border-0 hover:bg-slate-50 transition-colors">
-                                    <td class="px-6 py-4">
-                                        <div class="flex flex-col">
-                                            <span class="text-sm font-bold text-slate-700">{{ new Date(h.DataAgendamento).toLocaleDateString() }}</span>
-                                            <span class="text-[10px] text-slate-400 uppercase font-bold">{{ new Date(h.DataAgendamento).toLocaleTimeString() }}</span>
+                                <tr v-for="p in aguardando" :key="p.Id" @click="selectPatient(p)" 
+                                    class="border-b border-slate-200 cursor-pointer hover:bg-blue-50 transition-colors"
+                                    :class="activePatient?.Codigo === p.Codigo ? 'bg-blue-100/80 border-l-4 border-l-blue-500' : 'bg-white border-l-4 border-l-transparent'">
+                                    <td class="p-2 border-r border-slate-50 font-bold text-slate-700">
+                                        {{ p.Codigo }}
+                                        <div class="mt-1">
+                                            <span 
+                                                class="px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-wider text-white"
+                                                :class="getStatusColor(p.Situacao)"
+                                            >
+                                                {{ p.Situacao }}
+                                            </span>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4">
-                                        <span class="text-sm font-black text-blue-600">{{ h.Descricao }}</span>
+                                    <td class="p-2 border-r border-slate-50">
+                                        <div class="font-bold uppercase text-[10px] text-slate-800">{{ p.PacienteNome }}</div>
+                                        <div class="text-[8px] text-slate-500 font-bold uppercase mt-0.5">Médico: {{ p.MedicoNome || 'N/D' }}</div>
                                     </td>
-                                    <td class="px-6 py-4">
-                                        <p class="text-sm text-slate-600 truncate max-w-xs">{{ h.Resultado }}</p>
-                                    </td>
-                                    <td class="px-6 py-4 text-right">
-                                        <button class="p-2 text-slate-400 hover:text-blue-600 transition-colors">
-                                            <Printer class="w-4 h-4" />
-                                        </button>
-                                    </td>
+                                    <td class="p-2 text-center text-blue-600"><ChevronRight class="w-4 h-4 mx-auto" /></td>
                                 </tr>
-                                <tr v-if="historico.length === 0">
-                                    <td colspan="4" class="px-6 py-12 text-center text-slate-400 italic">Nenhum histórico encontrado para este paciente.</td>
+                                <tr v-if="aguardando.length === 0">
+                                    <td colspan="3" class="p-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nenhum paciente aguardando</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
+                </div>
 
-                    <!-- Tab Content: Materiais -->
-                    <div v-if="activeTab === 'materiais'" class="space-y-6">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-lg font-bold text-slate-800">Materiais Consumidos</h2>
-                            <button 
-                                @click="showMaterialModal = true"
-                                class="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
-                            >
-                                <Plus class="w-4 h-4" />
-                                Adicionar Material
-                            </button>
+                <!-- RIGHT COLUMN: EXAMES, MATERIAIS E RESULTADOS -->
+                <div v-if="activePatient" class="flex-1 flex gap-2 overflow-hidden">
+                    
+                    <!-- Middle Column: Exames Ativos -->
+                    <div class="flex-1 flex flex-col bg-white rounded shadow-sm border border-slate-300 overflow-hidden">
+                        <div class="bg-slate-100/50 p-2 border-b border-slate-200 flex items-center justify-between shrink-0">
+                            <span class="font-black text-[10px] uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
+                                <FlaskConical class="w-3 h-3" /> Exames Solicitados
+                            </span>
+                            <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-[9px] font-black">{{ activeExames.length }} Total</span>
+                        </div>
+                        
+                        <div class="flex-1 overflow-auto bg-slate-50 p-2 custom-scrollbar">
+                            <div class="grid grid-cols-1 gap-2">
+                                <div 
+                                    v-for="ex in activeExames" 
+                                    :key="ex.Id"
+                                    class="bg-white border border-slate-200 rounded shadow-sm overflow-hidden flex flex-col"
+                                >
+                                    <div class="p-2 border-b bg-slate-100/50 flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <Radiation v-if="ex.MetaTipo === 'RAIO X'" class="w-3.5 h-3.5 text-purple-600" />
+                                            <Microscope v-else class="w-3.5 h-3.5 text-blue-600" />
+                                            <div>
+                                                <div class="font-black uppercase text-[10px] text-slate-800">{{ ex.Descricao }}</div>
+                                                <div class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{{ ex.MetaTipo || 'GERAL' }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <CheckCircle v-if="ex.Estado === 'Finalizado'" class="w-3.5 h-3.5 text-emerald-500" />
+                                            <Activity v-else class="w-3.5 h-3.5 text-amber-500" />
+                                        </div>
+                                    </div>
+
+                                    <div class="p-2 space-y-2 bg-white">
+                                        <!-- Multi-field Inputs (Filhos) -->
+                                        <div v-if="ex.MetaFilhos" class="grid grid-cols-2 gap-2">
+                                            <div v-for="campo in ex.MetaFilhos.split('|').filter(c => c.trim())" :key="campo" class="flex flex-col">
+                                                <label class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{{ campo.trim() }}</label>
+                                                <input 
+                                                    type="text" 
+                                                    v-model="ex.resultadosForm[campo.trim()]"
+                                                    class="w-full border border-slate-200 rounded px-2 py-1 text-[10px] uppercase focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <!-- Simple Result Input -->
+                                        <div v-else class="flex flex-col">
+                                            <label class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Resultado</label>
+                                            <textarea 
+                                                v-model="ex.Resultado"
+                                                rows="2"
+                                                class="w-full border border-slate-200 rounded px-2 py-1 text-[10px] uppercase focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none resize-none bg-slate-50"
+                                            ></textarea>
+                                        </div>
+
+                                        <!-- Observations -->
+                                        <div class="flex flex-col">
+                                            <label class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Observações (Opcional)</label>
+                                            <input 
+                                                type="text" 
+                                                v-model="ex.Obs"
+                                                class="w-full border border-slate-200 rounded px-2 py-1 text-[10px] italic focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none bg-slate-50"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div class="px-2 py-1.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                                        <div class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                                            <span v-if="ex.MetaReferencia">Ref: {{ ex.MetaReferencia }}</span>
+                                        </div>
+                                        <button 
+                                            @click="saveExameResult(ex)"
+                                            :disabled="saving[ex.Id]"
+                                            class="bg-slate-800 text-white px-4 py-1 font-black uppercase text-[8px] tracking-widest hover:bg-slate-900 transition-all rounded shadow-sm disabled:opacity-50"
+                                        >
+                                            {{ saving[ex.Id] ? 'Gravando...' : 'Gravar' }}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div v-if="activeExames.length === 0" class="p-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    Nenhum exame solicitado ativo.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Histórico & Materiais -->
+                    <div class="w-80 flex flex-col gap-2 shrink-0 overflow-hidden">
+                        
+                        <!-- Historico -->
+                        <div class="h-1/2 flex flex-col bg-white rounded shadow-sm border border-slate-300 overflow-hidden">
+                            <div class="bg-slate-100/50 p-2 border-b border-slate-200 flex items-center justify-between shrink-0">
+                                <span class="font-black text-[10px] uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
+                                    <History class="w-3 h-3 text-slate-500" /> Histórico Recente
+                                </span>
+                            </div>
+                            <div class="flex-1 overflow-auto bg-slate-50 custom-scrollbar">
+                                <table class="w-full text-left border-collapse">
+                                    <tbody>
+                                        <tr v-for="h in historico" :key="h.Id" class="border-b border-slate-200 bg-white">
+                                            <td class="p-2">
+                                                <div class="font-black uppercase text-[9px] text-slate-700">{{ h.Descricao }}</div>
+                                                <div class="text-[8px] font-bold uppercase mt-0.5 text-slate-500 truncate w-48">{{ h.Resultado || 'S/ Resultado' }}</div>
+                                            </td>
+                                            <td class="p-2 text-right w-10">
+                                                <span class="text-[7px] font-black bg-slate-100 px-1 py-0.5 rounded text-slate-500">{{ new Date(h.DataAgendamento).toLocaleDateString() }}</span>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="historico.length === 0">
+                                            <td colspan="2" class="p-4 text-center text-[9px] font-bold text-slate-400 uppercase tracking-widest">Sem histórico</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
-                        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-50 border-b">
-                                        <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase">Descrição</th>
-                                        <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase">Qtd</th>
-                                        <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase">Preço Unit.</th>
-                                        <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase">Total</th>
-                                        <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase text-right">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="m in materiaisUsados" :key="m.Id" class="border-b last:border-0 hover:bg-slate-50">
-                                        <td class="px-6 py-4">
-                                            <span class="text-sm font-bold text-slate-700">{{ m.Descricao }}</span>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-black">{{ m.Quantidade }}</span>
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-slate-600">
-                                            {{ Number(m.Preco).toLocaleString('pt-AO', { style: 'currency', currency: 'AOA' }) }}
-                                        </td>
-                                        <td class="px-6 py-4 text-sm font-black text-slate-900">
-                                            {{ Number(m.Total).toLocaleString('pt-AO', { style: 'currency', currency: 'AOA' }) }}
-                                        </td>
-                                        <td class="px-6 py-4 text-right">
-                                            <button 
-                                                @click="removeMaterial(m.Id)"
-                                                class="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                                            >
-                                                <Trash2 class="w-4 h-4" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <!-- Materiais Usados -->
+                        <div class="h-1/2 flex flex-col bg-white rounded shadow-sm border border-slate-300 overflow-hidden">
+                            <div class="bg-slate-100/50 p-2 border-b border-slate-200 flex items-center justify-between shrink-0">
+                                <span class="font-black text-[10px] uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
+                                    <Package class="w-3 h-3 text-amber-600" /> Insumos Consumidos
+                                </span>
+                            </div>
+                            <div class="flex-1 overflow-auto bg-slate-50 custom-scrollbar">
+                                <table class="w-full text-left border-collapse">
+                                    <tbody>
+                                        <tr v-for="m in materiaisUsados" :key="m.Id" class="border-b border-slate-200 bg-white">
+                                            <td class="p-2">
+                                                <div class="font-black uppercase text-[9px] text-slate-700">{{ m.Descricao }}</div>
+                                                <div class="text-[8px] font-bold uppercase mt-0.5 text-slate-500">{{ m.Quantidade }}x | {{ Number(m.Total).toLocaleString('pt-AO', { style: 'currency', currency: 'AOA' }) }}</div>
+                                            </td>
+                                            <td class="p-2 text-right w-8">
+                                                <button @click="removeMaterial(m.Id)" class="text-slate-400 hover:text-red-500 transition-colors">
+                                                    <Trash2 class="w-3.5 h-3.5" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="materiaisUsados.length === 0">
+                                            <td colspan="2" class="p-4 text-center text-[9px] font-bold text-slate-400 uppercase tracking-widest">Nenhum insumo registado</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
+
                     </div>
                 </div>
 
                 <!-- Empty State -->
-                <div v-else class="h-full flex flex-col items-center justify-center text-slate-300">
-                    <div class="w-40 h-40 rounded-full bg-white flex items-center justify-center mb-6 shadow-xl shadow-slate-200/50">
-                        <Microscope class="w-20 h-20 text-slate-100" />
-                    </div>
-                    <h2 class="text-2xl font-black text-slate-400 tracking-tight">Painel de Diagnóstico</h2>
-                    <p class="text-slate-400/60 font-medium">Selecione um paciente na lista para iniciar os lançamentos</p>
+                <div v-else class="flex-1 flex flex-col items-center justify-center bg-white rounded shadow-sm border border-slate-300 p-12 text-center relative overflow-hidden">
+                    <Microscope class="w-16 h-16 text-slate-200 mb-4" />
+                    <h2 class="text-base font-black text-slate-400 uppercase tracking-[0.2em]">Painel Laboratorial</h2>
+                    <p class="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest">Selecione um paciente na fila para visualizar os exames solicitados e lançar os resultados</p>
                 </div>
+
             </div>
         </div>
 
         <!-- Material Selection Modal -->
-        <div v-if="showMaterialModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
-                <div class="p-8 border-b bg-slate-50/50 flex items-center justify-between">
-                    <div>
-                        <h3 class="text-xl font-black text-slate-900">Registrar Material Consumido</h3>
-                        <p class="text-sm text-slate-500">Selecione os reagentes ou insumos utilizados</p>
+        <Transition enter-active-class="duration-200 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="duration-150 ease-in" leave-to-class="opacity-0">
+            <div v-if="showMaterialModal" class="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+                <div class="bg-white rounded shadow-2xl w-full max-w-xl border border-slate-200 flex flex-col max-h-[85vh]">
+                    <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <h2 class="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                            <Package class="w-4 h-4 text-blue-600" /> Insumos & Reagentes Utilizados
+                        </h2>
+                        <button @click="showMaterialModal = false" class="text-slate-400 hover:text-slate-600 transition-all">
+                            <Plus class="w-5 h-5 rotate-45" />
+                        </button>
                     </div>
-                    <button @click="showMaterialModal = false" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
-                        <X class="w-6 h-6 text-slate-400" />
-                    </button>
-                </div>
-                
-                <div class="p-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                    <div class="grid grid-cols-1 gap-3">
-                        <div 
-                            v-for="mat in materiais" 
-                            :key="mat.CODIGO"
-                            @click="addMaterial(mat)"
-                            class="p-4 rounded-2xl border border-slate-100 hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-all flex items-center justify-between group"
-                        >
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors border">
-                                    <Package class="w-5 h-5" />
+                    
+                    <div class="p-4 overflow-y-auto space-y-4 custom-scrollbar bg-white">
+                        <div class="grid grid-cols-1 gap-1">
+                            <div 
+                                v-for="mat in materiais" 
+                                :key="mat.CODIGO"
+                                @click="addMaterial(mat)"
+                                class="p-3 border border-slate-100 hover:border-blue-500 hover:bg-blue-50 rounded cursor-pointer transition-all flex items-center justify-between group shadow-sm bg-white"
+                            >
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-slate-50 border border-slate-100 rounded flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors">
+                                        <Package class="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p class="font-black text-[10px] uppercase text-slate-800">{{ mat.DESCRICAO }}</p>
+                                        <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest">Cód: {{ mat.CODIGO }}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p class="font-bold text-slate-800">{{ mat.DESCRICAO }}</p>
-                                    <p class="text-xs text-slate-400 font-medium">Cód: {{ mat.CODIGO }}</p>
+                                <div class="text-right">
+                                    <p class="text-[10px] font-black text-slate-900">{{ Number(mat.PV).toLocaleString('pt-AO', { style: 'currency', currency: 'AOA' }) }}</p>
+                                    <span class="text-[8px] text-blue-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase">Adicionar</span>
                                 </div>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-sm font-black text-slate-900">{{ Number(mat.PV).toLocaleString('pt-AO', { style: 'currency', currency: 'AOA' }) }}</p>
-                                <span class="text-[10px] text-blue-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase">Clique para Adicionar</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Notification Toast -->
-        <div 
-            v-if="notification.show" 
-            class="fixed bottom-8 right-8 z-[100] animate-in slide-in-from-bottom-5 duration-300"
-        >
-            <div 
-                :class="[notification.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white']"
-                class="px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/10"
-            >
-                <Check v-if="notification.type === 'success'" class="w-5 h-5 text-emerald-400" />
-                <X v-else class="w-5 h-5 text-white" />
-                <span class="font-bold text-sm">{{ notification.message }}</span>
-            </div>
-        </div>
+        </Transition>
     </DashboardLayout>
 </template>
 
 <style scoped>
-.custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #e2e8f0;
-    border-radius: 10px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #cbd5e1;
-}
+.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 input[type="text"], textarea {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.animate-in {
-    animation-fill-mode: forwards;
 }
 </style>
