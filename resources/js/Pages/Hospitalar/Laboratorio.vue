@@ -258,7 +258,12 @@ const removeMaterial = (id) => {
                                     </td>
                                     <td class="p-2 border-r border-slate-50">
                                         <div class="font-bold uppercase text-[10px] text-slate-800">{{ p.PacienteNome }}</div>
-                                        <div class="text-[8px] text-slate-500 font-bold uppercase mt-0.5">Médico: {{ p.MedicoNome || 'N/D' }}</div>
+                                        <div class="text-[8px] text-slate-500 font-bold uppercase mt-0.5 flex items-center gap-2">
+                                            <span>Médico: {{ p.MedicoNome || 'N/D' }}</span>
+                                            <span v-if="p.TotalExames > 0" class="bg-blue-100 text-blue-600 px-1 py-0.5 rounded flex items-center gap-1 font-black">
+                                                <FlaskConical class="w-2.5 h-2.5" /> {{ p.TotalExames }} Exame(s)
+                                            </span>
+                                        </div>
                                     </td>
                                     <td class="p-2 text-center text-blue-600"><ChevronRight class="w-4 h-4 mx-auto" /></td>
                                 </tr>

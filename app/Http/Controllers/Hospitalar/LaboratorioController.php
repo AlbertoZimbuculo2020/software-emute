@@ -19,7 +19,8 @@ class LaboratorioController extends Controller
             ->select(
                 'tb_agendamento.*', 
                 'paciente.Nome as PacienteNome',
-                'medico.Nome as MedicoNome'
+                'medico.Nome as MedicoNome',
+                DB::raw('(SELECT COUNT(*) FROM tb_resultado_exame WHERE tb_resultado_exame.IdAgenda = tb_agendamento.Codigo AND tb_resultado_exame.Estado != \'Removido\') as TotalExames')
             )
             ->whereIn('tb_agendamento.Situacao', ['Laboratorio', 'RAIO X', 'Internado'])
             ->where('tb_agendamento.Estado', 'Ativo')
