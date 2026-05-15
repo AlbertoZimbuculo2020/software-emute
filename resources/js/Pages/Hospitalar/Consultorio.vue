@@ -137,9 +137,14 @@ const examesList = computed(() => {
     
     // If searching, we search everything in the catalog + requested
     if (term) {
+        const cleanResult = (res) => {
+            if (!res) return '';
+            return res.replace(/\|/g, ' / ').replace(/\s+/g, ' ').trim();
+        };
+
         const requested = examesSolicitados.value.map(e => ({
             id: 'sol_' + e.Id, dbId: e.Id, codigo: e.CodExame, nome: e.Descricao,
-            resultado: e.Resultado || '', obs: e.Obs || '', selected: false, isRequested: true,
+            resultado: cleanResult(e.Resultado), obs: e.Obs || '', selected: false, isRequested: true,
             categoria: e.Categoria || '', filhos: e.Filhos || ''
         }));
 
@@ -160,7 +165,8 @@ const examesList = computed(() => {
     if (activeExamFilter.value === 'SOLICITADOS') {
         result = examesSolicitados.value.map(e => ({
             id: 'sol_' + e.Id, dbId: e.Id, codigo: e.CodExame, nome: e.Descricao,
-            resultado: e.Resultado || '', obs: e.Obs || '', selected: false, isRequested: true,
+            resultado: e.Resultado ? e.Resultado.replace(/\|/g, ' / ').replace(/\s+/g, ' ').trim() : '', 
+            obs: e.Obs || '', selected: false, isRequested: true,
             categoria: e.Categoria || '', filhos: e.Filhos || ''
         }));
     } else if (activeExamFilter.value === 'LABORATORIO') {
@@ -573,6 +579,27 @@ const selecionarPaciente = async (paciente, readOnly = false, force = false) => 
         isLoading.value = false;
     }
 };
+
+onMounted(() => {
+    const interval = setInterval(async () => {
+        // Silently reload the waiting list
+        router.reload({ only: ['aguardando'], preserveState: true });
+        
+        // If a patient is being attended, silently refresh their exams to catch lab results
+        if (selectedPaciente.value && !isLoading.value && !isReadOnly.value) {
+            try {
+                const response = await axios.get(route('hospitalar.consultorio.paciente', selectedPaciente.value.Codigo));
+                if (response.data.exames_solicitados) {
+                    examesSolicitados.value = response.data.exames_solicitados;
+                }
+            } catch (e) {
+                console.error("Auto-refresh failed", e);
+            }
+        }
+    }, 15000); // 15 seconds
+
+    onUnmounted(() => clearInterval(interval));
+});
 
 // Silent auto-save logic
 let saveTimeout = null;

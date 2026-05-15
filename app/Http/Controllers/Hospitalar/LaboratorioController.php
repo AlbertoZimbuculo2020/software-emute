@@ -168,13 +168,15 @@ class LaboratorioController extends Controller
         }
 
         // Passo 5: Validação - Verificar se todos os exames foram preenchidos
+        // Ignoramos os exames removidos e focamos nos que ainda não estão 'Finalizado'
         $examesPendentes = DB::table('tb_resultado_exame')
-            ->where('Codigo', $idAgenda)
-            ->where('Estado', '<>', 'Finalizado')
+            ->where('IdAgenda', $idAgenda)
+            ->where('Estado', '!=', 'Finalizado')
+            ->where('Estado', '!=', 'Removido')
             ->count();
 
         if ($examesPendentes > 0) {
-            return redirect()->back()->with('error', 'Não é possível finalizar. Existem ' . $examesPendentes . ' exame(s) pendente(s) de resultado.');
+            return redirect()->back()->withErrors(['error' => 'Ainda existem ' . $examesPendentes . ' exame(s) pendente(s) de resultado para este paciente.']);
         }
 
         // Passo 5: Mudança de Estado do Paciente

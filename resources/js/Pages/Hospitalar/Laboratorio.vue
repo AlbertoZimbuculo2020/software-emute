@@ -7,7 +7,7 @@ import {
     Search, User, Calendar, Clock, Activity, 
     FileText, Check, X, FlaskConical, Stethoscope,
     ChevronRight, Save, Printer, Trash2, Plus, 
-    Microscope, Radiation, History, Package
+    Microscope, Radiation, History, Package, CheckCircle
 } from 'lucide-vue-next';
 import debounce from 'lodash/debounce';
 
