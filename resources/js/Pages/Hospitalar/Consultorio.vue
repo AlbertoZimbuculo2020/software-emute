@@ -774,7 +774,7 @@ const changeFontSize = (type) => {
     <Head title="Consultório Médico" />
 
     <DashboardLayout>
-        <div :style="{ fontSize: currentFontSize }" class="p-0 bg-slate-100 min-h-[calc(100vh-64px)] flex overflow-hidden font-sans relative">
+        <div :style="{ fontSize: currentFontSize }" class="p-0 bg-slate-100 min-h-[calc(100vh-64px)] flex font-sans relative">
             
             <!-- Sidebar: Lista de Espera -->
             <Transition 
