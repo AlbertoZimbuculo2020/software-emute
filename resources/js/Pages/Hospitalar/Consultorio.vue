@@ -503,14 +503,15 @@ const filteredAguardando = computed(() => {
     );
 });
 
-const selecionarPaciente = async (paciente, readOnly = false) => {
+const selecionarPaciente = async (paciente, readOnly = false, force = false) => {
     // If it's already selected, don't reload unless force
-    if (selectedPaciente.value?.Codigo === paciente.Codigo && !readOnly) return;
+    if (selectedPaciente.value?.Codigo === paciente.Codigo && !readOnly && !force) return;
 
     selectedPaciente.value = paciente;
     isLoading.value = true;
     isReadOnly.value = readOnly;
     activeTab.value = 1; // Reset to first tab
+    if (force) exameCurrentPage.value = 1; // Reset exam pagination on force reload
     
     const { notes, cids } = parsingHDA(paciente.HDA);
     hdaNotes.value = notes;
@@ -618,10 +619,11 @@ const solicitarExame = async (exame) => {
     try {
         await axios.post(route('hospitalar.consultorio.solicitar-exames'), {
             IdAgenda: selectedPaciente.value.Codigo,
-            exames: ['cat_' + exame.dbId || exame.id.replace('cat_', '')]
+            exames: ['cat_' + (exame.dbId || exame.id.toString().replace('cat_', ''))]
         });
         showNotification('Exame solicitado!');
-        selecionarPaciente(selectedPaciente.value);
+        await selecionarPaciente(selectedPaciente.value, false, true);
+        router.reload({ only: ['aguardando'] });
     } catch (e) {
         showNotification('Erro ao solicitar exame.', 'error');
     }
@@ -637,7 +639,8 @@ const removerExameSolicitado = async (exame) => {
             try {
                 await axios.post(route('hospitalar.consultorio.remover-exame'), { Id: exame.dbId });
                 showNotification('Exame removido com sucesso!');
-                selecionarPaciente(selectedPaciente.value);
+                await selecionarPaciente(selectedPaciente.value, false, true);
+                router.reload({ only: ['aguardando'] });
             } catch (e) {
                 showNotification(e.response?.data?.error || 'Erro ao remover exame.', 'error');
             }
@@ -719,10 +722,11 @@ const enviarExamesAoLaboratorio = () => {
     axios.post(route('hospitalar.consultorio.solicitar-exames'), {
         IdAgenda: selectedPaciente.value.Codigo,
         exames: catalogExams
-    }).then(() => {
+    }).then(async () => {
         showNotification('Exames enviados com sucesso!');
         selectedExams.value = [];
-        selecionarPaciente(selectedPaciente.value);
+        await selecionarPaciente(selectedPaciente.value, false, true);
+        router.reload({ only: ['aguardando'] });
     }).catch(err => {
         console.error(err);
         showNotification('Erro ao enviar exames ao laboratório.', 'error');
@@ -961,7 +965,7 @@ const changeFontSize = (type) => {
                     <div class="bg-slate-100 px-2 py-1.5 border-b border-slate-200 flex items-center justify-between">
                         <span class="font-black text-slate-700 uppercase text-[10px] tracking-widest pl-1">Exames / Serviços</span>
                         <div class="flex gap-1">
-                            <button @click="solicitarExame" class="bg-blue-600 text-white px-2 py-1 rounded text-[8px] font-black uppercase shadow">Solicitar</button>
+                            <button @click="enviarExamesAoLaboratorio" class="bg-blue-600 text-white px-2 py-1 rounded text-[8px] font-black uppercase shadow">Solicitar</button>
                             <button @click="imprimirRequisicao" class="bg-orange-500 text-white px-2 py-1 rounded text-[8px] font-black uppercase shadow">Imp.</button>
                         </div>
                     </div>

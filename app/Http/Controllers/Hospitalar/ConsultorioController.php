@@ -188,12 +188,43 @@ class ConsultorioController extends Controller
         $userId     = auth()->user()->id ?? 0;
 
         foreach ($exames as $ex) {
-            $exists = DB::table('tb_resultado_exame')
+            $existingExame = DB::table('tb_resultado_exame')
                 ->where('IdAgenda', $request->IdAgenda)
                 ->where('CodExame', $ex->Codigo)
-                ->exists();
+                ->first();
 
-            if (!$exists) {
+            if ($existingExame) {
+                if ($existingExame->Estado === 'Removido') {
+                    DB::table('tb_resultado_exame')
+                        ->where('Id', $existingExame->Id)
+                        ->update(['Estado' => 'Ativo', 'DataExame' => now()]);
+                    
+                    // Billing: Re-add to Carrinho if not present or deleted
+                    $hasBilling = DB::table('tb_carrinho_hospitalar')
+                        ->where('ID_AGENDA', $request->IdAgenda)
+                        ->where('CODIGO', $ex->Codigo)
+                        ->exists();
+                    
+                    if (!$hasBilling) {
+                        DB::table('tb_carrinho_hospitalar')->insert([
+                            'ID_ENTIDADE'    => $agenda->IdPaciente,
+                            'ID_AGENDA'      => $request->IdAgenda,
+                            'PRODUTO'        => $ex->IdProduto,
+                            'CODIGO'         => $ex->Codigo,
+                            'DESCRICAO'      => $ex->Descricao,
+                            'QUANTIDADE'     => 1,
+                            'PRECO'          => $ex->Valor ?? 0,
+                            'TOTAL'          => $ex->Valor ?? 0,
+                            'IVA'            => 0,
+                            'DESCONTO'       => 0,
+                            'ESTADO'         => 'N_PAGO',
+                            'TIPO'           => 'Exame',
+                            'ID_UTILIZADOR'  => $userId,
+                            'DATA_'          => now(),
+                        ]);
+                    }
+                }
+            } else {
                 DB::table('tb_resultado_exame')->insert([
                     'IdAgenda'   => $request->IdAgenda,
                     'Codigo'     => $request->IdAgenda,
@@ -242,6 +273,8 @@ class ConsultorioController extends Controller
         $exame = DB::table('tb_resultado_exame')->where('Id', $request->Id)->first();
         if (!$exame) return response()->json(['error' => 'Exame não encontrado'], 404);
         
+        $idAgenda = $exame->IdAgenda;
+
         // Check permissions
         if (auth()->user()->NOME_UTILIZADOR !== $exame->Utilizador && auth()->user()->ACESSO !== 'SIM') {
              return response()->json(['error' => 'Sem permissão para remover exames solicitados por outro utilizador.'], 403);
@@ -250,10 +283,23 @@ class ConsultorioController extends Controller
         DB::table('tb_resultado_exame')->where('Id', $request->Id)->update(['Estado' => 'Removido']);
         
         DB::table('tb_carrinho_hospitalar')
-            ->where('ID_AGENDA', $exame->IdAgenda)
+            ->where('ID_AGENDA', $idAgenda)
             ->where('CODIGO', $exame->CodExame)
             ->where('ESTADO', 'N_PAGO')
             ->delete();
+
+        // Se não restarem mais exames solicitados ativos, o paciente volta para o consultório
+        $restantes = DB::table('tb_resultado_exame')
+            ->where('IdAgenda', $idAgenda)
+            ->where('Estado', '!=', 'Removido')
+            ->count();
+
+        if ($restantes === 0) {
+            DB::table('tb_agendamento')
+                ->where('Codigo', $idAgenda)
+                ->where('Situacao', 'Laboratorio')
+                ->update(['Situacao' => 'Consultorio']);
+        }
 
         return response()->json(['message' => 'Exame removido com sucesso!']);
     }
