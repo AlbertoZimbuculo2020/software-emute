@@ -410,7 +410,7 @@
 @endif
 
 @if(!isset($only_content) && !isset($is_economico))
-    <button class="no-print no-print-btn" onclick="window.print()">IMPRIMIR RELATÓRIO</button>
+    <!-- O botão foi removido para garantir que o relatório impresso/PDF saia limpo -->
     <script>
         window.onload = function() {
             setTimeout(function() {

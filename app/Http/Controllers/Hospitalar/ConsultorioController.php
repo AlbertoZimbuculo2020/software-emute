@@ -59,11 +59,6 @@ class ConsultorioController extends Controller
             ->select('Codigo', 'Nome')
             ->get();
 
-        $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
-        if ($empresa && $empresa->IMAGEM) {
-            $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
-        }
-
         $catalogoCid = DB::table('tb_ciddez')
             ->where('ESTADO', 'Activado')
             ->select('codigo', 'Indicador', 'Descricao')
@@ -74,8 +69,7 @@ class ConsultorioController extends Controller
             'catalogoExames'  => $catalogoExames,
             'catalogoFarmacos'=> $catalogoFarmacos,
             'catalogoCid'     => $catalogoCid,
-            'listaMedicos'    => $listaMedicos,
-            'empresa'         => $empresa
+            'listaMedicos'    => $listaMedicos
         ]);
     }
     public function getWaitlist()
@@ -378,14 +372,11 @@ class ConsultorioController extends Controller
         $view = 'pdf.ficha_medica';
         $data = compact('paciente', 'triagem', 'exames', 'receita', 'empresa', 'idade', 'medicina');
 
-        if (request('modo') === 'economico') {
-            $data['is_economico'] = true;
-            $data['is_duplicate'] = request('duplicado') !== '0';
-            $data['original_view'] = $view;
-            $data['data'] = $data;
-            return view('pdf.layout_economico', $data);
+        if (request('download') === '1') {
+            $pdf = Pdf::loadView($view, $data);
+            return $pdf->setPaper('a4')->download('Ficha_Medica_' . $paciente->PacienteNome . '.pdf');
         }
-        
+
         return view($view, $data);
     }
 

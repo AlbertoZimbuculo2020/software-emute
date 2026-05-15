@@ -1,7 +1,7 @@
 <script setup>
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Pie, Bar } from 'vue-chartjs';
 import {
   Chart as ChartJS,
@@ -11,7 +11,10 @@ import {
   ArcElement,
   CategoryScale,
   LinearScale,
-  BarElement
+  BarElement,
+  PointElement,
+  LineElement,
+  Filler
 } from 'chart.js';
 import { 
     Users, 
@@ -24,11 +27,15 @@ import {
     CheckCircle2,
     Stethoscope,
     FileText,
-    TrendingUp
+    TrendingUp,
+    ChevronRight,
+    Search,
+    AlertCircle,
+    ArrowUpRight
 } from 'lucide-vue-next';
 import { usePage } from '@inertiajs/vue3';
 
-ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement);
+ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler);
 
 const page = usePage();
 const props = defineProps({
@@ -45,6 +52,9 @@ const props = defineProps({
     filtros: { type: Object, default: () => ({ start_date: '', end_date: '' }) }
 });
 
+const clinicData = computed(() => page.props.clinicData);
+const user = computed(() => page.props.auth.user);
+
 const can = (permission) => {
     const permissions = page.props.auth.permissions;
     return permissions.includes('*') || permissions.includes(permission);
@@ -52,7 +62,7 @@ const can = (permission) => {
 
 const startDate = ref(props.filtros.start_date);
 const endDate = ref(props.filtros.end_date);
-const activeTab = ref(can('dashConsultasAndamento') ? 'em_andamento' : 'realizadas'); // Tabs: 'em_andamento', 'realizadas'
+const activeTab = ref(can('dashConsultasAndamento') ? 'em_andamento' : 'realizadas');
 
 const applyFilters = () => {
     router.get(route('dashboard'), {
@@ -91,15 +101,46 @@ const pieChartData = computed(() => {
         labels: props.statusStats.map(s => s.label),
         datasets: [{
             data: props.statusStats.map(s => s.count),
-            backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#14B8A6', '#F43F5E'],
-            hoverOffset: 4
+            backgroundColor: [
+                '#3B82F6', // Blue
+                '#10B981', // Green
+                '#F59E0B', // Orange
+                '#6366F1', // Indigo
+                '#EC4899', // Pink
+                '#8B5CF6', // Violet
+                '#F43F5E'  // Rose
+            ],
+            hoverOffset: 15,
+            borderWidth: 2,
+            borderColor: '#ffffff'
         }]
     };
 });
 
 const pieChartOptions = {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '65%',
+    plugins: { 
+        legend: { 
+            position: 'bottom', 
+            labels: { 
+                boxWidth: 8, 
+                usePointStyle: true,
+                padding: 20,
+                font: { size: 10, weight: 'bold' },
+                color: '#64748b'
+            } 
+        },
+        tooltip: {
+            backgroundColor: '#1e293b',
+            titleFont: { size: 12, weight: 'bold' },
+            bodyFont: { size: 12 },
+            padding: 12,
+            cornerRadius: 10,
+            displayColors: true
+        }
+    }
 };
 
 // Bar Chart (Atividade da Semana)
@@ -107,258 +148,367 @@ const barChartData = computed(() => {
     return {
         labels: props.activityLabels.length > 0 ? props.activityLabels : ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
         datasets: [{
-            label: 'Acessos/Atividade',
+            label: 'Atividade',
             data: props.activityData.length > 0 ? props.activityData : [0, 0, 0, 0, 0, 0, 0],
-            backgroundColor: '#60A5FA',
-            borderRadius: 4
+            backgroundColor: (context) => {
+                const chart = context.chart;
+                const {ctx, chartArea} = chart;
+                if (!chartArea) return null;
+                const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                gradient.addColorStop(0, '#3b82f620');
+                gradient.addColorStop(1, '#3b82f6');
+                return gradient;
+            },
+            borderRadius: 8,
+            hoverBackgroundColor: '#2563eb'
         }]
     };
 });
 
 const barChartOptions = {
-    responsive: true, maintainAspectRatio: false,
-    scales: { y: { display: false }, x: { grid: { display: false } } },
-    plugins: { legend: { display: false } }
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: { 
+        y: { 
+            display: true,
+            grid: { display: false },
+            ticks: { color: '#94a3b8', font: { size: 10 } }
+        }, 
+        x: { 
+            grid: { display: false },
+            ticks: { color: '#94a3b8', font: { size: 10, weight: 'bold' } }
+        } 
+    },
+    plugins: { 
+        legend: { display: false },
+        tooltip: {
+            backgroundColor: '#1e293b',
+            padding: 12,
+            cornerRadius: 10
+        }
+    }
 };
 
 const getStatusColor = (status) => {
     switch (status) {
-        case 'Agendada': return 'bg-blue-100 text-blue-700';
-        case 'Triagem': return 'bg-purple-100 text-purple-700';
-        case 'Consultorio': return 'bg-orange-100 text-orange-700';
-        case 'Laboratorio': return 'bg-indigo-100 text-indigo-700';
-        case 'Enfermaria': return 'bg-emerald-100 text-emerald-700';
-        default: return 'bg-gray-100 text-gray-700';
+        case 'Agendada': return 'bg-blue-50 text-blue-600 border-blue-100';
+        case 'Triagem': return 'bg-purple-50 text-purple-600 border-purple-100';
+        case 'Consultorio': return 'bg-orange-50 text-orange-600 border-orange-100';
+        case 'Laboratorio': return 'bg-indigo-50 text-indigo-600 border-indigo-100';
+        case 'Enfermaria': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+        default: return 'bg-gray-50 text-gray-600 border-gray-100';
     }
 };
 </script>
 
 <template>
-    <Head title="Controle Operacional" />
+    <Head title="Dashboard Executivo" />
 
     <DashboardLayout>
-        
-        <!-- Filtros de Data -->
-        <div v-if="can('dashConsultasAndamento') || can('dashProdutividadeMedica') || can('dashVerResumo') || can('dashVerGraficos') || can('dashVerTopListas')" class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div class="flex items-center space-x-2 text-gray-500">
-                <Filter class="w-5 h-5 text-blue-500" />
-                <span class="text-xs font-black uppercase tracking-widest">Filtros Dinâmicos</span>
-            </div>
-            <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-                <div class="flex items-center gap-2 w-full sm:w-auto">
-                    <input type="date" v-model="startDate" class="flex-grow sm:flex-none px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" />
-                    <span class="text-gray-300 font-black">-</span>
-                    <input type="date" v-model="endDate" class="flex-grow sm:flex-none px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" />
-                </div>
-                <button @click="applyFilters" class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all hover:scale-105 active:scale-95">Filtrar</button>
-            </div>
-        </div>
+        <div class="space-y-6 pb-10">
+            
+            <!-- HEADER / WELCOME BANNER -->
+            <div class="relative overflow-hidden bg-white rounded-[2.5rem] border border-slate-200 p-8 shadow-sm">
+                <!-- Decorative elements -->
+                <div class="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl"></div>
+                <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl"></div>
 
-        <!-- ROW 1: Summary Cards -->
-        <div v-if="can('dashVerResumo') || can('dashConsultasAndamento')" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <div v-if="can('dashVerResumo')" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
-                <div>
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Consultas Período</p>
-                    <p class="text-2xl font-black text-gray-800 mt-1">{{ props.summary.totalConsultas }}</p>
-                </div>
-                <div class="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <CalendarCheck class="w-6 h-6" />
-                </div>
-            </div>
-            <div v-if="can('dashVerResumo')" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
-                <div>
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Exames Período</p>
-                    <p class="text-2xl font-black text-gray-800 mt-1">{{ props.summary.totalExames }}</p>
-                </div>
-                <div class="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Microscope class="w-6 h-6" />
-                </div>
-            </div>
-            <div v-if="can('dashVerResumo')" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
-                <div>
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pacientes Registados</p>
-                    <p class="text-2xl font-black text-gray-800 mt-1">{{ props.summary.totalPacientes }}</p>
-                </div>
-                <div class="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Users class="w-6 h-6" />
-                </div>
-            </div>
-            <div v-if="can('dashConsultasAndamento')" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer group">
-                <div>
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Consultas Em Andamento</p>
-                    <p class="text-2xl font-black text-orange-500 mt-1">{{ props.emAndamentoCount }}</p>
-                </div>
-                <div class="w-12 h-12 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <ActivitySquare class="w-6 h-6" />
-                </div>
-            </div>
-        </div>
+                <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div class="flex items-center gap-6">
+                        <div class="w-16 h-16 bg-blue-600 rounded-3xl flex items-center justify-center text-white shadow-xl shadow-blue-200 shrink-0">
+                            <TrendingUp class="w-8 h-8" />
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-black text-slate-900 tracking-tight leading-none">Olá, {{ user.NOME_UTILIZADOR || user.name }}</h2>
+                            <p class="text-slate-400 text-sm font-bold uppercase tracking-widest mt-2">
+                                Bem-vindo ao cockpit operacional da <span class="text-blue-600">{{ clinicData?.nome || 'EMUTE' }}</span>
+                            </p>
+                        </div>
+                    </div>
 
-        <!-- ROW 2: Charts -->
-        <div v-if="can('dashVerGraficos')" class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <!-- Pie Chart -->
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 lg:col-span-1 h-[320px] flex flex-col">
-                <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-gray-800 mb-4">Situação das Consultas</h3>
-                <div class="flex-grow relative">
-                    <Pie :data="pieChartData" :options="pieChartOptions" />
-                    <div v-if="props.statusStats.length === 0" class="absolute inset-0 flex items-center justify-center backdrop-blur-[2px]">
-                        <span class="text-xs font-bold text-gray-500 bg-white/80 px-3 py-1 rounded-full shadow-sm">Sem Dados</span>
+                    <div class="flex items-center gap-4">
+                        <div class="bg-slate-50 border border-slate-200 p-2 rounded-2xl flex items-center gap-4">
+                            <div class="flex flex-col pl-3">
+                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Período Selecionado</span>
+                                <span class="text-xs font-black text-slate-700 mt-1">
+                                    {{ formatDate(startDate) || 'Hoje' }} - {{ formatDate(endDate) || 'Hoje' }}
+                                </span>
+                            </div>
+                            <div class="h-8 w-px bg-slate-200"></div>
+                            <button @click="router.get(route('dashboard'))" class="p-2 bg-white text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all shadow-sm border border-slate-100">
+                                <Filter class="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Bar Chart -->
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 lg:col-span-2 h-[320px] flex flex-col">
-                <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-gray-800 mb-4">Atividade da Semana</h3>
-                <div class="flex-grow">
-                    <Bar :data="barChartData" :options="barChartOptions" />
+            <!-- ROW 1: Summary Cards -->
+            <div v-if="can('dashVerResumo') || can('dashConsultasAndamento')" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Total Consultas -->
+                <div v-if="can('dashVerResumo')" class="group relative bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-blue-500/10 transition-all cursor-pointer overflow-hidden">
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <CalendarCheck class="w-6 h-6" />
+                            </div>
+                            <span class="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-full uppercase tracking-widest">Consultas</span>
+                        </div>
+                        <p class="text-3xl font-black text-slate-900 leading-none">{{ props.summary.totalConsultas }}</p>
+                        <p class="text-xs font-bold text-slate-400 mt-2">Volume total no período</p>
+                        <div class="mt-4 flex items-center text-[10px] font-black text-emerald-500 uppercase tracking-tighter">
+                            <ArrowUpRight class="w-3 h-3 mr-1" /> Crescimento Estável
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Exames -->
+                <div v-if="can('dashVerResumo')" class="group relative bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 transition-all cursor-pointer overflow-hidden">
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Microscope class="w-6 h-6" />
+                            </div>
+                            <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full uppercase tracking-widest">Exames</span>
+                        </div>
+                        <p class="text-3xl font-black text-slate-900 leading-none">{{ props.summary.totalExames }}</p>
+                        <p class="text-xs font-bold text-slate-400 mt-2">Análises processadas</p>
+                        <div class="mt-4 flex items-center text-[10px] font-black text-blue-500 uppercase tracking-tighter">
+                            <ActivitySquare class="w-3 h-3 mr-1" /> Alta Produtividade
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pacientes -->
+                <div v-if="can('dashVerResumo')" class="group relative bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-emerald-500/10 transition-all cursor-pointer overflow-hidden">
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Users class="w-6 h-6" />
+                            </div>
+                            <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase tracking-widest">Pacientes</span>
+                        </div>
+                        <p class="text-3xl font-black text-slate-900 leading-none">{{ props.summary.totalPacientes }}</p>
+                        <p class="text-xs font-bold text-slate-400 mt-2">Base de dados ativa</p>
+                        <div class="mt-4 flex items-center text-[10px] font-black text-emerald-500 uppercase tracking-tighter">
+                            <CheckCircle2 class="w-3 h-3 mr-1" /> Retenção Positiva
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Em Andamento -->
+                <div v-if="can('dashConsultasAndamento')" class="group relative bg-slate-900 p-6 rounded-[2rem] shadow-xl shadow-slate-900/20 transition-all cursor-pointer overflow-hidden">
+                    <div class="absolute -top-12 -right-12 w-32 h-32 bg-orange-500/20 rounded-full blur-2xl group-hover:scale-125 transition-transform"></div>
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 bg-orange-500/10 text-orange-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform border border-orange-500/20">
+                                <ActivitySquare class="w-6 h-6" />
+                            </div>
+                            <span class="text-[10px] font-black text-orange-400 bg-orange-500/10 px-2 py-1 rounded-full uppercase tracking-widest border border-orange-500/20">Em Tempo Real</span>
+                        </div>
+                        <p class="text-4xl font-black text-white leading-none">{{ props.emAndamentoCount }}</p>
+                        <p class="text-xs font-bold text-slate-400 mt-2 uppercase tracking-tighter">Atendimentos Agora</p>
+                        <div class="mt-4 flex items-center gap-2">
+                             <div class="flex -space-x-2">
+                                 <div v-for="i in Math.min(3, props.emAndamentoCount)" :key="i" class="w-6 h-6 rounded-full border-2 border-slate-900 bg-orange-500 flex items-center justify-center text-[8px] font-black text-white">
+                                     {{ i }}
+                                 </div>
+                             </div>
+                             <span class="text-[9px] font-black text-orange-400 uppercase tracking-widest">Fila Ativa</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- ROW 3: Top 10 Lists & Combined Dynamic Card -->
-        <div v-if="can('dashVerTopListas') || can('dashConsultasAndamento') || can('dashProdutividadeMedica')" class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-6">
-            
-            <!-- TOP 10 Consultas -->
-            <div v-if="can('dashVerTopListas')" class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
-                <div class="p-5 border-b border-gray-50 flex items-center justify-between">
-                    <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-gray-800">TOP 10 Consultas Mais Marcadas</h3>
+            <!-- FILTERS DRAWER (Static for now, but styled) -->
+            <div v-if="can('dashVerResumo')" class="bg-slate-50/50 p-2 rounded-3xl border border-slate-100 flex items-center gap-2 max-w-fit mx-auto">
+                <input type="date" v-model="startDate" class="bg-white px-4 py-2 border-none rounded-2xl text-[10px] font-black text-slate-600 shadow-sm focus:ring-2 focus:ring-blue-500/20 outline-none" />
+                <div class="w-4 h-px bg-slate-300"></div>
+                <input type="date" v-model="endDate" class="bg-white px-4 py-2 border-none rounded-2xl text-[10px] font-black text-slate-600 shadow-sm focus:ring-2 focus:ring-blue-500/20 outline-none" />
+                <button @click="applyFilters" class="ml-2 px-6 py-2 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">Atualizar</button>
+            </div>
+
+            <!-- ROW 2: Charts & Top Stats -->
+            <div v-if="can('dashVerGraficos')" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Pie Chart Card -->
+                <div class="lg:col-span-4 bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm flex flex-col h-[450px]">
+                    <div class="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight">Status Operacional</h3>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Situação das Consultas</p>
+                        </div>
+                        <div class="p-2 bg-slate-50 rounded-xl">
+                            <PieChart class="w-4 h-4 text-slate-400" />
+                        </div>
+                    </div>
+                    <div class="flex-grow relative">
+                        <Pie :data="pieChartData" :options="pieChartOptions" />
+                        <!-- Donut Center text -->
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-12">
+                            <span class="text-3xl font-black text-slate-900">{{ props.summary.totalConsultas }}</span>
+                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex-grow p-6 overflow-y-auto custom-scrollbar">
-                    <div v-if="props.topConsultas.length > 0" class="w-full space-y-5">
-                        <div v-for="(consulta, index) in props.topConsultas" :key="index" class="space-y-1.5">
-                            <div class="flex justify-between items-end">
-                                <span class="text-[11px] font-bold text-gray-700">{{ consulta.label }}</span>
-                                <span class="text-[10px] font-black text-gray-500">{{ Math.round((consulta.count / maxConsultaCount) * 100) }}%</span>
+
+                <!-- Bar Chart Card -->
+                <div class="lg:col-span-8 bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm flex flex-col h-[450px]">
+                    <div class="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight">Atividade Semanal</h3>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Fluxo de atendimentos por dia</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <div class="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+                                 <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                                 <span class="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Tendência de Alta</span>
+                             </div>
+                        </div>
+                    </div>
+                    <div class="flex-grow">
+                        <Bar :data="barChartData" :options="barChartOptions" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROW 3: Detailed Lists -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- TOP Consultas -->
+                <div v-if="can('dashVerTopListas')" class="lg:col-span-4 bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm flex flex-col h-[480px]">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xs font-black text-slate-900 uppercase tracking-widest">Top Especialidades</h3>
+                        <span class="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">Ranking #10</span>
+                    </div>
+                    <div class="flex-grow overflow-y-auto custom-scrollbar pr-2 space-y-5">
+                         <div v-for="(consulta, index) in props.topConsultas" :key="index" class="group">
+                             <div class="flex justify-between items-center mb-1.5">
+                                 <span class="text-[11px] font-black text-slate-700 uppercase tracking-tight truncate max-w-[180px]">{{ consulta.label }}</span>
+                                 <span class="text-[10px] font-black text-slate-400 group-hover:text-blue-600 transition-colors">{{ consulta.count }}</span>
+                             </div>
+                             <div class="relative w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                 <div :style="{width: ((consulta.count / maxConsultaCount) * 100) + '%'}" class="absolute h-full bg-blue-600 rounded-full transition-all duration-1000 group-hover:shadow-[0_0_8px_rgba(37,99,235,0.4)]"></div>
+                             </div>
+                         </div>
+                         <div v-if="!props.topConsultas.length" class="h-full flex flex-col items-center justify-center text-slate-300">
+                             <AlertCircle class="w-10 h-10 mb-2 opacity-20" />
+                             <p class="text-[10px] font-black uppercase tracking-widest">Sem Registos</p>
+                         </div>
+                    </div>
+                </div>
+
+                <!-- Combined Activity Tab -->
+                <div v-if="can('dashConsultasAndamento') || can('dashProdutividadeMedica')" class="lg:col-span-8 bg-white rounded-[2.5rem] border border-slate-200 shadow-sm flex flex-col h-[480px] overflow-hidden">
+                    <!-- Custom Tabs -->
+                    <div class="flex p-2 bg-slate-50 border-b border-slate-100">
+                        <button 
+                            @click="activeTab = 'em_andamento'"
+                            :class="activeTab === 'em_andamento' ? 'bg-white text-orange-600 shadow-md shadow-orange-100' : 'text-slate-400 hover:text-orange-500'"
+                            class="flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all"
+                        >
+                            <Clock class="w-4 h-4" /> Em Andamento
+                            <span class="bg-orange-100 text-orange-600 w-5 h-5 flex items-center justify-center rounded-lg text-[9px]">{{ props.emAndamentoCount }}</span>
+                        </button>
+                        <button 
+                            @click="activeTab = 'realizadas'"
+                            :class="activeTab === 'realizadas' ? 'bg-white text-emerald-600 shadow-md shadow-emerald-100' : 'text-slate-400 hover:text-emerald-500'"
+                            class="flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all"
+                        >
+                            <CheckCircle2 class="w-4 h-4" /> Finalizadas
+                            <span class="bg-emerald-100 text-emerald-600 w-5 h-5 flex items-center justify-center rounded-lg text-[9px]">{{ props.realizadasLista.length }}</span>
+                        </button>
+                    </div>
+
+                    <div class="flex-grow overflow-y-auto p-8 custom-scrollbar bg-white">
+                        <!-- Content: Em Andamento -->
+                        <div v-show="activeTab === 'em_andamento'" class="space-y-4 animate-fadeIn">
+                            <div v-for="(consulta, index) in props.emAndamentoLista" :key="index" class="p-4 bg-white rounded-3xl border border-slate-100 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-100/50 transition-all group flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center shadow-inner">
+                                        <UserCheck class="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-black text-slate-800 uppercase tracking-tight">{{ consulta.Paciente }}</p>
+                                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mt-1">
+                                            <Stethoscope class="w-3 h-3" /> Dr. {{ consulta.Medico || 'Plantão' }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <span :class="getStatusColor(consulta.Situacao)" class="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border">
+                                        {{ consulta.Situacao }}
+                                    </span>
+                                    <ChevronRight class="w-4 h-4 text-slate-200 group-hover:text-orange-400 group-hover:translate-x-1 transition-all" />
+                                </div>
                             </div>
-                            <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                                <div :style="{width: ((consulta.count / maxConsultaCount) * 100) + '%'}" class="bg-blue-500 h-full rounded-full transition-all duration-1000"></div>
+                            <div v-if="!props.emAndamentoLista.length" class="h-64 flex flex-col items-center justify-center text-slate-300">
+                                <ActivitySquare class="w-16 h-16 mb-4 opacity-10" />
+                                <p class="text-[10px] font-black uppercase tracking-[0.3em]">Nenhum Atendimento Ativo</p>
+                            </div>
+                        </div>
+
+                        <!-- Content: Realizadas -->
+                        <div v-show="activeTab === 'realizadas'" class="space-y-4 animate-fadeIn">
+                             <div v-for="(consulta, index) in props.realizadasLista" :key="index" class="p-5 bg-white rounded-3xl border border-slate-100 hover:border-emerald-200 hover:shadow-lg transition-all group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-inner">
+                                            <CheckCircle2 class="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-black text-slate-800 uppercase tracking-tight">{{ consulta.Paciente }}</p>
+                                            <p class="text-[9px] font-bold text-slate-400 uppercase flex items-center gap-2 mt-1">
+                                                <CalendarCheck class="w-3 h-3" /> {{ formatDate(consulta.DataAgendamento) }} 
+                                                <div class="w-1 h-1 bg-slate-300 rounded-full"></div>
+                                                <Clock class="w-3 h-3" /> {{ formatTime(consulta.Hora) }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span class="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg uppercase border border-emerald-100">Finalizado</span>
+                                </div>
+                                <div class="p-3 bg-slate-50/50 rounded-2xl border border-slate-100/50 flex items-center gap-4">
+                                    <div class="flex-grow">
+                                        <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Diagnóstico / Resumo</p>
+                                        <p class="text-[10px] text-slate-600 font-medium italic line-clamp-1">{{ consulta.Resultado || 'Atendimento concluído sem intercorrências' }}</p>
+                                    </div>
+                                    <div class="shrink-0 text-right">
+                                        <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Médico</p>
+                                        <p class="text-[10px] font-black text-slate-700 uppercase">Dr. {{ (consulta.Medico || 'N/A').split(' ')[0] }}</p>
+                                    </div>
+                                </div>
+                             </div>
+                             <div v-if="!props.realizadasLista.length" class="h-64 flex flex-col items-center justify-center text-slate-300">
+                                <FileText class="w-16 h-16 mb-4 opacity-10" />
+                                <p class="text-[10px] font-black uppercase tracking-[0.3em]">Sem Histórico Recente</p>
                             </div>
                         </div>
                     </div>
-                    <div v-else class="w-full h-full flex flex-col items-center justify-center">
-                        <p class="text-xs text-gray-400 italic font-medium">Nenhuma consulta registada no período.</p>
-                    </div>
                 </div>
+
             </div>
-
-            <!-- TOP 10 Exames -->
-            <div v-if="can('dashVerTopListas')" class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
-                <div class="p-5 border-b border-gray-50 flex items-center justify-between">
-                    <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-gray-800">TOP 10 Exames Mais Solicitados</h3>
-                </div>
-                <div class="flex-grow p-6 overflow-y-auto custom-scrollbar">
-                     <div v-if="props.topExames.length > 0" class="space-y-3">
-                         <div v-for="(exame, index) in props.topExames" :key="index" class="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center space-x-3 transition-all hover:border-blue-200">
-                              <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 font-black text-xs">#{{ index + 1 }}</div>
-                              <div class="flex-grow overflow-hidden">
-                                  <p class="text-[10px] font-black text-gray-600 uppercase tracking-tighter truncate" :title="exame.label">{{ exame.label }}</p>
-                                  <p class="text-[9px] text-gray-400 font-medium">{{ exame.count }} Solicitações</p>
-                              </div>
-                         </div>
-                     </div>
-                     <div v-else class="w-full h-full flex flex-col items-center justify-center">
-                        <p class="text-xs text-gray-400 italic font-medium">Nenhum exame registado no período.</p>
-                     </div>
-                </div>
-            </div>
-
-            <!-- NEW COMBINED DYNAMIC CARD: Em Andamento & Realizadas -->
-            <div v-if="can('dashConsultasAndamento') || can('dashProdutividadeMedica')" class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[400px] overflow-hidden relative">
-                
-                <!-- TABS HEADER -->
-                <div class="flex border-b border-gray-100 relative z-10 bg-gray-50/50">
-                    <button 
-                        v-if="can('dashConsultasAndamento')"
-                        @click="activeTab = 'em_andamento'"
-                        :class="['flex-1 py-4 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all', activeTab === 'em_andamento' ? 'bg-white text-orange-600 border-b-2 border-orange-500 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.1)]' : 'text-gray-400 hover:bg-white hover:text-orange-500']">
-                        <Clock class="w-4 h-4" />
-                        Em Andamento
-                        <span class="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full text-[9px]">{{ props.emAndamentoCount }}</span>
-                    </button>
-                    <button 
-                        v-if="can('dashProdutividadeMedica')"
-                        @click="activeTab = 'realizadas'"
-                        :class="['flex-1 py-4 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all', activeTab === 'realizadas' ? 'bg-white text-emerald-600 border-b-2 border-emerald-500 shadow-[0_4px_10px_-4px_rgba(0,0,0,0.1)]' : 'text-gray-400 hover:bg-white hover:text-emerald-500']">
-                        <CheckCircle2 class="w-4 h-4" />
-                        Realizadas
-                        <span class="bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full text-[9px]">{{ props.realizadasLista.length }}</span>
-                    </button>
-                </div>
-
-                <!-- TABS CONTENT -->
-                <div class="flex-grow p-5 overflow-y-auto custom-scrollbar relative z-10 bg-white">
-                     
-                     <!-- TAB: EM ANDAMENTO -->
-                     <div v-if="can('dashConsultasAndamento')" v-show="activeTab === 'em_andamento'">
-                         <div v-if="props.emAndamentoLista.length > 0" class="space-y-3">
-                             <div v-for="(consulta, index) in props.emAndamentoLista" :key="index" class="p-3 border border-orange-100/60 rounded-xl hover:shadow-md hover:border-orange-200 transition-all bg-orange-50/20">
-                                  <div class="flex justify-between items-start mb-2">
-                                      <p class="text-[11px] font-black text-slate-700 uppercase tracking-tight">{{ consulta.Paciente }}</p>
-                                      <span :class="['text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider', getStatusColor(consulta.Situacao)]">{{ consulta.Situacao }}</span>
-                                  </div>
-                                  <p class="text-[10px] text-slate-500 font-medium flex items-center gap-1 mt-2">
-                                      <UserCheck class="w-3 h-3 text-slate-400" />
-                                      {{ consulta.Medico || 'Sem médico atribuído' }}
-                                  </p>
-                             </div>
-                         </div>
-                         <div v-else class="w-full py-16 flex flex-col items-center justify-center text-orange-700/40">
-                            <Clock class="w-12 h-12 mb-3 opacity-50" />
-                            <p class="text-xs font-black uppercase tracking-widest">Tudo Tranquilo</p>
-                            <p class="text-[10px] mt-1 font-medium">Não há consultas em andamento.</p>
-                         </div>
-                     </div>
-
-                     <!-- TAB: REALIZADAS (Lista Detalhada) -->
-                     <div v-if="can('dashProdutividadeMedica')" v-show="activeTab === 'realizadas'">
-                         <div v-if="props.realizadasLista.length > 0" class="space-y-4">
-                             <div v-for="(consulta, index) in props.realizadasLista" :key="index" class="p-4 border border-emerald-100 shadow-sm rounded-2xl hover:shadow-md hover:border-emerald-300 transition-all bg-emerald-50/10">
-                                  <div class="flex justify-between items-start mb-3">
-                                      <div>
-                                          <p class="text-[11px] font-black text-slate-800 uppercase tracking-tight">{{ consulta.Paciente }}</p>
-                                          <p class="text-[9px] text-slate-400 font-bold uppercase flex items-center gap-1">
-                                              <CalendarCheck class="w-3 h-3" /> {{ formatDate(consulta.DataAgendamento) }} 
-                                              <Clock class="w-3 h-3 ml-1" /> {{ formatTime(consulta.Hora) }}
-                                          </p>
-                                      </div>
-                                      <div class="text-right">
-                                          <span class="text-[9px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded uppercase tracking-widest">Finalizado</span>
-                                      </div>
-                                  </div>
-
-                                  <div class="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-emerald-100/50">
-                                      <div>
-                                          <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Médico Assistente</p>
-                                          <p class="text-[10px] font-black text-slate-700 uppercase flex items-center gap-1">
-                                              <UserCheck class="w-3 h-3 text-emerald-500" /> {{ consulta.Medico || 'N/A' }}
-                                          </p>
-                                      </div>
-                                      <div>
-                                          <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Resultado / Diagnóstico</p>
-                                          <p class="text-[10px] font-medium text-slate-600 line-clamp-2 italic" :title="consulta.Resultado">
-                                              {{ consulta.Resultado || 'Sem observações' }}
-                                          </p>
-                                      </div>
-                                  </div>
-                             </div>
-                         </div>
-                         <div v-else class="w-full py-16 flex flex-col items-center justify-center text-emerald-700/40">
-                            <CheckCircle2 class="w-12 h-12 mb-3 opacity-50" />
-                            <p class="text-xs font-black uppercase tracking-widest">Sem Atendimentos</p>
-                            <p class="text-[10px] mt-1 font-medium">Nenhum médico finalizou consultas.</p>
-                         </div>
-                     </div>
-
-                </div>
-            </div>
-
         </div>
     </DashboardLayout>
 </template>
 
 <style scoped>
-.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+/* Donut Chart Animation scale */
+canvas {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+canvas:hover {
+    transform: scale(1.02);
+}
 </style>

@@ -59,6 +59,14 @@ class HandleInertiaRequests extends Middleware
                 'message' => session('message'),
                 'error' => session('error'),
             ],
+            'clinicData' => (function() {
+                $empresa = \Illuminate\Support\Facades\DB::table('tb_empresa')->first();
+                if (!$empresa) return null;
+                return [
+                    'nome' => $empresa->DESCRICAO,
+                    'logo' => $empresa->IMAGEM ? 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM) : null
+                ];
+            })(),
         ];
     }
 }

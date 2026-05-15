@@ -5,7 +5,7 @@ import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import axios from 'axios';
 import { 
     Users, Search, Activity, History, Clock,
-    Weight, Thermometer, HeartPulse, ClipboardList, Stethoscope, Pill, Printer, User, Camera,
+    Weight, Thermometer, HeartPulse, ClipboardList, Stethoscope, Pill, Printer, User, Camera, Download,
     ChevronDown, Save, Info, ChevronRight, Plus, Trash2, X, CheckCircle, AlertCircle, FileText, 
     SendHorizontal, BedDouble, UserRoundCog, ArrowRightLeft, Database, Building2, Settings2, Heart
 } from 'lucide-vue-next';
@@ -16,7 +16,6 @@ const props = defineProps({
     catalogoFarmacos: { type: Array, default: () => [] },
     catalogoCid:      { type: Array, default: () => [] },
     listaMedicos:     { type: Array, default: () => [] },
-    empresa: Object,
     config: { type: Object, default: () => ({ triageEnabled: true, fontSize: '10px' }) }
 });
 
@@ -179,6 +178,20 @@ const examesList = computed(() => {
     }
     return result;
 });
+
+// Pagination for Exams
+const exameCurrentPage = ref(1);
+const exameItemsPerPage = 5;
+const totalPagesExames = computed(() => Math.ceil(examesList.value.length / exameItemsPerPage));
+const paginatedExamesList = computed(() => {
+    const start = (exameCurrentPage.value - 1) * exameItemsPerPage;
+    return examesList.value.slice(start, start + exameItemsPerPage);
+});
+
+watch([activeExamFilter, searchExameQuery], () => {
+    exameCurrentPage.value = 1;
+});
+
 
 const notification = ref({ show: false, message: '', type: 'success' });
 const showNotification = (message, type = 'success') => {
@@ -440,6 +453,11 @@ const imprimirResultadosLab = () => {
 const visualizarRelatorio = (codigoAgenda) => {
     if (!codigoAgenda) return;
     window.open(route('hospitalar.consultorio.imprimir.ficha', codigoAgenda), '_blank');
+};
+
+const baixarRelatorio = (codigoAgenda) => {
+    if (!codigoAgenda) return;
+    window.open(route('hospitalar.consultorio.imprimir.ficha', { id: codigoAgenda, download: 1 }), '_blank');
 };
 
 const calcularIdadeFormatoDesktop = (dataNascimento) => {
@@ -843,6 +861,9 @@ const changeFontSize = (type) => {
                         <button @click="imprimirDadosClinico" class="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-all tooltip" title="Imprimir Ficha">
                             <Printer class="w-5 h-5" />
                         </button>
+                        <button v-if="selectedPaciente" @click="baixarRelatorio(selectedPaciente.Codigo)" class="p-2 hover:bg-slate-100 rounded-lg text-emerald-600 transition-all tooltip" title="Baixar PDF">
+                            <Download class="w-5 h-5" />
+                        </button>
                         <button class="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-all">
                             <settings-2 class="w-5 h-5" />
                         </button>
@@ -951,7 +972,7 @@ const changeFontSize = (type) => {
                             <input v-model="searchExameQuery" placeholder="Buscar exame..." class="w-full text-[9px] p-1 border border-slate-300 rounded focus:border-blue-500 outline-none font-bold" />
                         </div>
                         <div class="flex-grow overflow-y-auto custom-scrollbar p-1">
-                            <div v-for="ex in examesList" :key="ex.id" class="flex items-center justify-between p-1.5 border-b border-slate-200 hover:bg-slate-100 group">
+                            <div v-for="ex in paginatedExamesList" :key="ex.id" class="flex items-center justify-between p-1.5 border-b border-slate-200 hover:bg-slate-100 group">
                                 <div class="flex items-center gap-2 overflow-hidden">
                                     <input v-if="!ex.isRequested" type="checkbox" :value="ex.id" v-model="selectedExams" class="w-3 h-3 text-blue-600 rounded" />
                                     <CheckCircle v-else class="w-3 h-3 text-emerald-500 shrink-0" />
@@ -962,6 +983,19 @@ const changeFontSize = (type) => {
                                     <button v-if="ex.isRequested" @click="selectedExameToLancar = ex; showLancarResultadosModal = true" class="text-blue-600 font-black text-[8px] uppercase hover:underline">Lançar</button>
                                     <button v-if="ex.isRequested" @click="removerExameSolicitado(ex)" class="text-red-500 opacity-0 group-hover:opacity-100"><Trash2 class="w-3 h-3" /></button>
                                 </div>
+                            </div>
+                            
+                            <!-- Pagination Controls -->
+                            <div v-if="totalPagesExames > 1" class="flex items-center justify-between p-2 mt-auto border-t border-slate-200 bg-white shadow-inner">
+                                <button @click="exameCurrentPage--" :disabled="exameCurrentPage === 1" class="p-1 rounded hover:bg-slate-100 disabled:opacity-30 transition-colors">
+                                    <ChevronLeft class="w-3 h-3 text-slate-600" />
+                                </button>
+                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
+                                    Página {{ exameCurrentPage }} de {{ totalPagesExames }}
+                                </span>
+                                <button @click="exameCurrentPage++" :disabled="exameCurrentPage >= totalPagesExames" class="p-1 rounded hover:bg-slate-100 disabled:opacity-30 transition-colors">
+                                    <ChevronRight class="w-3 h-3 text-slate-600" />
+                                </button>
                             </div>
                         </div>
                         <div class="p-1 grid grid-cols-2 gap-1 bg-slate-100 shrink-0 border-t border-slate-300">
@@ -1163,9 +1197,16 @@ const changeFontSize = (type) => {
                     <div class="grid grid-cols-1 gap-2">
                         <button @click="imprimirDadosClinico(); showDocumentosModal = false" class="w-full text-left p-3 border border-slate-200 hover:bg-blue-50 rounded flex items-center gap-3 transition-all group bg-white">
                             <FileText class="w-5 h-5 text-blue-600" />
-                            <div class="flex flex-col">
+                            <div class="flex-grow flex flex-col">
                                 <span class="font-black text-slate-700 text-[11px] uppercase">Ficha Médica Geral</span>
-                                <span class="text-[9px] text-slate-400">Relatório completo da consulta atual</span>
+                                <span class="text-[9px] text-slate-400">Visualizar/Imprimir relatório completo</span>
+                            </div>
+                        </button>
+                        <button @click="baixarRelatorio(selectedPaciente.Codigo); showDocumentosModal = false" class="w-full text-left p-3 border border-slate-200 hover:bg-emerald-50 rounded flex items-center gap-3 transition-all group bg-white">
+                            <Download class="w-5 h-5 text-emerald-600" />
+                            <div class="flex-grow flex flex-col">
+                                <span class="font-black text-slate-700 text-[11px] uppercase">Baixar em PDF</span>
+                                <span class="text-[9px] text-slate-400">Download directo do arquivo PDF</span>
                             </div>
                         </button>
                         <button @click="gerarJustificativo(); showDocumentosModal = false" class="w-full text-left p-3 border border-slate-200 hover:bg-blue-50 rounded flex items-center gap-3 transition-all group bg-white">

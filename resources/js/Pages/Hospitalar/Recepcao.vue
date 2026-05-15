@@ -6,7 +6,7 @@ import axios from 'axios';
 import { 
     Search, UserPlus, Plus, ClipboardList, Stethoscope, 
     Calendar, MousePointer2, RotateCcw, FileText, Activity, 
-    CreditCard, Users, User, ChevronDown, Check, X
+    CreditCard, Users, User, ChevronDown, Check, X, Printer, Download
 } from 'lucide-vue-next';
 import { watch } from 'vue';
 import debounce from 'lodash/debounce';
@@ -152,6 +152,7 @@ const admitirPaciente = (situacao = 'Agendada') => {
     form.situacao = situacao;
 
     form.post(route('hospitalar.recepcao.store'), {
+        preserveScroll: true,
         onSuccess: () => {
             showNotification(`Paciente ${situacao === 'Triagem' ? 'enviado para triagem' : 'admitido'} com sucesso!`);
             limparForm();
@@ -445,6 +446,8 @@ onUnmounted(() => {
                                 <table class="w-full border-separate border-spacing-y-2">
                                     <thead>
                                         <tr class="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                            <th class="px-4 py-2 text-left">Cod. Agendamento</th>
+                                            <th class="px-4 py-2 text-left">Cod. Paciente</th>
                                             <th class="px-4 py-2 text-left">Paciente</th>
                                             <th class="px-4 py-2 text-left">Consulta</th>
                                             <th class="px-4 py-2 text-left">Médico</th>
@@ -455,6 +458,12 @@ onUnmounted(() => {
                                     <tbody>
                                         <tr v-for="agenda in props.agendamentos" :key="agenda.Id" class="group bg-slate-50/50 hover:bg-blue-50/60 transition-all border border-transparent hover:border-blue-200 rounded-2xl">
                                             <td class="px-4 py-3 first:rounded-l-2xl border-y border-l border-transparent">
+                                                <span class="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100">{{ agenda.Codigo }}</span>
+                                            </td>
+                                            <td class="px-4 py-3 border-y border-transparent">
+                                                <span class="text-[10px] font-black text-slate-600 bg-white px-2 py-1 rounded-lg border border-slate-100">{{ agenda.IdPaciente }}</span>
+                                            </td>
+                                            <td class="px-4 py-3 border-y border-transparent">
                                                 <div class="flex items-center gap-3">
                                                     <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[10px] font-black text-slate-500 shadow-sm border border-slate-100">
                                                         {{ agenda.PacienteNome?.substring(0, 2) }}
@@ -482,7 +491,7 @@ onUnmounted(() => {
                                                 </span>
                                             </td>
                                             <td class="px-4 py-3 last:rounded-r-2xl border-y border-r border-transparent text-right">
-                                                <div class="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div class="flex justify-end gap-1.5 transition-opacity">
                                                     <button v-if="agenda.Situacao === 'Agendada'" @click="enviarParaTriagem(agenda)" class="p-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-lg transition-all shadow-sm" title="Enviar para Triagem">
                                                         <Activity class="w-3.5 h-3.5" />
                                                     </button>
@@ -493,6 +502,18 @@ onUnmounted(() => {
                                                     })" class="p-1.5 bg-white text-slate-600 hover:bg-blue-600 hover:text-white rounded-lg transition-all shadow-sm border border-slate-200" title="Editar">
                                                         <FileText class="w-3.5 h-3.5" />
                                                     </button>
+                                                    <a :href="route('hospitalar.consultorio.imprimir.ficha', agenda.Codigo)" 
+                                                       target="_blank"
+                                                       class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-all shadow-sm border border-slate-200" 
+                                                       title="Imprimir Ficha Médica">
+                                                        <Printer class="w-3.5 h-3.5" />
+                                                    </a>
+                                                    <a :href="route('hospitalar.consultorio.imprimir.ficha', { id: agenda.Codigo, download: 1 })" 
+                                                       target="_blank"
+                                                       class="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all shadow-sm border border-slate-200" 
+                                                       title="Baixar Ficha (PDF)">
+                                                        <Download class="w-3.5 h-3.5" />
+                                                    </a>
                                                 </div>
                                             </td>
                                         </tr>
@@ -525,7 +546,10 @@ onUnmounted(() => {
                                             <tr v-for="exame in props.examesPendentes" :key="exame.Id" class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                                                 <td class="py-3">
                                                     <p class="text-[10px] font-bold text-slate-700 leading-tight">{{ exame.PACIENTE }}</p>
-                                                    <p class="text-[8px] text-slate-400 font-medium">Cod: {{ exame.PROCESSO }}</p>
+                                                    <div class="flex items-center gap-2 mt-1">
+                                                        <span class="text-[8px] font-black text-blue-600 bg-blue-50 px-1 rounded border border-blue-100">{{ exame.AGENDA }}</span>
+                                                        <span class="text-[8px] font-black text-slate-400 uppercase tracking-tighter">PC: {{ exame.PROCESSO }}</span>
+                                                    </div>
                                                 </td>
                                                 <td class="py-3">
                                                     <span class="text-[9px] font-semibold text-slate-500 truncate block max-w-[120px]">{{ exame.EXAME }}</span>
@@ -566,7 +590,10 @@ onUnmounted(() => {
                                             <tr v-for="interna in props.internamentosPendentes" :key="interna.Codigo" class="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                                                 <td class="py-3">
                                                     <p class="text-[10px] font-bold text-slate-700 leading-tight">{{ interna.Paciente }}</p>
-                                                    <p class="text-[8px] text-slate-400 font-medium">{{ interna.Consulta }}</p>
+                                                    <div class="flex items-center gap-2 mt-1">
+                                                        <span class="text-[8px] font-black text-blue-600 bg-blue-50 px-1 rounded border border-blue-100">{{ interna.Codigo }}</span>
+                                                        <span class="text-[8px] text-slate-400 font-medium tracking-tighter">{{ interna.Consulta }}</span>
+                                                    </div>
                                                 </td>
                                                 <td class="py-3 text-[9px] font-medium text-slate-500">
                                                     {{ new Date(interna.DataInternamento).toLocaleDateString('pt-PT') }}
