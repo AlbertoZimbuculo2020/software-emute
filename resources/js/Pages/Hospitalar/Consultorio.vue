@@ -834,6 +834,12 @@ const changeFontSize = (type) => {
                         <button @click="showSidebar = !showSidebar" class="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-500">
                             <ChevronRight :class="showSidebar ? 'rotate-180' : ''" class="w-5 h-5 transition-transform" />
                         </button>
+                        
+                        <!-- Nome da Tela -->
+                        <div class="text-blue-600 font-black text-[9px] uppercase tracking-widest flex items-center gap-1.5 border-r border-slate-200 pr-4 mr-2">
+                            <Stethoscope class="w-4 h-4" /> Consultório
+                        </div>
+
                         <div v-if="selectedPaciente" class="flex items-center gap-3 animate-fadeIn">
                             <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                                 <User class="w-5 h-5 text-blue-600" />

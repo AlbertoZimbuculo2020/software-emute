@@ -452,6 +452,13 @@ const finalizarSaidaFarmaco = async () => {
 
             <!-- Segmented Top Action Bar (Matches Screenshot) -->
             <div class="flex items-center gap-2 p-2 bg-white border-b border-slate-200 shrink-0 h-[72px] shadow-sm z-10">
+                <!-- Nome da Tela -->
+                <div class="flex flex-col mx-2 justify-center h-full border-r border-slate-200 pr-4">
+                    <div class="text-blue-600 font-black text-[9px] uppercase tracking-widest flex items-center gap-1.5">
+                        <BedDouble class="w-4 h-4" /> Internamento
+                    </div>
+                </div>
+
                 <!-- Group 1: General -->
                 <div class="flex gap-2 pr-4 border-r border-slate-200 h-full items-center">
                     <button @click="recarregar" class="bg-slate-100 text-slate-600 px-4 py-2 font-black uppercase text-[9px] tracking-widest hover:bg-slate-200 transition-all rounded shadow-sm flex items-center gap-2">

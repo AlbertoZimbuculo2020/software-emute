@@ -94,6 +94,37 @@ const toggleMenu = (menu) => {
 };
 
 const clinicData = computed(() => usePage().props.clinicData);
+
+const pageTitle = computed(() => {
+    const component = usePage().component;
+    if (!component) return 'Sistema';
+    
+    const parts = component.split('/');
+    let name = parts[parts.length - 1];
+    
+    // Specific translations
+    const titles = {
+        'Laboratorio': 'Laboratório',
+        'Consultorio': 'Consultório',
+        'Internamento': 'Internamento',
+        'Triagem': 'Triagem',
+        'Enfermaria': 'Enfermaria',
+        'RaioX': 'Raio X',
+        'Recepcao': 'Recepção',
+        'Seguradoras': 'Seguradoras',
+        'Pacientes': 'Pacientes',
+        'Medicos': 'Médicos',
+        'Clientes': 'Clientes',
+        'Utilizadores': 'Utilizadores',
+        'Dashboard': 'Dashboard',
+        'Empresa': 'Empresa',
+        'Consultas': 'Consultas',
+        'Exames': 'Exames',
+        'Servicos': 'Serviços'
+    };
+    
+    return titles[name] || name.replace(/([A-Z])/g, ' $1').trim();
+});
 </script>
 
 <template>
@@ -320,6 +351,11 @@ const clinicData = computed(() => usePage().props.clinicData);
                           <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
                         </span>
                         <span class="font-bold tracking-wide uppercase text-[10px]">Online</span>
+                    </div>
+
+                    <!-- Nome da Página Atual -->
+                    <div class="hidden md:flex items-center ml-2 sm:ml-4 pl-2 sm:pl-4 border-l border-slate-200">
+                        <span class="text-xs font-black text-slate-700 uppercase tracking-widest">{{ pageTitle }}</span>
                     </div>
                 </div>
 

@@ -187,7 +187,7 @@ const removeMaterial = (id) => {
             <div class="flex items-center gap-2 p-2 bg-white border-b border-slate-200 shrink-0 h-[72px] shadow-sm z-10 justify-between">
                 <div class="flex flex-col mx-2 justify-center h-full">
                     <div class="text-blue-600 font-black text-[9px] uppercase mb-1.5 tracking-widest flex items-center gap-1.5">
-                        <Microscope class="w-3 h-3" /> Diagnóstico em Andamento
+                        <Microscope class="w-3 h-3" /> Laboratório
                     </div>
                     <div class="flex items-center gap-4">
                         <span class="font-black text-xs uppercase tracking-tighter text-slate-800">{{ activePatient?.PacienteNome || 'Nenhum paciente selecionado' }}</span>
