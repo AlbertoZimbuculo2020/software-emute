@@ -446,8 +446,6 @@ onUnmounted(() => {
                                 <table class="w-full border-separate border-spacing-y-2">
                                     <thead>
                                         <tr class="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                                            <th class="px-4 py-2 text-left">Cod. Agendamento</th>
-                                            <th class="px-4 py-2 text-left">Cod. Paciente</th>
                                             <th class="px-4 py-2 text-left">Paciente</th>
                                             <th class="px-4 py-2 text-left">Consulta</th>
                                             <th class="px-4 py-2 text-left">Médico</th>
@@ -458,17 +456,17 @@ onUnmounted(() => {
                                     <tbody>
                                         <tr v-for="agenda in props.agendamentos" :key="agenda.Id" class="group bg-slate-50/50 hover:bg-blue-50/60 transition-all border border-transparent hover:border-blue-200 rounded-2xl">
                                             <td class="px-4 py-3 first:rounded-l-2xl border-y border-l border-transparent">
-                                                <span class="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100">{{ agenda.Codigo }}</span>
-                                            </td>
-                                            <td class="px-4 py-3 border-y border-transparent">
-                                                <span class="text-[10px] font-black text-slate-600 bg-white px-2 py-1 rounded-lg border border-slate-100">{{ agenda.IdPaciente }}</span>
-                                            </td>
-                                            <td class="px-4 py-3 border-y border-transparent">
                                                 <div class="flex items-center gap-3">
                                                     <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[10px] font-black text-slate-500 shadow-sm border border-slate-100">
                                                         {{ agenda.PacienteNome?.substring(0, 2) }}
                                                     </div>
-                                                    <p class="text-xs font-bold text-slate-800 leading-none">{{ agenda.PacienteNome }}</p>
+                                                    <div>
+                                                        <p class="text-xs font-bold text-slate-800 leading-none">{{ agenda.PacienteNome }}</p>
+                                                        <div class="flex items-center gap-2 mt-1.5">
+                                                            <span class="text-[8px] font-black text-blue-600 bg-blue-50 px-1 rounded border border-blue-100" title="Cód. Agendamento">{{ agenda.Codigo }}</span>
+                                                            <span class="text-[8px] font-black text-slate-400 uppercase tracking-tighter">PC: {{ agenda.IdPaciente }}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td class="px-4 py-3 border-y border-transparent">
