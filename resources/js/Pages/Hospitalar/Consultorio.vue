@@ -6,7 +6,7 @@ import axios from 'axios';
 import { 
     Users, Search, Activity, History, Clock,
     Weight, Thermometer, HeartPulse, ClipboardList, Stethoscope, Pill, Printer, User, Camera, Download,
-    ChevronDown, Save, Info, ChevronRight, Plus, Trash2, X, CheckCircle, AlertCircle, FileText, 
+    ChevronDown, Save, Info, ChevronRight, ChevronLeft, Plus, Trash2, X, CheckCircle, AlertCircle, FileText, 
     SendHorizontal, BedDouble, UserRoundCog, ArrowRightLeft, Database, Building2, Settings2, Heart
 } from 'lucide-vue-next';
 
@@ -877,9 +877,9 @@ const changeFontSize = (type) => {
                 </div>
 
 <!-- Main Grid Content Area (Original Layout Restored) -->
-<div class="flex-grow overflow-hidden relative bg-slate-200 p-2">
+<div class="flex-grow overflow-x-auto overflow-y-hidden relative bg-slate-200 p-2 custom-scrollbar">
     <template v-if="selectedPaciente">
-        <div class="grid grid-cols-12 gap-2 h-full overflow-y-auto custom-scrollbar pr-1">
+        <div class="grid grid-cols-12 gap-2 h-full overflow-y-auto custom-scrollbar pr-1 min-w-[900px]">
             
             <!-- COLUNA 1: Histórico -->
             <div class="col-span-12 lg:col-span-3 flex flex-col h-full bg-white rounded shadow-sm border border-slate-300 overflow-hidden">
@@ -1142,34 +1142,31 @@ const changeFontSize = (type) => {
                 </div>
 
                 <!-- Sticky Footer Actions -->
-                <div v-if="selectedPaciente" class="h-20 bg-white border-t border-slate-200 px-8 flex items-center justify-between shrink-0 z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                    <div class="flex items-center gap-4">
-                         <button @click="selectedPaciente = null" class="bg-slate-100 text-slate-500 px-6 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-200 transition-all flex items-center gap-2">
-                            <X class="w-4 h-4" /> Sair
-                        </button>
-                        <div class="h-8 w-px bg-slate-200 mx-2"></div>
-                        <button @click="confirmarInternamento" class="text-blue-600 hover:bg-blue-50 px-4 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all flex items-center gap-2">
+                <div v-if="selectedPaciente" class="h-14 bg-white border-t border-slate-200 px-6 flex items-center justify-between shrink-0 z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                    <div class="flex items-center gap-2">
+
+                        <button @click="confirmarInternamento" class="text-blue-600 hover:bg-blue-50 px-3 py-2 rounded font-black uppercase text-[10px] tracking-widest transition-all flex items-center gap-2">
                             <BedDouble class="w-4 h-4" /> Solicitar Internamento
                         </button>
-                        <button @click="showEncaminharModal = true" class="text-blue-600 hover:bg-blue-50 px-4 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all flex items-center gap-2">
+                        <button @click="showEncaminharModal = true" class="text-blue-600 hover:bg-blue-50 px-3 py-2 rounded font-black uppercase text-[10px] tracking-widest transition-all flex items-center gap-2">
                             <ArrowRightLeft class="w-4 h-4" /> Encaminhar
                         </button>
-                        <button @click="showDocumentosModal = true" class="text-slate-600 hover:bg-slate-100 px-4 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all flex items-center gap-2">
+                        <button @click="showDocumentosModal = true" class="text-slate-600 hover:bg-slate-100 px-3 py-2 rounded font-black uppercase text-[10px] tracking-widest transition-all flex items-center gap-2">
                             <FileText class="w-4 h-4" /> Documentos
                         </button>
                     </div>
 
-                    <div class="flex items-center gap-3">
-                        <button @click="showDocumentosModal = true" class="bg-orange-500 text-white px-6 py-4 rounded-xl font-black uppercase text-[11px] tracking-widest hover:bg-orange-600 transition-all shadow-lg shadow-orange-100 flex items-center gap-2">
-                            <Printer class="w-5 h-5" /> Imprimir
+                    <div class="flex items-center gap-2">
+                        <button @click="showDocumentosModal = true" class="bg-orange-500 text-white h-10 min-w-[140px] px-6 rounded font-black uppercase text-[10px] tracking-widest hover:bg-orange-600 transition-all shadow shadow-orange-100 flex items-center justify-center gap-2 whitespace-nowrap">
+                            <Printer class="w-4 h-4" /> Imprimir
                         </button>
-                        <button @click="salvarConsulta" :disabled="isLoading" class="bg-blue-600 text-white px-8 py-4 rounded-xl font-black uppercase text-[11px] tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center gap-3 active:scale-95 disabled:opacity-50">
-                            <Save v-if="!isLoading" class="w-5 h-5" />
-                            <div v-else class="w-5 h-5 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <button @click="salvarConsulta" :disabled="isLoading" class="bg-blue-600 text-white h-10 min-w-[140px] px-6 rounded font-black uppercase text-[10px] tracking-widest hover:bg-blue-700 transition-all shadow shadow-blue-100 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 whitespace-nowrap">
+                            <Save v-if="!isLoading" class="w-4 h-4" />
+                            <div v-else class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                             Gravar Dados
                         </button>
-                        <button @click="confirmarFinalizar" class="bg-emerald-500 text-white px-8 py-4 rounded-xl font-black uppercase text-[11px] tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-100 flex items-center gap-3 active:scale-95">
-                            <CheckCircle class="w-5 h-5" /> Finalizar Atendimento
+                        <button @click="confirmarFinalizar" class="bg-emerald-500 text-white h-10 min-w-[140px] px-6 rounded font-black uppercase text-[10px] tracking-widest hover:bg-emerald-600 transition-all shadow shadow-emerald-100 flex items-center justify-center gap-2 active:scale-95 whitespace-nowrap">
+                            <CheckCircle class="w-4 h-4" /> Finalizar
                         </button>
                     </div>
                 </div>

@@ -128,7 +128,7 @@ const pageTitle = computed(() => {
 </script>
 
 <template>
-    <div class="min-h-screen bg-[#F4F7FA] flex font-sans selection:bg-blue-500 selection:text-white">
+    <div class="h-screen w-full bg-[#F4F7FA] flex font-sans selection:bg-blue-500 selection:text-white overflow-hidden">
         
         <!-- Elegant Toast Notification -->
         <Transition name="toast">
@@ -332,11 +332,11 @@ const pageTitle = computed(() => {
         <!-- Main Content Wrapper -->
         <main 
             :class="showingSidebar ? 'lg:pl-0' : 'lg:pl-0'" 
-            class="flex-grow flex flex-col transition-all duration-300 w-full"
+            class="flex-grow flex flex-col transition-all duration-300 min-w-0 overflow-hidden relative"
         >
             
             <!-- Barra Superior Principal -->
-            <header class="h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 shadow-sm">
+            <header class="shrink-0 h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 z-20 shadow-sm">
                 <!-- Esquerda: Info e Links -->
                 <div class="flex items-center space-x-2 sm:space-x-6 text-xs font-medium text-gray-500">
                     <!-- Mobile Menu Toggle -->
@@ -389,7 +389,7 @@ const pageTitle = computed(() => {
 
 
             <!-- Page Slots -->
-            <div class="p-6 overflow-y-auto">
+            <div class="flex-grow overflow-y-auto overflow-x-hidden p-4 sm:p-6 custom-scrollbar relative">
                 <slot />
             </div>
 
