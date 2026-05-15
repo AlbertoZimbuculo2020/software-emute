@@ -26,10 +26,36 @@ const saving = ref({});
 const notification = ref({ show: false, message: '', type: 'success' });
 const activeTab = ref('exames'); // 'exames', 'historico', 'materiais'
 
+const speak = (text) => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'pt-PT';
+    utterance.rate = 1.0;
+    const voices = window.speechSynthesis.getVoices();
+    const ptVoice = voices.find(v => v.lang.startsWith('pt'));
+    if (ptVoice) utterance.voice = ptVoice;
+    window.speechSynthesis.speak(utterance);
+};
+
 const showNotification = (message, type = 'success') => {
     notification.value = { show: true, message, type };
+    speak(message);
     setTimeout(() => notification.value.show = false, 4000);
 };
+
+const previousAguardando = ref([]);
+watch(() => props.aguardando, (newList) => {
+    if (previousAguardando.value.length > 0) {
+        newList.forEach(p => {
+            const prev = previousAguardando.value.find(old => old.Codigo === p.Codigo);
+            if (!prev) {
+                speak(`Novo paciente para exames: ${p.PacienteNome}`);
+            }
+        });
+    }
+    previousAguardando.value = JSON.parse(JSON.stringify(newList));
+}, { deep: true });
 
 const selectPatient = async (patient) => {
     loading.value = true;

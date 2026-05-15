@@ -199,11 +199,39 @@ watch([activeExamFilter, searchExameQuery], () => {
 });
 
 
+const speak = (text) => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'pt-PT';
+    utterance.rate = 1.0;
+    const voices = window.speechSynthesis.getVoices();
+    const ptVoice = voices.find(v => v.lang.startsWith('pt'));
+    if (ptVoice) utterance.voice = ptVoice;
+    window.speechSynthesis.speak(utterance);
+};
+
 const notification = ref({ show: false, message: '', type: 'success' });
 const showNotification = (message, type = 'success') => {
     notification.value = { show: true, message, type };
+    speak(message);
     setTimeout(() => notification.value.show = false, 4000);
 };
+
+const previousWaitlist = ref([]);
+watch(() => props.aguardando, (newList) => {
+    if (previousWaitlist.value.length > 0) {
+        newList.forEach(p => {
+            const prev = previousWaitlist.value.find(old => old.Codigo === p.Codigo);
+            if (!prev) {
+                speak(`Novo paciente na fila: ${p.PacienteNome}`);
+            } else if (prev.Situacao === 'Laboratorio' && p.Situacao !== 'Laboratorio') {
+                speak(`O paciente ${p.PacienteNome} retornou do laboratório.`);
+            }
+        });
+    }
+    previousWaitlist.value = JSON.parse(JSON.stringify(newList));
+}, { deep: true });
 
 const form = useForm({
     Codigo: '',
