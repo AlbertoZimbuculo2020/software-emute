@@ -12,7 +12,6 @@ class LaboratorioController extends Controller
 {
     public function index()
     {
-        // Pacientes aguardando exames (Situação = 'Laboratorio' ou 'RAIO X')
         $aguardando = DB::table('tb_agendamento')
             ->join('tb_tipoentidade as paciente', 'tb_agendamento.IdPaciente', '=', 'paciente.Codigo')
             ->leftJoin('tb_tipoentidade as medico', 'tb_agendamento.IdMedico', '=', 'medico.Codigo')
@@ -20,10 +19,21 @@ class LaboratorioController extends Controller
                 'tb_agendamento.*', 
                 'paciente.Nome as PacienteNome',
                 'medico.Nome as MedicoNome',
-                DB::raw('(SELECT COUNT(*) FROM tb_resultado_exame WHERE tb_resultado_exame.IdAgenda = tb_agendamento.Codigo AND tb_resultado_exame.Estado != \'Removido\') as TotalExames')
+                DB::raw('(SELECT COUNT(*) FROM tb_resultado_exame WHERE tb_resultado_exame.IdAgenda = tb_agendamento.Codigo AND tb_resultado_exame.Estado NOT IN (\'Finalizado\', \'Removido\')) as TotalExames')
             )
-            ->whereIn('tb_agendamento.Situacao', ['Laboratorio', 'RAIO X', 'Internado'])
             ->where('tb_agendamento.Estado', 'Ativo')
+            ->where(function($query) {
+                $query->whereIn('tb_agendamento.Situacao', ['Laboratorio', 'RAIO X'])
+                      ->orWhere(function($q) {
+                          $q->where('tb_agendamento.Situacao', 'Internado')
+                            ->whereExists(function ($sub) {
+                                $sub->select(DB::raw(1))
+                                    ->from('tb_resultado_exame')
+                                    ->whereColumn('tb_resultado_exame.IdAgenda', 'tb_agendamento.Codigo')
+                                    ->whereNotIn('tb_resultado_exame.Estado', ['Finalizado', 'Removido']);
+                            });
+                      });
+            })
             ->orderBy('tb_agendamento.Id', 'desc')
             ->get();
 
