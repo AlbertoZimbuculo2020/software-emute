@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use App\Http\Controllers\Hospitalar\RecepcaoController;
+use App\Http\Controllers\Hospitalar\SenhaController as FilaSenhaController;
 use App\Http\Controllers\EmpresaController;
 use App\Http\Controllers\Entidades\ClienteController;
 use App\Http\Controllers\Entidades\PacienteController;
@@ -139,6 +140,17 @@ Route::get('/hospitalar/recepcao', [RecepcaoController::class, 'index'])->middle
 Route::post('/hospitalar/recepcao/search', [RecepcaoController::class, 'searchPaciente'])->middleware(['auth', 'verified'])->name('hospitalar.recepcao.search');
 Route::post('/hospitalar/recepcao/store', [RecepcaoController::class, 'store'])->middleware(['auth', 'verified'])->name('hospitalar.recepcao.store');
 Route::post('/hospitalar/recepcao/enviar-triagem', [RecepcaoController::class, 'enviarTriagem'])->middleware(['auth', 'verified'])->name('hospitalar.recepcao.enviar-triagem');
+
+// Gestão de Senhas
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/hospitalar/recepcao/senhas', [FilaSenhaController::class, 'index'])->name('senhas.index');
+    Route::post('/hospitalar/recepcao/senhas/gerar', [FilaSenhaController::class, 'gerar'])->name('senhas.gerar');
+    Route::post('/hospitalar/recepcao/senhas/chamar', [FilaSenhaController::class, 'chamar'])->name('senhas.chamar');
+    Route::post('/hospitalar/recepcao/senhas/estado', [FilaSenhaController::class, 'mudarEstado'])->name('senhas.estado');
+});
+// Rota pública para a TV da Recepção (livre de auth para facilitar exibição em TVs smart)
+Route::get('/hospitalar/painel-senhas', [FilaSenhaController::class, 'painelPublico'])->name('senhas.painel');
+Route::get('/hospitalar/recepcao/senhas/painel-dados', [FilaSenhaController::class, 'obterDadosPainel'])->name('senhas.painel-dados');
 
 Route::get('/empresa/register', [EmpresaController::class, 'create'])->name('empresa.register');
 Route::post('/empresa/register', [EmpresaController::class, 'store'])->name('empresa.store');
