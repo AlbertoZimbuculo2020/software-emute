@@ -63,8 +63,22 @@ class LicencaController extends Controller
             });
 
             return back()->with('success', 'Código de ativação enviado para ' . $request->email . '! Verifique a sua caixa de entrada.');
+        } catch (\Symfony\Component\Mailer\Exception\TransportException $e) {
+            $msg = $e->getMessage();
+
+            if (str_contains($msg, 'Username and Password not accepted') || str_contains($msg, 'BadCredentials')) {
+                $errorMsg = 'As credenciais do servidor de email estão incorretas. Contacte o suporte técnico para configurar o envio de emails.';
+            } elseif (str_contains($msg, 'Connection could not be established') || str_contains($msg, 'Connection refused')) {
+                $errorMsg = 'Não foi possível conectar ao servidor de email. Verifique a sua ligação à internet e tente novamente.';
+            } elseif (str_contains($msg, 'Timed out')) {
+                $errorMsg = 'O servidor de email demorou a responder. Tente novamente em alguns instantes.';
+            } else {
+                $errorMsg = 'Não foi possível enviar o email neste momento. Tente novamente mais tarde ou contacte o suporte.';
+            }
+
+            return back()->withErrors(['email' => $errorMsg]);
         } catch (\Exception $e) {
-            return back()->withErrors(['email' => 'Erro ao enviar email: ' . $e->getMessage()]);
+            return back()->withErrors(['email' => 'Ocorreu um erro inesperado ao processar o seu pedido. Tente novamente mais tarde.']);
         }
     }
 
