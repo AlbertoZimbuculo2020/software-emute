@@ -24,8 +24,10 @@ class LicencaController extends Controller
             'plano' => 'required|in:mensal,semestral,anual',
         ]);
 
-        // Generate random 4-digit activation code
-        $codigo = str_pad(random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
+        // Generate unique random 5-digit activation code
+        do {
+            $codigo = str_pad(random_int(10000, 99999), 5, '0', STR_PAD_LEFT);
+        } while (DB::table('licencas')->where('codigo_ativacao', $codigo)->exists());
 
         // Calculate license duration
         $duracaoMap = [
@@ -48,21 +50,26 @@ class LicencaController extends Controller
             'updated_at' => now(),
         ]);
 
-        // Build the email message matching the format shown in the image
-        $mensagem = "Código de Ativação do Software EMUTE\n\n";
-        $mensagem .= "EMPRESA: " . strtoupper($request->empresa) . " / NIF: " . $request->nif . "\n";
-        $mensagem .= "O código de ativação é: " . $codigo . " .\n";
-        $mensagem .= "Licença: " . $duracao['label'] . ".\n";
-        $mensagem .= "Módulos: Todos.\n";
+        // Build the email message for the company manager
+        $mensagem = "📋 Nova Solicitação de Licença - Software EMUTE\n\n";
+        $mensagem .= "EMPRESA: " . strtoupper($request->empresa) . "\n";
+        $mensagem .= "NIF: " . $request->nif . "\n";
+        $mensagem .= "EMAIL DO CLIENTE: " . $request->email . "\n";
+        $mensagem .= "PLANO: " . $duracao['label'] . "\n\n";
+        $mensagem .= "CÓDIGO DE ATIVAÇÃO: " . $codigo . "\n\n";
+        $mensagem .= "Módulos: Todos.\n\n";
+        $mensagem .= "⚠️ Envie este código ao cliente somente após a confirmação do pagamento.";
 
-        // Send email to the client
+        // Send email to the company (not to the client)
+        $emailEmpresa = 'mauromutete2@gmail.com';
+
         try {
-            Mail::raw($mensagem, function ($message) use ($request) {
-                $message->to($request->email)
-                    ->subject('Código de Ativação do Software EMUTE');
+            Mail::raw($mensagem, function ($message) use ($emailEmpresa, $request) {
+                $message->to($emailEmpresa)
+                    ->subject('Nova Solicitação de Licença - ' . strtoupper($request->empresa));
             });
 
-            return back()->with('success', 'Código de ativação enviado para ' . $request->email . '! Verifique a sua caixa de entrada.');
+            return back()->with('success', 'Pedido de licença enviado com sucesso! A equipa EMUTE entrará em contacto através do email ' . $request->email . ' após a confirmação do pagamento.');
         } catch (\Symfony\Component\Mailer\Exception\TransportException $e) {
             $msg = $e->getMessage();
 
@@ -85,8 +92,27 @@ class LicencaController extends Controller
     public function ativar(Request $request)
     {
         $request->validate([
-            'codigo' => 'required|string|size:4',
+            'codigo' => 'required|string|size:5',
         ]);
+
+        // Check if the activation code exists in the database
+        $codigoExiste = DB::table('licencas')
+            ->where('codigo_ativacao', $request->codigo)
+            ->exists();
+
+        if (!$codigoExiste) {
+            return back()->withErrors(['codigo' => 'O código de ativação introduzido é inválido.']);
+        }
+
+        // Check if the code has already been used (activated)
+        $licencaJaAtivada = DB::table('licencas')
+            ->where('codigo_ativacao', $request->codigo)
+            ->where('ativado', true)
+            ->exists();
+
+        if ($licencaJaAtivada) {
+            return back()->withErrors(['codigo' => 'Este código de ativação já foi utilizado e não pode ser usado outra vez.']);
+        }
 
         // Find the license by code (most recent, not yet activated)
         $licenca = DB::table('licencas')

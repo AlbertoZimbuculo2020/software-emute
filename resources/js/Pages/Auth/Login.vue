@@ -1,22 +1,20 @@
 <script setup>
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref, watch, onMounted } from 'vue';
-import { User, Lock, Eye, EyeOff, Search, CheckCircle, X, Server, Database, Settings, Loader2, Save } from 'lucide-vue-next';
+import { User, Lock, Eye, EyeOff, CheckCircle, X, Server, Database, Settings, Loader2, Save, Key, Building, Stethoscope, Activity, HelpCircle } from 'lucide-vue-next';
 import axios from 'axios';
 
 const props = defineProps({
-    canResetPassword: {
-        type: Boolean,
-    },
-    status: {
-        type: String,
-    },
+    canResetPassword: { type: Boolean },
+    status: { type: String },
+    licencaValida: { type: Boolean, default: false },
+    dataInicio: { type: String, default: null },
+    dataFim: { type: String, default: null },
+    plano: { type: String, default: null },
 });
 
 const page = usePage();
 const flashSuccess = ref(page.props.flash?.success || null);
-
-// Show Toast
 const showToast = ref(!!flashSuccess.value);
 const toastMessage = ref(flashSuccess.value);
 const toastType = ref('success');
@@ -29,9 +27,7 @@ const triggerToast = (message, type = 'success') => {
 };
 
 watch(() => page.props.flash?.success, (newVal) => {
-    if (newVal) {
-        triggerToast(newVal, 'success');
-    }
+    if (newVal) triggerToast(newVal, 'success');
 });
 
 const form = useForm({
@@ -46,11 +42,7 @@ const form = useForm({
 });
 
 onMounted(() => {
-    if (showToast.value) {
-        setTimeout(() => { showToast.value = false }, 5000);
-    }
-    
-    // Load saved settings from localStorage
+    if (showToast.value) setTimeout(() => { showToast.value = false }, 5000);
     const savedSettings = localStorage.getItem('emute_server_settings');
     if (savedSettings) {
         try {
@@ -60,13 +52,10 @@ onMounted(() => {
             form.db_database = settings.db_database || '';
             form.db_username = settings.db_username || '';
             form.db_password = settings.db_password || '';
-            // If settings were found, show the panel by default
             showServerSettings.value = true;
-        } catch (e) {
-            console.error('Falha ao carregar definições:', e);
-        }
+        } catch (e) {}
     }
-})
+});
 
 const showPassword = ref(false);
 const showServerSettings = ref(false);
@@ -74,315 +63,255 @@ const testingConnection = ref(false);
 
 const saveSettings = async () => {
     if (!form.db_host || !form.db_database || !form.db_username) {
-        triggerToast('Por favor, preencha os dados do servidor.', 'error');
+        triggerToast('Preencha os dados do servidor.', 'error');
         return;
     }
-
     try {
-        const settings = {
-            db_host: form.db_host,
-            db_port: form.db_port,
-            db_database: form.db_database,
-            db_username: form.db_username,
-            db_password: form.db_password,
-        };
-        
-        // Save to backend session
+        const settings = { db_host: form.db_host, db_port: form.db_port, db_database: form.db_database, db_username: form.db_username, db_password: form.db_password };
         await axios.post(route('db.save'), settings);
-        
-        // Save to local storage for persistence across app restarts
         localStorage.setItem('emute_server_settings', JSON.stringify(settings));
-        
-        triggerToast('Configurações de rede sincronizadas com o sistema!', 'success');
+        triggerToast('Configurações sincronizadas!', 'success');
     } catch (error) {
-        triggerToast('Erro ao gravar configurações no sistema.', 'error');
+        triggerToast('Erro ao gravar configurações.', 'error');
     }
 };
 
 const testConnection = async () => {
     if (!form.db_host || !form.db_database || !form.db_username) {
-        triggerToast('Por favor, preencha os dados do servidor.', 'error');
+        triggerToast('Preencha os dados do servidor.', 'error');
         return;
     }
-
     testingConnection.value = true;
     try {
-        const response = await axios.post(route('db.test'), {
-            db_host: form.db_host,
-            db_port: form.db_port,
-            db_database: form.db_database,
-            db_username: form.db_username,
-            db_password: form.db_password,
-        });
-
+        const response = await axios.post(route('db.test'), { db_host: form.db_host, db_port: form.db_port, db_database: form.db_database, db_username: form.db_username, db_password: form.db_password });
         triggerToast(response.data.message, 'success');
     } catch (error) {
-        const message = error.response?.data?.message || 'Erro ao testar conexão.';
-        triggerToast(message, 'error');
+        triggerToast(error.response?.data?.message || 'Erro ao testar conexão.', 'error');
     } finally {
         testingConnection.value = false;
     }
 };
 
 const submit = () => {
-    form.post(route('login'), {
-        onFinish: () => form.reset('senha'),
-    });
+    form.post(route('login'), { onFinish: () => form.reset('senha') });
 };
-
 </script>
 
 <template>
     <Head title="EMUTE - Login" />
-    
-    <!-- Top Bar Elegance -->
-    <div class="fixed top-0 left-0 w-full h-1 bg-gradient-to-r from-[#12F2FF] via-[#247BFF] to-[#006BB3] z-50"></div>
 
-    <!-- Elegant Toast Notification -->
+    <!-- Toast -->
     <transition enter-active-class="transform transition ease-out duration-300" enter-from-class="translate-y-[-100%] opacity-0" enter-to-class="translate-y-0 opacity-100" leave-active-class="transform transition ease-in duration-200" leave-from-class="translate-y-0 opacity-100" leave-to-class="translate-y-[-100%] opacity-0">
-        <div v-if="showToast" class="fixed top-6 right-6 z-50 flex items-center bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 p-4 rounded-2xl min-w-[300px]">
-            <div :class="[
-                'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-3',
-                toastType === 'success' ? 'bg-green-50' : 'bg-red-50'
-            ]">
-                <CheckCircle v-if="toastType === 'success'" class="w-5 h-5 text-green-500" />
-                <X v-else class="w-5 h-5 text-red-500" />
+        <div v-if="showToast" class="fixed top-5 right-5 z-50 flex items-center bg-white/95 backdrop-blur-xl shadow-xl border border-gray-100/80 px-5 py-3.5 rounded-2xl min-w-[280px]">
+            <div :class="['w-8 h-8 rounded-full flex items-center justify-center mr-3', toastType === 'success' ? 'bg-emerald-50' : 'bg-red-50']">
+                <CheckCircle v-if="toastType === 'success'" class="w-4 h-4 text-emerald-500" />
+                <X v-else class="w-4 h-4 text-red-500" />
             </div>
             <div class="flex-grow">
-                <p class="text-sm font-bold text-gray-800">{{ toastType === 'success' ? 'Sucesso' : 'Erro' }}</p>
-                <p class="text-xs text-gray-500 mt-0.5">{{ toastMessage }}</p>
+                <p class="text-[13px] font-semibold text-gray-800">{{ toastMessage }}</p>
             </div>
-            <button @click="showToast = false" class="text-gray-400 hover:text-gray-600 transition-colors ml-3"><X class="w-4 h-4"/></button>
+            <button @click="showToast = false" class="text-gray-300 hover:text-gray-500 ml-3"><X class="w-3.5 h-3.5" /></button>
         </div>
     </transition>
 
-    <div class="min-h-screen relative flex flex-col items-center justify-center font-sans overflow-hidden bg-[#F8FAFC] p-4 sm:p-8">
-        
-        <!-- Abstract Background Orbs -->
-        <div class="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-blue-400/20 rounded-full blur-[100px] mix-blend-multiply pointer-events-none"></div>
-        <div class="absolute bottom-[-10%] left-[-5%] w-[600px] h-[600px] bg-[#006BB3]/10 rounded-full blur-[120px] mix-blend-multiply pointer-events-none"></div>
+    <div class="min-h-screen flex font-['Inter',sans-serif] bg-[#f5f7fb]">
 
-        <!-- Main Card -->
-        <div class="w-full max-w-[450px] lg:max-w-[900px] flex flex-col lg:flex-row bg-white/80 backdrop-blur-3xl shadow-[0_20px_60px_rgba(0,107,179,0.08)] border border-white overflow-hidden rounded-[2rem] z-10 transition-all duration-500 hover:shadow-[0_20px_60px_rgba(0,107,179,0.12)] relative">
-            
-            <!-- Left Side: Login Form -->
-            <div class="w-full lg:w-1/2 p-8 sm:p-14 flex flex-col items-center justify-center relative bg-white/50">
-                <!-- Logo and TITLE -->
-                <div class="flex flex-col items-center mb-10 w-full relative">
-                    <div class="bg-white p-3 rounded-2xl shadow-sm mb-4 border border-gray-50">
-                        <img src="/images/logo.png" class="h-10 w-auto" alt="Logo" />
+        <!-- LEFT: Form Side -->
+        <div class="w-full lg:w-[480px] xl:w-[520px] flex flex-col justify-between p-8 sm:p-12 lg:p-14 bg-white relative z-10 shadow-[20px_0_50px_rgba(0,0,0,0.02)]">
+
+            <!-- Form Area -->
+            <div class="flex-grow flex flex-col justify-center max-w-[360px] mx-auto w-full py-8">
+                
+                <!-- Centered Logo and Header -->
+                <div class="text-center mb-8 flex flex-col items-center">
+                    <div class="inline-flex items-center justify-center p-3 bg-slate-50 border border-slate-100 shadow-sm mb-5 transition-transform duration-300 hover:scale-105">
+                        <img src="/images/logo.png" class="h-16 w-auto object-contain" alt="Logo" />
                     </div>
-                    <h1 class="text-[26px] font-extrabold text-gray-800 tracking-tight">Bem-vindo de volta</h1>
-                    <p class="text-xs text-gray-500 mt-2 font-medium">Acesso seguro ao EMUTE Software</p>
+                    <h1 class="text-[26px] font-extrabold text-gray-900 tracking-tight leading-tight">Bem-vindo de volta</h1>
+                    <p class="text-[12px] text-gray-400 mt-2 font-medium leading-relaxed">Acesso seguro ao EMUTE Software</p>
                 </div>
 
-                <div v-if="form.errors.login || status" class="w-full mb-6 p-4 rounded-xl bg-red-50 border border-red-100 flex items-start space-x-3">
-                    <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <!-- License Expired Alert -->
+                <div v-if="!props.licencaValida" class="mb-6 p-4 rounded-2xl bg-rose-50/80 border border-rose-100 flex items-start space-x-3 shadow-sm shadow-rose-100/5">
+                    <div class="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0 mt-0.5 animate-pulse">
+                        <X class="w-4 h-4 text-rose-500 font-extrabold" />
+                    </div>
                     <div>
-                        <h3 class="text-xs font-bold text-red-800">Falha na Autenticação</h3>
-                        <p class="text-[11px] text-red-600 mt-0.5">{{ form.errors.login || status }}</p>
+                        <p class="text-[12px] font-bold text-rose-800">Sistema Bloqueado!</p>
+                        <p class="text-[11px] text-rose-600 mt-0.5 leading-relaxed font-medium">A sua licença expirou ou não está ativa. Por favor, ative uma licença válida para continuar.</p>
                     </div>
                 </div>
 
-                <form @submit.prevent="submit" class="w-full max-w-[320px] space-y-5">
-                    <!-- Login Input -->
+                <!-- Error Alert -->
+                <div v-if="form.errors.login || status" class="mb-5 px-4 py-3 rounded-xl bg-red-50/80 border border-red-100 flex items-center space-x-2.5">
+                    <div class="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                        <X class="w-3 h-3 text-red-500" />
+                    </div>
+                    <p class="text-[12px] text-red-600 font-medium">{{ form.errors.login || status }}</p>
+                </div>
+
+                <form @submit.prevent="submit" class="space-y-5">
+                    <!-- Utilizador -->
                     <div class="space-y-1.5">
-                        <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider pl-1">Utilizador</label>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-0.5">Utilizador</label>
                         <div class="relative group">
                             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                                <User class="h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                                <User class="h-4 w-4 text-gray-300 group-focus-within:text-emerald-500 transition-colors" />
                             </div>
-                            <input
-                                type="text"
-                                v-model="form.login"
-                                class="w-full pl-10 pr-4 py-3.5 bg-gray-50/50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all font-medium placeholder-gray-400"
-                                placeholder="Insira o seu login"
-                                required
-                            />
+                            <input v-model="form.login" type="text" placeholder="O seu utilizador" required :disabled="!props.licencaValida"
+                                class="w-full pl-10 pr-4 py-3 bg-[#f8f9fc] border border-gray-200/50 text-gray-800 text-[13px] rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:bg-white transition-all font-medium placeholder-gray-300 disabled:opacity-50 disabled:bg-gray-50/50 disabled:cursor-not-allowed" />
                         </div>
                     </div>
 
-                    <!-- Password Input -->
+                    <!-- Palavra-passe -->
                     <div class="space-y-1.5">
-                        <div class="flex justify-between items-center pl-1">
-                            <label class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Palavra Palavra-passe</label>
-                            <Link href="#" class="text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors">Esqueceu?</Link>
+                        <div class="flex justify-between items-center pl-0.5">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Palavra-passe</label>
+                            <span v-if="!props.licencaValida" class="text-[10px] font-semibold text-gray-300">Esqueceu?</span>
+                            <a v-else href="#" class="text-[10px] font-semibold text-blue-500 hover:text-blue-600 transition-colors">Esqueceu?</a>
                         </div>
                         <div class="relative group">
                             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                                <Lock class="h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                                <Lock class="h-4 w-4 text-gray-300 group-focus-within:text-emerald-500 transition-colors" />
                             </div>
-                            <input
-                                :type="showPassword ? 'text' : 'password'"
-                                v-model="form.senha"
-                                class="w-full pl-10 pr-12 py-3.5 bg-gray-50/50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all font-medium placeholder-gray-400"
-                                placeholder="••••••••"
-                                required
-                            />
-                            <button @click="showPassword = !showPassword" type="button" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
+                            <input :type="showPassword ? 'text' : 'password'" v-model="form.senha" placeholder="••••••••" required :disabled="!props.licencaValida"
+                                class="w-full pl-10 pr-11 py-3 bg-[#f8f9fc] border border-gray-200/50 text-gray-800 text-[13px] rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:bg-white transition-all font-medium placeholder-gray-300 disabled:opacity-50 disabled:bg-gray-50/50 disabled:cursor-not-allowed" />
+                            <button @click="showPassword = !showPassword" type="button" :disabled="!props.licencaValida" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors disabled:opacity-30">
                                 <Eye v-if="!showPassword" class="w-4 h-4" />
                                 <EyeOff v-else class="w-4 h-4" />
                             </button>
                         </div>
                     </div>
 
-                    <!-- Server Settings Toggle -->
-                    <div class="pt-2">
-                        <button 
-                            type="button" 
-                            @click="showServerSettings = !showServerSettings"
-                            class="flex items-center text-[11px] font-bold text-gray-400 hover:text-blue-500 transition-colors uppercase tracking-wider space-x-2"
-                        >
-                            <Settings class="w-3.5 h-3.5" :class="{'rotate-90': showServerSettings}" />
-                            <span>{{ showServerSettings ? 'Ocultar Servidor' : 'Configurar Servidor' }}</span>
-                        </button>
-                    </div>
+                    <!-- Server Config Toggle -->
+                    <button type="button" @click="showServerSettings = !showServerSettings" :disabled="!props.licencaValida"
+                        class="flex items-center text-[9px] font-bold text-gray-400 hover:text-emerald-500 transition-colors uppercase tracking-wider space-x-1.5 disabled:opacity-50 disabled:hover:text-gray-300 pl-0.5">
+                        <Settings class="w-3.5 h-3.5 transition-transform duration-300" :class="{ 'rotate-90 text-emerald-500': showServerSettings }" />
+                        <span>{{ showServerSettings ? 'Ocultar Servidor' : 'Configurar Servidor' }}</span>
+                    </button>
 
-                    <!-- Server Settings Fields -->
-                    <transition 
-                        enter-active-class="transition duration-300 ease-out"
-                        enter-from-class="transform scale-95 opacity-0"
-                        enter-to-class="transform scale-100 opacity-100"
-                        leave-active-class="transition duration-200 ease-in"
-                        leave-from-class="transform scale-100 opacity-100"
-                        leave-to-class="transform scale-95 opacity-0"
-                    >
-                        <div v-if="showServerSettings" class="space-y-4 p-4 rounded-xl bg-gray-50/80 border border-gray-100">
-                            <!-- Host & Port -->
-                            <div class="grid grid-cols-3 gap-3">
-                                <div class="col-span-2 space-y-1.5">
-                                    <label class="text-[10px] font-bold text-gray-500 uppercase">Servidor</label>
-                                    <div class="relative group">
-                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Server class="h-3.5 w-3.5 text-gray-400" />
-                                        </div>
-                                        <input v-model="form.db_host" type="text" placeholder="127.0.0.1" class="w-full pl-8 pr-3 py-2 bg-white border border-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                    <!-- Server Settings Card -->
+                    <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 -translate-y-2" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0 -translate-y-2">
+                        <div v-if="showServerSettings" class="space-y-3 p-4 rounded-xl bg-[#f8f9fc]/80 border border-gray-100 shadow-inner">
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="col-span-2">
+                                    <label class="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Servidor</label>
+                                    <div class="relative">
+                                        <Server class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-300" />
+                                        <input v-model="form.db_host" placeholder="127.0.0.1" class="w-full pl-8 pr-2 py-2 bg-white border border-gray-200 text-[11px] rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium" />
                                     </div>
                                 </div>
-                                <div class="space-y-1.5">
-                                    <label class="text-[10px] font-bold text-gray-500 uppercase">Porta</label>
-                                    <input v-model="form.db_port" type="text" placeholder="3306" class="w-full px-3 py-2 bg-white border border-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                                <div>
+                                    <label class="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Porta</label>
+                                    <input v-model="form.db_port" placeholder="3306" class="w-full px-2.5 py-2 bg-white border border-gray-200 text-[11px] rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-center" />
                                 </div>
                             </div>
-
-                            <!-- Database Name -->
-                            <div class="space-y-1.5">
-                                <label class="text-[10px] font-bold text-gray-500 uppercase">Banco de Dados</label>
-                                <div class="relative group">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Database class="h-3.5 w-3.5 text-gray-400" />
-                                    </div>
-                                    <input v-model="form.db_database" type="text" placeholder="emute_db" class="w-full pl-8 pr-3 py-2 bg-white border border-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                            <div>
+                                <label class="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Base de Dados</label>
+                                <div class="relative">
+                                    <Database class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-300" />
+                                    <input v-model="form.db_database" placeholder="emute_db" class="w-full pl-8 pr-2 py-2 bg-white border border-gray-200 text-[11px] rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium" />
                                 </div>
                             </div>
-
-                            <!-- DB Credentials -->
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="space-y-1.5">
-                                    <label class="text-[10px] font-bold text-gray-500 uppercase">Utilizador DB</label>
-                                    <input v-model="form.db_username" type="text" placeholder="root" class="w-full px-3 py-2 bg-white border border-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Utilizador</label>
+                                    <input v-model="form.db_username" placeholder="root" class="w-full px-2.5 py-2 bg-white border border-gray-200 text-[11px] rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium" />
                                 </div>
-                                <div class="space-y-1.5">
-                                    <label class="text-[10px] font-bold text-gray-500 uppercase">Senha DB</label>
-                                    <input v-model="form.db_password" type="password" placeholder="••••" class="w-full px-3 py-2 bg-white border border-gray-200 text-xs rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                                <div>
+                                    <label class="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Senha</label>
+                                    <input v-model="form.db_password" type="password" placeholder="••••" class="w-full px-2.5 py-2 bg-white border border-gray-200 text-[11px] rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium" />
                                 </div>
                             </div>
-
-                            <div class="grid grid-cols-2 gap-3">
-                                <button
-                                    type="button"
-                                    @click="testConnection"
-                                    :disabled="testingConnection"
-                                    class="w-full flex items-center justify-center space-x-2 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-bold hover:bg-blue-100 transition-all border border-blue-100 disabled:opacity-50"
-                                >
-                                    <Loader2 v-if="testingConnection" class="w-3 h-3 animate-spin" />
+                            <div class="grid grid-cols-2 gap-2 pt-1.5">
+                                <button type="button" @click="testConnection" :disabled="testingConnection"
+                                    class="py-2 bg-blue-50/50 text-blue-600 rounded-lg text-[10px] font-extrabold hover:bg-blue-100 transition-all border border-blue-100 disabled:opacity-50 flex items-center justify-center space-x-1">
+                                    <Loader2 v-if="testingConnection" class="w-3.5 h-3.5 animate-spin" />
                                     <span>{{ testingConnection ? 'A Testar...' : 'Testar Conexão' }}</span>
                                 </button>
-
-                                <button
-                                    type="button"
-                                    @click="saveSettings"
-                                    class="w-full flex items-center justify-center space-x-2 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-bold hover:bg-emerald-100 transition-all border border-emerald-100"
-                                >
-                                    <Save class="w-3 h-3" />
-                                    <span>Gravar</span>
+                                <button type="button" @click="saveSettings"
+                                    class="py-2 bg-emerald-50/50 text-emerald-600 rounded-lg text-[10px] font-extrabold hover:bg-emerald-100 transition-all border border-emerald-100 flex items-center justify-center space-x-1">
+                                    <Save class="w-3.5 h-3.5" />
+                                    <span>Sincronizar</span>
                                 </button>
                             </div>
                         </div>
                     </transition>
 
-                    <!-- Buttons -->
-                    <div class="pt-4">
-                        <button
-                            type="submit"
-                            :disabled="form.processing"
-                            class="w-full bg-gradient-to-r from-[#006BB3] to-[#0091FF] hover:from-[#005a96] hover:to-[#007EE6] text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/25 transition-all hover:-translate-y-0.5 focus:ring-4 focus:ring-blue-500/20 active:translate-y-0 disabled:opacity-70 disabled:hover:translate-y-0 disabled:active:scale-100 active:scale-95 flex items-center justify-center"
-                        >
-                            Entrar no Sistema
-                        </button>
-                    </div>
-
-                    <!-- Bottom Links -->
-                    <div class="flex flex-col items-center pt-8 space-y-3">
-                        <Link :href="route('licenca.index')" class="group flex items-center text-[12px] font-bold text-gray-500 hover:text-blue-600 transition-colors">
-                            <span class="bg-gray-100 group-hover:bg-blue-100 p-1.5 rounded-lg mr-2 transition-colors">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                            </span>
-                            Solicitar Licença
-                        </Link>
-                        <Link :href="route('empresa.register')" class="group flex items-center text-[12px] font-bold text-gray-500 hover:text-blue-600 transition-colors">
-                            <span class="bg-gray-100 group-hover:bg-blue-100 p-1.5 rounded-lg mr-2 transition-colors">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                            </span>
-                            Criar Organização / Configurar
-                        </Link>
-                    </div>
+                    <!-- Login Button (Azul/Verde Médico em Gradiente) -->
+                    <button type="submit" :disabled="form.processing || !props.licencaValida"
+                        class="w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500 hover:from-emerald-600 hover:via-teal-600 hover:to-blue-600 text-white py-3.5 rounded-xl text-[13px] font-bold shadow-lg shadow-emerald-500/10 transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-50 disabled:from-gray-400 disabled:to-gray-500 disabled:shadow-none disabled:hover:translate-y-0 disabled:cursor-not-allowed flex items-center justify-center space-x-2">
+                        <Loader2 v-if="form.processing" class="w-4 h-4 animate-spin" />
+                        <Activity v-else class="w-4 h-4" />
+                        <span>{{ props.licencaValida ? 'Entrar no Portal' : 'Acesso Bloqueado' }}</span>
+                    </button>
                 </form>
+
+                <!-- Links Secundários -->
+                <div class="flex items-center justify-center space-x-4 mt-6 pt-5 border-t border-gray-100">
+                    <Link :href="route('licenca.index')" class="flex items-center text-[10px] font-bold text-gray-400 hover:text-emerald-500 transition-colors space-x-1 group uppercase tracking-wider">
+                        <Key class="w-3.5 h-3.5 text-gray-300 group-hover:text-emerald-500 transition-colors" />
+                        <span>Ativar Licença</span>
+                    </Link>
+                    <span class="w-px h-3 bg-gray-200"></span>
+                    <a href="mailto:suporte@mutecode.com" class="flex items-center text-[10px] font-bold text-gray-400 hover:text-emerald-500 transition-colors space-x-1 group uppercase tracking-wider">
+                        <HelpCircle class="w-3.5 h-3.5 text-gray-300 group-hover:text-emerald-500 transition-colors" />
+                        <span>Suporte Técnico</span>
+                    </a>
+                </div>
             </div>
 
-            <!-- Right Side: Brand Banner -->
-            <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#006BB3] via-[#004d80] to-[#002b4d] relative overflow-hidden flex-col justify-center items-center p-12">
-                <!-- Inner Graphic Elements -->
-                <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-                <div class="absolute bottom-0 left-0 w-64 h-64 bg-[#12F2FF]/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3"></div>
-                
-                <!-- Floating Glass Card effect -->
-                <div class="relative z-10 w-full max-w-[320px] bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 p-10 flex flex-col items-center transform transition-transform duration-700 hover:scale-105 hover:rotate-1 shadow-2xl">
-                    <img src="/images/logo_official.png" class="w-full h-auto drop-shadow-lg" alt="Emute Software" />
-                </div>
-                
-                <div class="relative z-10 mt-14 text-center">
-                    <span class="inline-block px-3 py-1 bg-white/10 border border-white/20 rounded-full text-[10px] font-bold text-white/90 tracking-widest uppercase backdrop-blur-sm mb-4">
-                        Solução Hospitalar Premium
+            <!-- Bottom: License + Copyright -->
+            <div class="flex items-center justify-between mt-6 pt-5 border-t border-gray-100">
+                <div class="flex items-center space-x-2">
+                    <span class="relative flex h-2 w-2">
+                        <span :class="['absolute inline-flex h-full w-full rounded-full opacity-75', props.licencaValida ? 'animate-ping bg-emerald-400' : 'bg-rose-400']"></span>
+                        <span :class="['relative inline-flex rounded-full h-2 w-2', props.licencaValida ? 'bg-emerald-500' : 'bg-rose-500']"></span>
                     </span>
-                    <h2 class="text-white text-xl font-medium tracking-wide">Inove o seu processo.</h2>
+                    <span v-if="props.licencaValida" class="text-[10px] font-bold text-gray-500 uppercase tracking-wider leading-none">
+                        Licença {{ props.plano }}<br>
+                        <span class="text-[9px] font-semibold text-gray-400 normal-case">{{ props.dataInicio }} até {{ props.dataFim }}</span>
+                    </span>
+                    <span v-else class="text-[10px] font-extrabold text-rose-500 uppercase tracking-wider">
+                        Licença Expirada / Inativa
+                    </span>
                 </div>
+                <Link :href="route('licenca.index')" class="text-[9px] font-extrabold text-emerald-600 hover:text-emerald-700 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-all uppercase tracking-wider px-3 py-1.5 rounded-lg">
+                    {{ props.licencaValida ? 'Renovar' : 'Ativar' }}
+                </Link>
             </div>
+
         </div>
 
-        <!-- External Footer Controls -->
-        <div class="hidden sm:flex absolute bottom-6 left-8 flex-col items-start z-10">
-            <div class="flex items-center space-x-2 mb-2">
-                <span class="relative flex h-2.5 w-2.5">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+        <!-- RIGHT: Brand Panel -->
+        <div class="hidden lg:flex flex-1 bg-gradient-to-br from-[#0a1628] via-[#0d2347] to-[#061a3a] relative overflow-hidden items-center justify-center p-16">
+            <!-- Decorative elements -->
+            <div class="absolute top-0 right-0 w-96 h-96 bg-blue-500/8 rounded-full blur-[100px]"></div>
+            <div class="absolute bottom-0 left-0 w-80 h-80 bg-cyan-400/10 rounded-full blur-[80px]"></div>
+            <div class="absolute top-1/3 left-1/4 w-40 h-40 bg-blue-400/5 rounded-full blur-[60px]"></div>
+
+            <!-- Subtle grid -->
+            <div class="absolute inset-0 opacity-[0.03]" style="background-image: radial-gradient(circle, white 1px, transparent 1px); background-size: 40px 40px;"></div>
+
+            <div class="relative z-10 text-center max-w-[400px]">
+                <!-- Glass Card -->
+                <div class="bg-white/[0.06] backdrop-blur-md rounded-3xl border border-white/[0.08] p-12 mb-10 transition-transform duration-700 hover:scale-[1.02]">
+                    <img src="/images/logo_official.png" class="w-full h-auto drop-shadow-2xl" alt="Emute Software" />
+                </div>
+
+                <span class="inline-block px-4 py-1.5 bg-white/[0.06] border border-white/[0.08] rounded-full text-[10px] font-semibold text-white/50 tracking-[0.2em] uppercase backdrop-blur-sm mb-5">
+                    Solução Hospitalar Premium
                 </span>
-                <span class="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Licença: 6 Dias</span>
+                <h2 class="text-white/80 text-xl font-light tracking-wide">Inove o seu processo.</h2>
+                <p class="text-white/25 text-[12px] mt-3 font-medium leading-relaxed">
+                    Gestão clínica integrada. Recepção, consultório, laboratório, faturação e muito mais.
+                </p>
             </div>
-            <Link :href="route('licenca.index')" class="text-xs font-bold text-[#006BB3] hover:text-blue-800 transition-colors uppercase tracking-wider relative group">
-                Renovar Licença Agora
-                <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#006BB3] transition-all group-hover:w-full"></span>
-            </Link>
-        </div>
 
-        <div class="absolute bottom-6 w-full text-center z-10">
-            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
-                © 2026 MUTECODE. Versão 1.0.0.
-            </p>
+            <!-- Version -->
+            <div class="absolute bottom-8 left-0 w-full text-center">
+                <p class="text-[10px] font-medium text-white/15 uppercase tracking-[0.2em]">© 2026 MUTECODE · v1.0.0</p>
+            </div>
         </div>
     </div>
 </template>
-
-<style scoped>
-/* Scoped overrides if necessary */
-</style>

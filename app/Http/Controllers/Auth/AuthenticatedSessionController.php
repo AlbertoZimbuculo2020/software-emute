@@ -18,9 +18,38 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): Response
     {
+        $licencaAtiva = \Illuminate\Support\Facades\DB::table('licencas')
+            ->where('ativado', true)
+            ->where('data_fim', '>=', now()->format('Y-m-d'))
+            ->orderBy('data_fim', 'desc')
+            ->first();
+
+        $licencaValida = false;
+        $dataInicio = null;
+        $dataFim = null;
+        $plano = null;
+
+        if ($licencaAtiva) {
+            $licencaValida = true;
+            $dataInicio = $licencaAtiva->data_inicio ? \Carbon\Carbon::parse($licencaAtiva->data_inicio)->format('d/m/Y') : null;
+            $dataFim = $licencaAtiva->data_fim ? \Carbon\Carbon::parse($licencaAtiva->data_fim)->format('d/m/Y') : null;
+            
+            // Map plan to Portuguese label
+            $plano = match ($licencaAtiva->plano) {
+                'mensal' => 'Mensal',
+                'semestral' => 'Semestral',
+                'anual' => 'Anual',
+                default => ucfirst($licencaAtiva->plano),
+            };
+        }
+
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
+            'licencaValida' => $licencaValida,
+            'dataInicio' => $dataInicio,
+            'dataFim' => $dataFim,
+            'plano' => $plano,
         ]);
     }
 
@@ -29,6 +58,17 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
+        $licencaAtiva = \Illuminate\Support\Facades\DB::table('licencas')
+            ->where('ativado', true)
+            ->where('data_fim', '>=', now()->format('Y-m-d'))
+            ->exists();
+
+        if (!$licencaAtiva) {
+            return back()->withErrors([
+                'login' => 'A sua licença expirou ou não está ativa. Por favor, ative uma licença válida para entrar.',
+            ]);
+        }
+
         $request->authenticate();
 
         $request->session()->regenerate();

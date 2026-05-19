@@ -22,6 +22,12 @@ watch(() => page.props.flash?.success, (val) => {
     if (val) triggerToast(val, 'success');
 }, { immediate: true });
 
+// Feedback state
+const solicitacaoEnviada = ref(false);
+const solicitacaoMsg = ref('');
+const ativacaoSucesso = ref(false);
+const ativacaoMsg = ref('');
+
 // Solicitation form
 const formSolicitar = useForm({
     email: '',
@@ -78,13 +84,18 @@ watch(selectedPlan, (val) => {
 });
 
 const solicitar = () => {
+    solicitacaoEnviada.value = false;
     formSolicitar.plano = selectedPlan.value;
     formSolicitar.post(route('licenca.solicitar'), {
         preserveScroll: true,
-        onSuccess: () => {
+        onSuccess: (page) => {
+            solicitacaoEnviada.value = true;
+            solicitacaoMsg.value = page.props.flash?.success || 'Pedido enviado com sucesso! Aguarde o contacto da equipa EMUTE.';
             showActivationSection.value = true;
+            triggerToast(solicitacaoMsg.value, 'success');
         },
         onError: (errors) => {
+            solicitacaoEnviada.value = false;
             const firstError = Object.values(errors)[0];
             triggerToast(firstError, 'error');
         },
@@ -92,8 +103,14 @@ const solicitar = () => {
 };
 
 const ativar = () => {
+    ativacaoSucesso.value = false;
     formAtivar.post(route('licenca.ativar'), {
         preserveScroll: true,
+        onSuccess: (page) => {
+            ativacaoSucesso.value = true;
+            ativacaoMsg.value = page.props.flash?.success || 'Licença ativada com sucesso!';
+            triggerToast(ativacaoMsg.value, 'success');
+        },
         onError: (errors) => {
             const firstError = Object.values(errors)[0];
             triggerToast(firstError, 'error');
@@ -276,6 +293,19 @@ const showActivationSection = ref(false);
                             <span>{{ formSolicitar.processing ? 'A Enviar...' : 'Solicitar Licença' }}</span>
                         </button>
                     </form>
+
+                    <!-- Inline Success Message -->
+                    <transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0">
+                        <div v-if="solicitacaoEnviada" class="mt-4 p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex items-start space-x-3">
+                            <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                                <CheckCircle class="w-4 h-4 text-emerald-600" />
+                            </div>
+                            <div>
+                                <p class="text-[12px] font-bold text-emerald-800">Pedido Enviado!</p>
+                                <p class="text-[11px] text-emerald-600 mt-0.5">{{ solicitacaoMsg }}</p>
+                            </div>
+                        </div>
+                    </transition>
                 </div>
 
                 <!-- Activation Form -->
@@ -300,7 +330,7 @@ const showActivationSection = ref(false);
                                 <p class="text-xs font-bold text-gray-700">Como funciona?</p>
                                 <ol class="mt-2 space-y-1.5 text-[11px] text-gray-500">
                                     <li class="flex items-start"><span class="w-4 h-4 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-[9px] mr-2 flex-shrink-0 mt-0.5">1</span> Preencha os dados e solicite a licença</li>
-                                    <li class="flex items-start"><span class="w-4 h-4 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-[9px] mr-2 flex-shrink-0 mt-0.5">2</span> Receba o código de 4 dígitos por email</li>
+                                    <li class="flex items-start"><span class="w-4 h-4 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-[9px] mr-2 flex-shrink-0 mt-0.5">2</span> Aguarde a confirmação e receba o código de 5 dígitos</li>
                                     <li class="flex items-start"><span class="w-4 h-4 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-[9px] mr-2 flex-shrink-0 mt-0.5">3</span> Digite o código abaixo e ative a licença</li>
                                 </ol>
                             </div>
@@ -318,9 +348,9 @@ const showActivationSection = ref(false);
                                 <input
                                     v-model="formAtivar.codigo"
                                     type="text"
-                                    maxlength="4"
+                                    maxlength="5"
                                     class="w-full pl-10 pr-4 py-4 bg-gray-50/50 border border-gray-200 text-gray-900 text-2xl font-extrabold text-center tracking-[0.5em] rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:bg-white transition-all placeholder-gray-300"
-                                    placeholder="• • • •"
+                                    placeholder="• • • • •"
                                     required
                                 />
                             </div>
@@ -329,7 +359,7 @@ const showActivationSection = ref(false);
 
                         <button
                             type="submit"
-                            :disabled="formAtivar.processing || formAtivar.codigo.length < 4"
+                            :disabled="formAtivar.processing || formAtivar.codigo.length < 5"
                             class="w-full bg-gradient-to-r from-emerald-500 to-green-400 hover:from-emerald-600 hover:to-green-500 text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/25 transition-all hover:-translate-y-0.5 focus:ring-4 focus:ring-emerald-500/20 active:translate-y-0 disabled:opacity-50 flex items-center justify-center space-x-2"
                         >
                             <Loader2 v-if="formAtivar.processing" class="w-4 h-4 animate-spin" />
@@ -337,6 +367,19 @@ const showActivationSection = ref(false);
                             <span>{{ formAtivar.processing ? 'A Ativar...' : 'Ativar Licença' }}</span>
                         </button>
                     </form>
+
+                    <!-- Inline Activation Success -->
+                    <transition enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0">
+                        <div v-if="ativacaoSucesso" class="mt-4 p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex items-start space-x-3">
+                            <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                                <CheckCircle class="w-4 h-4 text-emerald-600" />
+                            </div>
+                            <div>
+                                <p class="text-[12px] font-bold text-emerald-800">Licença Ativada!</p>
+                                <p class="text-[11px] text-emerald-600 mt-0.5">{{ ativacaoMsg }}</p>
+                            </div>
+                        </div>
+                    </transition>
                 </div>
             </div>
         </div>
