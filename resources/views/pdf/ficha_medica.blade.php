@@ -3,49 +3,25 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Relatório Geral da Consulta</title>
+    <title>Ficha Médica</title>
 @endif
 @if(!isset($only_content))
     @if(!isset($is_economico))
     <style>
         @page {
-            margin: 120px 40px 60px 40px; /* Top margin for fixed header */
+            margin: 15mm;
         }
     @endif
         body { 
             font-family: 'Helvetica', sans-serif; 
             font-size: 11px; 
             color: #000; 
-            margin: 0; 
-            padding: 0; 
-        }
-        
-        /* FIXED HEADER FOR EVERY PAGE */
-        header {
-            position: fixed;
-            top: -100px;
-            left: 0px;
-            right: 0px;
-            height: 90px;
-        }
-
-        /* FIXED FOOTER FOR EVERY PAGE */
-        footer {
-            position: fixed;
-            bottom: -40px;
-            left: 0px;
-            right: 0px;
-            height: 30px;
-            text-align: center;
-            font-size: 9px;
-            color: #0066cc;
-            font-weight: bold;
         }
 
         .header-table { width: 100%; border-collapse: collapse; }
-        .logo { width: 80px; height: auto; float: left; margin-right: 15px; }
-        .clinic-name { font-size: 11px; font-weight: bold; text-transform: uppercase; margin: 0; padding-top: 15px; }
-        .page-num { text-align: right; font-size: 9px; font-weight: bold; vertical-align: top; padding-top: 15px; }
+        .logo { width: 80px; height: auto; margin-right: 15px; }
+        .clinic-name { font-size: 11px; font-weight: bold; text-transform: uppercase; margin: 0; }
+        .page-num { text-align: right; font-size: 9px; font-weight: bold; vertical-align: top; }
 
         .report-title-container {
             margin-bottom: 20px;
@@ -137,31 +113,28 @@
 
 @if(!isset($is_economico) || (isset($column_index) && $column_index == 1))
     @if(!isset($is_economico))
-    <!-- REPEATING HEADER -->
-    <header>
-        <table class="header-table">
+    <!-- STANDARD HEADER -->
+    <div style="border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 15px;">
+        <table style="width: 100%; border-collapse: collapse;">
             <tr>
-                <td width="60%">
-                    @if($empresa && $empresa->IMAGEM)
-                        <img src="{{ $empresa->IMAGEM }}" class="logo">
-                    @endif
-                    <div class="clinic-name">{{ $empresa->DESCRICAO }}</div>
+                @if($empresa && $empresa->IMAGEM)
+                <td width="80" style="vertical-align: middle; padding-bottom: 5px;">
+                    <img src="{{ $empresa->IMAGEM }}" style="max-height: 55px; max-width: 75px; display: block;">
                 </td>
-                <td width="40%" class="page-num">
-                    página <span class="pagenum"></span>
+                @endif
+                <td style="vertical-align: middle; padding-left: 10px; padding-bottom: 5px;">
+                    <div style="font-size: 12px; font-weight: bold; text-transform: uppercase; line-height: 1.2;">{{ $empresa->DESCRICAO }}</div>
+                    <div style="font-size: 8px; color: #555; margin-top: 2px;">
+                        NIF: {{ $empresa->NIF ?? '' }} | Tel: {{ $empresa->TELEFONE ?? '' }} | Endereço: {{ $empresa->ENDERECO ?? '' }}
+                    </div>
                 </td>
             </tr>
         </table>
-        
-        <div class="report-title-container">
-            <span class="report-title">RELATÓRIO GERAL DA CONSULTA</span>
-        </div>
-    </header>
-
-    <!-- REPEATING FOOTER -->
-    <footer>
-        {{ $empresa->ENDERECO ?? '' }} | Tel: {{ $empresa->TELEFONE ?? '' }} | NIF: {{ $empresa->NIF ?? '' }}
-    </footer>
+    </div>
+    
+    <div style="text-align: center; margin-bottom: 20px; border-bottom: 1px solid #000; padding-bottom: 5px;">
+        <span style="font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">FICHA MÉDICA / DADOS CLÍNICOS</span>
+    </div>
     @endif
 
     @if(isset($is_economico))
@@ -200,11 +173,21 @@
 
     <!-- PAGE 1: DADOS GERAIS E TRIAGEM -->
 @if(!isset($is_economico) || (isset($column_index) && $column_index == 1))
-    <div class="consulta-info">
-        CONSULTA Nº {{ $paciente->Codigo }}<br>
-        CONSULTA: Clínica Geral<br>
-        DATA DA CONSULTA: {{ date('d/m/Y', strtotime($paciente->DataAgendamento)) }}<br>
-        ESTADO DA CONSULTA: {{ $paciente->Situacao ?? 'Atendido' }}
+    <div class="consulta-info" style="margin-bottom: 20px; background-color: #f8fafc; border: 1px solid #000; padding: 8px;">
+        <table style="width: 100%; font-size: 10px; border-collapse: collapse;">
+            <tr>
+                <td width="25%"><strong>CONSULTA Nº:</strong></td>
+                <td width="25%">{{ $paciente->Codigo }}</td>
+                <td width="25%"><strong>DATA DA CONSULTA:</strong></td>
+                <td width="25%">{{ date('d/m/Y', strtotime($paciente->DataAgendamento)) }}</td>
+            </tr>
+            <tr>
+                <td><strong>ESPECIALIDADE:</strong></td>
+                <td>Clínica Geral</td>
+                <td><strong>ESTADO:</strong></td>
+                <td><span style="color: #0066cc; font-weight: bold; text-transform: uppercase;">{{ $paciente->Situacao ?? 'Atendido' }}</span></td>
+            </tr>
+        </table>
     </div>
 
     <div class="section-separator"></div>
@@ -225,64 +208,6 @@
         </tr>
     </table>
 
-    <div class="section-separator"></div>
-    <div class="section-title">DADOS DA TRIAGEM</div>
-
-    <table class="triage-table">
-        @if(isset($is_economico))
-            <tr>
-                <td class="triage-label" width="25%">Peso:</td>
-                <td width="25%">{{ $triagem->Peso ?? '0' }}</td>
-                <td class="triage-label" width="25%">Temp:</td>
-                <td width="25%">{{ $triagem->Temperatura ?? '0' }}º</td>
-            </tr>
-            <tr>
-                <td class="triage-label">Puls:</td>
-                <td>{{ $triagem->FrequenciaCardiaca ?? '0' }}</td>
-                <td class="triage-label">Resp:</td>
-                <td>{{ $triagem->FrequenciaRespiratoria ?? '0' }}</td>
-            </tr>
-            <tr>
-                <td class="triage-label">SatO2:</td>
-                <td>{{ $triagem->SaturacaoOxigenio ?? '0' }}%</td>
-                <td class="triage-label">P.A:</td>
-                <td>{{ $triagem->PressaoArterial ?? '0' }}</td>
-            </tr>
-            <tr>
-                <td class="triage-label">Obs:</td>
-                <td colspan="3">{{ $triagem->Observacoes ?? 'Sem' }}</td>
-            </tr>
-        @else
-            <tr>
-                <td class="triage-label">Peso:</td>
-                <td class="triage-value">{{ $triagem->Peso ?? '0' }}</td>
-            </tr>
-            <tr>
-                <td class="triage-label">Temperatura Corporal:</td>
-                <td class="triage-value">{{ $triagem->Temperatura ?? '0' }}</td>
-            </tr>
-            <tr>
-                <td class="triage-label">Frequência cardíaca (pulso):</td>
-                <td class="triage-value">{{ $triagem->FrequenciaCardiaca ?? '0' }}</td>
-            </tr>
-            <tr>
-                <td class="triage-label">Frequência Respiratória:</td>
-                <td class="triage-value">{{ $triagem->FrequenciaRespiratoria ?? '0' }}</td>
-            </tr>
-            <tr>
-                <td class="triage-label">Saturação de oxigênio (oximetria):</td>
-                <td class="triage-value">{{ $triagem->SaturacaoOxigenio ?? '0' }}</td>
-            </tr>
-            <tr>
-                <td class="triage-label">Pressão arterial:</td>
-                <td class="triage-value">{{ $triagem->PressaoArterial ?? '0' }}</td>
-            </tr>
-            <tr>
-                <td class="triage-label">Observação:</td>
-                <td class="triage-value">{{ $triagem->Observacoes ?? 'Sem' }}</td>
-            </tr>
-        @endif
-    </table>
 
     <div class="section-separator"></div>
     <div class="section-title">DADOS CLINICOS</div>
