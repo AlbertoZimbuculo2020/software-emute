@@ -261,4 +261,9 @@ Route::middleware('auth')->group(function () {
 Route::post('/test-database-connection', [AuthenticatedSessionController::class, 'testConnection'])->name('db.test');
 Route::post('/save-database-connection', [AuthenticatedSessionController::class, 'saveConnection'])->name('db.save');
 
+// Licença
+Route::get('/licenca', [\App\Http\Controllers\LicencaController::class, 'index'])->name('licenca.index');
+Route::post('/licenca/solicitar', [\App\Http\Controllers\LicencaController::class, 'solicitar'])->name('licenca.solicitar');
+Route::post('/licenca/ativar', [\App\Http\Controllers\LicencaController::class, 'ativar'])->name('licenca.ativar');
+
 require __DIR__.'/auth.php';

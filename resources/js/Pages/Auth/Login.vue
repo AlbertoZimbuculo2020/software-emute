@@ -324,6 +324,12 @@ const submit = () => {
 
                     <!-- Bottom Links -->
                     <div class="flex flex-col items-center pt-8 space-y-3">
+                        <Link :href="route('licenca.index')" class="group flex items-center text-[12px] font-bold text-gray-500 hover:text-blue-600 transition-colors">
+                            <span class="bg-gray-100 group-hover:bg-blue-100 p-1.5 rounded-lg mr-2 transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                            </span>
+                            Solicitar Licença
+                        </Link>
                         <Link :href="route('empresa.register')" class="group flex items-center text-[12px] font-bold text-gray-500 hover:text-blue-600 transition-colors">
                             <span class="bg-gray-100 group-hover:bg-blue-100 p-1.5 rounded-lg mr-2 transition-colors">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
@@ -363,10 +369,10 @@ const submit = () => {
                 </span>
                 <span class="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Licença: 6 Dias</span>
             </div>
-            <button class="text-xs font-bold text-[#006BB3] hover:text-blue-800 transition-colors uppercase tracking-wider relative group">
+            <Link :href="route('licenca.index')" class="text-xs font-bold text-[#006BB3] hover:text-blue-800 transition-colors uppercase tracking-wider relative group">
                 Renovar Licença Agora
                 <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#006BB3] transition-all group-hover:w-full"></span>
-            </button>
+            </Link>
         </div>
 
         <div class="absolute bottom-6 w-full text-center z-10">
