@@ -242,10 +242,11 @@
         <div class="category-title">
             Categoria do Exame: {{ $exame->Categoria ?? 'LABORATÓRIO GERAL' }}
         </div>
-        <div class="exam-header">
+        @php $w = (strpos(strtolower($exame->Descricao), 'hemograma') !== false) ? '50%' : '100%'; @endphp
+        <div class="exam-header" style="width: {{ $w }}; box-sizing: border-box;">
             Exame: {{ $exame->Descricao }}
         </div>
-        <table class="result-table">
+        <table class="result-table" style="width: {{ $w }};">
             <thead>
                 <tr>
                     <th style="width: 40%">Dados</th>
@@ -268,6 +269,28 @@
                                 <td>{{ $referencias[$idx] ?? '' }}</td>
                             </tr>
                         @endif
+                    @endforeach
+                @elseif(strpos(strtolower($exame->Descricao), 'hemograma') !== false)
+                    @php
+                        $hemogramaFields = [
+                            'Hemoglobina',
+                            'Glóbulos brancos',
+                            'Leucograma',
+                            'Hematrocito',
+                            'Basófilos',
+                            'Neutrófilos',
+                            'Eosinófilos',
+                            'Monócitos',
+                            'Linfósitos',
+                            'C.Plaquetas'
+                        ];
+                    @endphp
+                    @foreach($hemogramaFields as $campo)
+                        <tr>
+                            <td>{{ $campo }}</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
                     @endforeach
                 @else
                     <tr>

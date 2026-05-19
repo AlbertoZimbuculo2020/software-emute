@@ -99,8 +99,14 @@ watch(() => form.idade, (newVal) => {
 });
 
 const buscarPaciente = debounce(async () => {
-    if (!searchTerm.value || searchTerm.value.length < 2) {
+    if (!searchTerm.value || searchTerm.value.length < 1) {
         searchResults.value = [];
+        showResults.value = false;
+        return;
+    }
+
+    // Prevents searching and reopening the dropdown when a patient is selected
+    if (searchTerm.value === form.nome) {
         showResults.value = false;
         return;
     }
