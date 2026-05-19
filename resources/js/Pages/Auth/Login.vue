@@ -243,7 +243,7 @@ const submit = () => {
                         class="w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500 hover:from-emerald-600 hover:via-teal-600 hover:to-blue-600 text-white py-3.5 rounded-xl text-[13px] font-bold shadow-lg shadow-emerald-500/10 transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-50 disabled:from-gray-400 disabled:to-gray-500 disabled:shadow-none disabled:hover:translate-y-0 disabled:cursor-not-allowed flex items-center justify-center space-x-2">
                         <Loader2 v-if="form.processing" class="w-4 h-4 animate-spin" />
                         <Activity v-else class="w-4 h-4" />
-                        <span>{{ props.licencaValida ? 'Entrar no Portal' : 'Acesso Bloqueado' }}</span>
+                        <span>{{ props.licencaValida ? 'Entrar no Sistema' : 'Acesso Bloqueado' }}</span>
                     </button>
                 </form>
 
@@ -254,7 +254,7 @@ const submit = () => {
                         <span>Ativar Licença</span>
                     </Link>
                     <span class="w-px h-3 bg-gray-200"></span>
-                    <a href="mailto:suporte@mutecode.com" class="flex items-center text-[10px] font-bold text-gray-400 hover:text-emerald-500 transition-colors space-x-1 group uppercase tracking-wider">
+                    <a href="https://wa.me/244923101044?text=Olá,%20gostaria%20de%20solicitar%20suporte%20para%20o%20EMUTE%20Software." target="_blank" class="flex items-center text-[10px] font-bold text-gray-400 hover:text-emerald-500 transition-colors space-x-1 group uppercase tracking-wider">
                         <HelpCircle class="w-3.5 h-3.5 text-gray-300 group-hover:text-emerald-500 transition-colors" />
                         <span>Suporte Técnico</span>
                     </a>

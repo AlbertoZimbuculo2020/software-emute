@@ -362,7 +362,7 @@ const pageTitle = computed(() => {
                 <!-- Direita: Perfil e Ações -->
                 <div class="flex items-center space-x-4">
                     <div class="hidden md:flex space-x-4 mr-2 text-xs font-medium text-gray-500">
-                        <Link href="#" class="hover:text-blue-600 transition-colors flex items-center"><MonitorSmartphone class="w-3.5 h-3.5 mr-1.5"/> Suporte</Link>
+                        <a href="https://wa.me/244923101044?text=Olá,%20gostaria%20de%20solicitar%20suporte%20para%20o%20EMUTE%20Software." target="_blank" class="hover:text-blue-600 transition-colors flex items-center"><MonitorSmartphone class="w-3.5 h-3.5 mr-1.5"/> Suporte</a>
                     </div>
                     
                     <!-- User Dropdown/Pill -->
