@@ -12,7 +12,17 @@ class LicencaController extends Controller
 {
     public function index()
     {
-        return Inertia::render('Auth/Licenca');
+        $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
+
+        $licencaAtiva = DB::table('licencas')
+            ->where('ativado', true)
+            ->orderBy('id', 'desc')
+            ->first();
+
+        return Inertia::render('Auth/Licenca', [
+            'empresa' => $empresa,
+            'licenca' => $licencaAtiva,
+        ]);
     }
 
     public function solicitar(Request $request)

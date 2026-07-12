@@ -254,6 +254,11 @@ const submit = () => {
                         <span>Ativar Licença</span>
                     </Link>
                     <span class="w-px h-3 bg-gray-200"></span>
+                    <Link :href="route('empresa.register')" class="flex items-center text-[10px] font-bold text-gray-400 hover:text-emerald-500 transition-colors space-x-1 group uppercase tracking-wider">
+                        <Building class="w-3.5 h-3.5 text-gray-300 group-hover:text-emerald-500 transition-colors" />
+                        <span>Config. Empresa</span>
+                    </Link>
+                    <span class="w-px h-3 bg-gray-200"></span>
                     <a href="https://wa.me/244923101044?text=Olá,%20gostaria%20de%20solicitar%20suporte%20para%20o%20EMUTE%20Software." target="_blank" class="flex items-center text-[10px] font-bold text-gray-400 hover:text-emerald-500 transition-colors space-x-1 group uppercase tracking-wider">
                         <HelpCircle class="w-3.5 h-3.5 text-gray-300 group-hover:text-emerald-500 transition-colors" />
                         <span>Suporte Técnico</span>
