@@ -31,7 +31,8 @@ import {
     ChevronRight,
     Search,
     AlertCircle,
-    ArrowUpRight
+    ArrowUpRight,
+    PieChart
 } from 'lucide-vue-next';
 import { usePage } from '@inertiajs/vue3';
 
