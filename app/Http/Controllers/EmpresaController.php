@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Carbon\Carbon;
 
 class EmpresaController extends Controller
 {
@@ -90,6 +91,35 @@ class EmpresaController extends Controller
             DB::table('tb_empresa')->insert($empresaData);
         }
 
-        return redirect()->route('login')->with('success', 'Configurações gravadas com sucesso!');
+        // Criar licença grátis de 3 meses automaticamente
+        $jaTemLicenca = DB::table('licencas')
+            ->where('nif', $data['NIF'] ?? '')
+            ->where('ativado', true)
+            ->where('data_fim', '>=', Carbon::now()->format('Y-m-d'))
+            ->exists();
+
+        if (!$jaTemLicenca) {
+            do {
+                $codigo = str_pad(random_int(10000, 99999), 5, '0', STR_PAD_LEFT);
+            } while (DB::table('licencas')->where('codigo_ativacao', $codigo)->exists());
+
+            $dataInicio = Carbon::now();
+            $dataFim = Carbon::now()->addMonths(3);
+
+            DB::table('licencas')->insert([
+                'email' => $data['EMAIL'] ?? 'admin@emute.co.ao',
+                'empresa' => strtoupper($data['DESCRICAO'] ?? ''),
+                'nif' => $data['NIF'] ?? '',
+                'plano' => 'trial',
+                'codigo_ativacao' => $codigo,
+                'ativado' => true,
+                'data_inicio' => $dataInicio->format('Y-m-d'),
+                'data_fim' => $dataFim->format('Y-m-d'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return redirect()->route('login')->with('success', 'Configurações gravadas com sucesso! Licença grátis de 3 meses ativada.');
     }
 }
