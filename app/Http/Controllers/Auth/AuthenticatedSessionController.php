@@ -14,33 +14,47 @@ use Inertia\Response;
 class AuthenticatedSessionController extends Controller
 {
     /**
+     * Verificar se a verificacao de licenca e obrigatoria.
+     * Licenca so e cobrada a partir de dezembro de 2026.
+     */
+    private function licencaObrigatoria(): bool
+    {
+        $now = now();
+        return $now->month >= 12 && $now->year >= 2026;
+    }
+
+    /**
      * Display the login view.
      */
     public function create(): Response
     {
-        $licencaAtiva = \Illuminate\Support\Facades\DB::table('licencas')
-            ->where('ativado', true)
-            ->where('data_fim', '>=', now()->format('Y-m-d'))
-            ->orderBy('data_fim', 'desc')
-            ->first();
-
         $licencaValida = false;
         $dataInicio = null;
         $dataFim = null;
         $plano = null;
 
-        if ($licencaAtiva) {
+        if (!$this->licencaObrigatoria()) {
+            // Ate dezembro, acesso livre
             $licencaValida = true;
-            $dataInicio = $licencaAtiva->data_inicio ? \Carbon\Carbon::parse($licencaAtiva->data_inicio)->format('d/m/Y') : null;
-            $dataFim = $licencaAtiva->data_fim ? \Carbon\Carbon::parse($licencaAtiva->data_fim)->format('d/m/Y') : null;
-            
-            // Map plan to Portuguese label
-            $plano = match ($licencaAtiva->plano) {
-                'mensal' => 'Mensal',
-                'semestral' => 'Semestral',
-                'anual' => 'Anual',
-                default => ucfirst($licencaAtiva->plano),
-            };
+        } else {
+            $licencaAtiva = \Illuminate\Support\Facades\DB::table('licencas')
+                ->where('ativado', true)
+                ->where('data_fim', '>=', now()->format('Y-m-d'))
+                ->orderBy('data_fim', 'desc')
+                ->first();
+
+            if ($licencaAtiva) {
+                $licencaValida = true;
+                $dataInicio = $licencaAtiva->data_inicio ? \Carbon\Carbon::parse($licencaAtiva->data_inicio)->format('d/m/Y') : null;
+                $dataFim = $licencaAtiva->data_fim ? \Carbon\Carbon::parse($licencaAtiva->data_fim)->format('d/m/Y') : null;
+                
+                $plano = match ($licencaAtiva->plano) {
+                    'mensal' => 'Mensal',
+                    'semestral' => 'Semestral',
+                    'anual' => 'Anual',
+                    default => ucfirst($licencaAtiva->plano),
+                };
+            }
         }
 
         return Inertia::render('Auth/Login', [
@@ -50,6 +64,7 @@ class AuthenticatedSessionController extends Controller
             'dataInicio' => $dataInicio,
             'dataFim' => $dataFim,
             'plano' => $plano,
+            'acessoLivre' => !$this->licencaObrigatoria(),
         ]);
     }
 
@@ -58,15 +73,17 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $licencaAtiva = \Illuminate\Support\Facades\DB::table('licencas')
-            ->where('ativado', true)
-            ->where('data_fim', '>=', now()->format('Y-m-d'))
-            ->exists();
+        if ($this->licencaObrigatoria()) {
+            $licencaAtiva = \Illuminate\Support\Facades\DB::table('licencas')
+                ->where('ativado', true)
+                ->where('data_fim', '>=', now()->format('Y-m-d'))
+                ->exists();
 
-        if (!$licencaAtiva) {
-            return back()->withErrors([
-                'login' => 'A sua licença expirou ou não está ativa. Por favor, ative uma licença válida para entrar.',
-            ]);
+            if (!$licencaAtiva) {
+                return back()->withErrors([
+                    'login' => 'A sua licença expirou ou não está ativa. Por favor, ative uma licença válida para entrar.',
+                ]);
+            }
         }
 
         $request->authenticate();

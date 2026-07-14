@@ -11,6 +11,7 @@ const props = defineProps({
     dataInicio: { type: String, default: null },
     dataFim: { type: String, default: null },
     plano: { type: String, default: null },
+    acessoLivre: { type: Boolean, default: false },
 });
 
 const page = usePage();
@@ -273,7 +274,11 @@ const submit = () => {
                         <span :class="['absolute inline-flex h-full w-full rounded-full opacity-75', props.licencaValida ? 'animate-ping bg-emerald-400' : 'bg-rose-400']"></span>
                         <span :class="['relative inline-flex rounded-full h-2 w-2', props.licencaValida ? 'bg-emerald-500' : 'bg-rose-500']"></span>
                     </span>
-                    <span v-if="props.licencaValida" class="text-[10px] font-bold text-gray-500 uppercase tracking-wider leading-none">
+                    <span v-if="props.acessoLivre" class="text-[10px] font-bold text-emerald-500 uppercase tracking-wider leading-none">
+                        Acesso Livre<br>
+                        <span class="text-[9px] font-semibold text-gray-400 normal-case">Licença cobrada a partir de Dezembro/2026</span>
+                    </span>
+                    <span v-else-if="props.licencaValida" class="text-[10px] font-bold text-gray-500 uppercase tracking-wider leading-none">
                         Licença {{ props.plano }}<br>
                         <span class="text-[9px] font-semibold text-gray-400 normal-case">{{ props.dataInicio }} até {{ props.dataFim }}</span>
                     </span>
