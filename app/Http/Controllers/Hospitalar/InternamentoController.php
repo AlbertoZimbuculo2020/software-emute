@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class InternamentoController extends Controller
 {
@@ -269,7 +270,7 @@ class InternamentoController extends Controller
             $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
         }
 
-        return view('pdf.processo_clinico', [
+        $pdf = Pdf::loadView('pdf.processo_clinico', [
             'agendamento' => $agendamento,
             'prescricoes' => $prescricoes,
             'atosMedicos' => $atosMedicos,
@@ -278,6 +279,7 @@ class InternamentoController extends Controller
             'alta' => $alta,
             'empresa' => $empresa
         ]);
+        return $pdf->setPaper('a4')->stream('Processo_Clinico_' . ($agendamento->PacienteNome ?? 'paciente') . '.pdf');
     }
 
     public function imprimirAtosEnfermagem($id)
@@ -299,11 +301,12 @@ class InternamentoController extends Controller
             $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
         }
 
-        return view('pdf.atos_enfermagem', [
+        $pdf = Pdf::loadView('pdf.atos_enfermagem', [
             'agendamento' => $agendamento,
             'atosEnfermagem' => $atosEnfermagem,
             'empresa' => $empresa
         ]);
+        return $pdf->setPaper('a4')->stream('Atos_Enfermagem_' . ($agendamento->PacienteNome ?? 'paciente') . '.pdf');
     }
 
     public function imprimirVitais($id)
@@ -325,11 +328,12 @@ class InternamentoController extends Controller
             $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
         }
 
-        return view('pdf.triagem_report', [
+        $pdf = Pdf::loadView('pdf.triagem_report', [
             'agendamento' => $agendamento,
             'sinaisVitais' => $sinaisVitais,
             'empresa' => $empresa
         ]);
+        return $pdf->setPaper('a4')->stream('Sinais_Vitais_' . ($agendamento->PacienteNome ?? 'paciente') . '.pdf');
     }
 
     // ─── Cumprimento (Enfermagem) ─────────────────────────────────────────────
@@ -409,11 +413,12 @@ class InternamentoController extends Controller
             $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
         }
 
-        return view('pdf.cumprimento_prescricoes', [
+        $pdf = Pdf::loadView('pdf.cumprimento_prescricoes', [
             'agendamento' => $agendamento,
             'prescricoes' => $prescricoes,
             'empresa' => $empresa
         ]);
+        return $pdf->setPaper('a4')->stream('Cumprimento_Prescricoes_' . ($agendamento->PacienteNome ?? 'paciente') . '.pdf');
     }
 
     public function finalizarSaidaFarmaco(Request $request)

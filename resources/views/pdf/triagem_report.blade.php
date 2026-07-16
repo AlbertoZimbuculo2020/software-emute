@@ -4,36 +4,35 @@
     <meta charset="UTF-8">
     <title>Controlo de Sinais Vitais</title>
     <style>
-        @page { margin: 15mm; }
         body { font-family: sans-serif; font-size: 9px; color: #333; line-height: 1.4; }
-        .header { width: 100%; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; }
-        .logo { width: 60px; height: auto; float: left; margin-right: 20px; }
-        .company-info { float: left; width: 80%; }
-        .company-info h1 { margin: 0; font-size: 12px; font-weight: bold; text-transform: uppercase; }
-        .company-info p { margin: 1px 0; font-size: 9px; }
-        .clear { clear: both; }
+        .header-table { width: 100%; border-collapse: collapse; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; }
+        .header-table td { vertical-align: top; padding: 2px; }
+        .logo-cell { width: 80px; }
         .report-title { text-align: center; font-size: 13px; font-weight: bold; text-transform: uppercase; margin: 15px 0; }
         .patient-info { margin-bottom: 15px; font-size: 11px; font-weight: bold; }
         .grid { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .grid th { background: #e0e0e0; border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase; font-size: 8px; }
         .grid td { border: 1px solid #000; padding: 5px; text-align: center; font-size: 8px; }
-        .footer { position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 8px; color: #777; padding-top: 5px; border-top: 1px solid #eee; }
+        .footer { text-align: center; font-size: 8px; color: #777; padding-top: 5px; border-top: 1px solid #eee; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    @if($empresa->IMAGEM)
-        <img src="{{ $empresa->IMAGEM }}" class="logo">
-    @endif
-    <div class="company-info">
-        <h1>{{ $empresa->NOME_EMPRESA ?? $empresa->EMPRESA ?? $empresa->Nome ?? 'CENTRO MÉDICO' }}</h1>
-        <p>{{ $empresa->ENDERECO ?? $empresa->CIDADE ?? '' }}, {{ $empresa->RUA ?? '' }}</p>
-        <p>Tel: {{ $empresa->TELEFONE ?? '' }} / {{ $empresa->TELEFONE2 ?? '' }}</p>
-        <p>Email: {{ $empresa->EMAIL ?? '' }} | NIF: {{ $empresa->NIF ?? '' }}</p>
-    </div>
-    <div class="clear"></div>
-</div>
+<table class="header-table">
+    <tr>
+        @if($empresa->IMAGEM)
+        <td class="logo-cell">
+            <img src="{{ $empresa->IMAGEM }}" style="width: 60px; height: auto;">
+        </td>
+        @endif
+        <td>
+            <h1 style="margin: 0; font-size: 12px; font-weight: bold; text-transform: uppercase;">{{ $empresa->DESCRICAO ?? $empresa->NOME_EMPRESA ?? 'CENTRO MÉDICO' }}</h1>
+            <p style="margin: 1px 0; font-size: 9px;">{{ $empresa->PROVINCIA ?? '' }}, {{ $empresa->CIDADE ?? '' }}, {{ $empresa->RUA ?? '' }}</p>
+            <p style="margin: 1px 0; font-size: 9px;">Tel: {{ $empresa->TELEFONE ?? '' }} / {{ $empresa->TELEFONE2 ?? '' }}</p>
+            <p style="margin: 1px 0; font-size: 9px;">NIF: {{ $empresa->NIF ?? '' }}</p>
+        </td>
+    </tr>
+</table>
 
 <div class="report-title">
     CONTROLO DE SINAIS VITAIS

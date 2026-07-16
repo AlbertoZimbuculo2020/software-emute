@@ -10,9 +10,8 @@
     <style>
     @endif
         body { font-family: 'Helvetica', sans-serif; font-size: 13px; color: #333; margin: 0; padding: 0; }
-        .header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-        .logo { width: 100px; height: 100px; float: left; margin-right: 20px; }
-        .company-info { float: left; }
+        .header-table { width: 100%; border-collapse: collapse; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+        .logo { width: 100px; height: 100px; }
         .company-name { font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 0; }
         .recipe-title { text-align: center; font-size: 22px; font-weight: bold; text-transform: uppercase; margin: 30px 0; border-bottom: 3px double #000; padding-bottom: 10px; }
         .patient-info { margin-bottom: 30px; font-size: 14px; }
@@ -23,13 +22,12 @@
         .dosagem { font-style: italic; color: #555; }
         .footer { margin-top: 100px; text-align: center; }
         .signature-line { width: 300px; border-bottom: 1px solid #000; margin: 0 auto 5px; }
-        .clear { clear: both; }
         .date { text-align: right; margin-bottom: 20px; font-weight: bold; }
         
         @if(isset($is_economico))
         body { font-size: 10px; }
         .recipe-title { font-size: 16px; margin: 10px 0; padding-bottom: 5px; }
-        .header { padding-bottom: 5px; margin-bottom: 10px; }
+        .header-table { padding-bottom: 5px; margin-bottom: 10px; }
         .logo { width: 50px; height: 50px; }
         .company-name { font-size: 12px; }
         .patient-info { margin-bottom: 15px; font-size: 11px; }
@@ -37,23 +35,6 @@
         .items-table th { padding: 5px; font-size: 9px; }
         .items-table td { padding: 5px; }
         @endif
-        @media print {
-            .no-print { display: none; }
-            body { padding: 40px; }
-        }
-        .no-print-btn {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #0066cc;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            z-index: 9999;
-        }
 @if(!isset($is_economico))
     </style>
 @endif
@@ -63,17 +44,20 @@
 </head>
 <body>
 @endif
-    <div class="header">
-        @if($empresa->IMAGEM)
-            <img src="{{ $empresa->IMAGEM }}" class="logo">
-        @endif
-        <div class="company-info">
-            <p class="company-name">{{ $empresa->DESCRICAO }}</p>
-            <p>NIF: {{ $empresa->NIF }}</p>
-            <p>Tel: {{ $empresa->TELEFONE }}</p>
-        </div>
-        <div class="clear"></div>
-    </div>
+    <table class="header-table">
+        <tr>
+            @if($empresa->IMAGEM)
+            <td width="120" style="vertical-align: middle;">
+                <img src="{{ $empresa->IMAGEM }}" class="logo">
+            </td>
+            @endif
+            <td style="vertical-align: middle; padding-left: 15px;">
+                <p class="company-name">{{ $empresa->DESCRICAO }}</p>
+                <p>NIF: {{ $empresa->NIF }}</p>
+                <p>Tel: {{ $empresa->TELEFONE }}</p>
+            </td>
+        </tr>
+    </table>
 
     <div class="recipe-title">Receita Médica</div>
 
@@ -113,16 +97,6 @@
         <p><strong>Dr(a). {{ $paciente->MedicoNome }}</strong></p>
         <p style="font-size: 11px;">Médico(a) Responsável</p>
     </div>
-@if(!isset($only_content) && !isset($is_economico))
-    <button class="no-print no-print-btn" onclick="window.print()">IMPRIMIR RECEITA</button>
-    <script>
-        window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 500);
-        }
-    </script>
 </body>
 </html>
-@endif
 @endif

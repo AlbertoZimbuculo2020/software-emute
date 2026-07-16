@@ -424,7 +424,8 @@ class ConsultorioController extends Controller
             return $pdf->setPaper('a4')->download('Ficha_Medica_' . $paciente->PacienteNome . '.pdf');
         }
 
-        return view($view, $data);
+        $pdf = Pdf::loadView($view, $data);
+        return $pdf->setPaper('a4')->stream('Ficha_Medica_' . ($paciente->PacienteNome ?? 'paciente') . '.pdf');
     }
 
     public function imprimirReceita($idAgenda)
@@ -458,10 +459,11 @@ class ConsultorioController extends Controller
             $data['is_duplicate'] = request('duplicado') !== '0';
             $data['original_view'] = $view;
             $data['data'] = $data;
-            return view('pdf.layout_economico', $data);
+            return Pdf::loadView('pdf.layout_economico', $data)->setPaper('a4', 'landscape')->stream('Receita_Medica_Economico_' . ($paciente->PacienteNome ?? 'paciente') . '.pdf');
         }
-        
-        return view($view, $data);
+
+        $pdf = Pdf::loadView($view, $data);
+        return $pdf->setPaper('a4')->stream('Receita_Medica_' . ($paciente->PacienteNome ?? 'paciente') . '.pdf');
     }
 
     public function imprimirRequisicao($idAgenda)
@@ -538,10 +540,11 @@ class ConsultorioController extends Controller
             $data['is_duplicate'] = request('duplicado') !== '0';
             $data['original_view'] = $view;
             $data['data'] = $data;
-            return view('pdf.layout_economico', $data);
+            return Pdf::loadView('pdf.layout_economico', $data)->setPaper('a4', 'landscape')->stream('Requisicao_Exames_Economico_' . ($paciente->PacienteNome ?? 'paciente') . '.pdf');
         }
-        
-        return view($view, $data);
+
+        $pdf = Pdf::loadView($view, $data);
+        return $pdf->setPaper('a4')->stream('Requisicao_Exames_' . ($paciente->PacienteNome ?? 'paciente') . '.pdf');
     }
 
     public function imprimirJustificativo($idAgenda)
@@ -573,10 +576,11 @@ class ConsultorioController extends Controller
             $data['is_duplicate'] = request('duplicado') !== '0';
             $data['original_view'] = $view;
             $data['data'] = $data;
-            return view('pdf.layout_economico', $data);
+            return Pdf::loadView('pdf.layout_economico', $data)->setPaper('a4', 'landscape')->stream('Justificativo_Medico_Economico_' . ($paciente->PacienteNome ?? 'paciente') . '.pdf');
         }
-        
-        return view($view, $data);
+
+        $pdf = Pdf::loadView($view, $data);
+        return $pdf->setPaper('a4')->stream('Justificativo_Medico_' . ($paciente->PacienteNome ?? 'paciente') . '.pdf');
     }
 
     public function imprimirGuia($idAgenda)
@@ -656,7 +660,7 @@ class ConsultorioController extends Controller
             $data['is_duplicate'] = request()->input('duplicado') !== '0';
             $data['original_view'] = $view;
             $data['data'] = $data;
-            return view('pdf.layout_economico', $data);
+            return Pdf::loadView('pdf.layout_economico', $data)->setPaper('a4', 'landscape')->stream('Guia_Transferencia_Economico_' . ($paciente->PacienteNome ?? 'paciente') . '.pdf');
         }
 
         $data['only_content'] = false;
@@ -725,7 +729,8 @@ class ConsultorioController extends Controller
 
         $mesExtenso = $this->mesExtenso(date('m'));
 
-        return view('pdf.medicina_ocupacional', compact('paciente', 'idade', 'empresa', 'dadosOcupacionais', 'historico', 'mesExtenso'));
+        $pdf = Pdf::loadView('pdf.medicina_ocupacional', compact('paciente', 'idade', 'empresa', 'dadosOcupacionais', 'historico', 'mesExtenso'));
+        return $pdf->setPaper('a4')->stream('Medicina_Ocupacional_' . ($paciente->PacienteNome ?? 'paciente') . '.pdf');
     }
 
     public function storeMedicinaOcupacional(Request $request)

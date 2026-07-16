@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Processo Clínico de Internamento</title>
     <style>
-        @page { margin: 20mm; }
         body { font-family: sans-serif; font-size: 11px; color: #333; line-height: 1.4; }
         .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000080; padding-bottom: 10px; }
         .header h1 { margin: 0; color: #000080; font-size: 18px; text-transform: uppercase; }
@@ -13,7 +12,7 @@
         .grid { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
         .grid th, .grid td { border: 1px solid #ddd; padding: 6px; text-align: left; }
         .grid th { background: #f9f9f9; font-weight: bold; }
-        .footer { position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 9px; color: #777; border-top: 1px solid #ddd; padding-top: 5px; }
+        .footer { text-align: center; font-size: 9px; color: #777; border-top: 1px solid #ddd; padding-top: 5px; margin-top: 20px; }
         .patient-card { border: 1px solid #000080; padding: 10px; margin-bottom: 20px; border-radius: 5px; }
         .patient-card table { width: 100%; }
         .patient-card td { padding: 2px 5px; }
@@ -27,8 +26,8 @@
     @if(isset($empresa->IMAGEM) && $empresa->IMAGEM)
         <img src="{{ $empresa->IMAGEM }}" alt="Logo" style="max-height: 60px; margin-bottom: 5px;">
     @endif
-    <h1>{{ $empresa->Nome ?? 'CENTRO MÉDICO' }}</h1>
-    <p>{{ $empresa->Endereco ?? '' }} | NIF: {{ $empresa->NIF ?? '' }} | Tel: {{ $empresa->Telefone ?? '' }} | Email: {{ $empresa->Email ?? '' }}</p>
+    <h1>{{ $empresa->DESCRICAO ?? 'CENTRO MÉDICO' }}</h1>
+    <p>{{ $empresa->PROVINCIA ?? '' }}, {{ $empresa->CIDADE ?? '' }}, {{ $empresa->RUA ?? '' }} | NIF: {{ $empresa->NIF ?? '' }} | Tel: {{ $empresa->TELEFONE ?? '' }}</p>
     <div style="font-size: 14px; font-weight: bold; margin-top: 10px;">PROCESSO CLÍNICO DE INTERNAMENTO</div>
 </div>
 
@@ -176,12 +175,6 @@
 <div class="footer">
     Emitido em: {{ date('d/m/Y H:i') }} | Gerado por: {{ auth()->user()->name ?? 'Sistema' }}
 </div>
-
-<script>
-    window.onload = function() {
-        window.print();
-    }
-</script>
 
 </body>
 </html>

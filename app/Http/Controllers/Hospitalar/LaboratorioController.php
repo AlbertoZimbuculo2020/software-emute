@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class LaboratorioController extends Controller
 {
@@ -283,10 +284,11 @@ class LaboratorioController extends Controller
             $data['is_duplicate'] = request('duplicado') !== '0';
             $data['original_view'] = $view;
             $data['data'] = $data;
-            return view('pdf.layout_economico', $data);
+            return Pdf::loadView('pdf.layout_economico', $data)->setPaper('a4', 'landscape')->stream('Resultado_Laboratorio_Economico_' . ($agendamento->PacienteNome ?? 'paciente') . '.pdf');
         }
 
-        return view($view, $data);
+        $pdf = Pdf::loadView($view, $data);
+        return $pdf->setPaper('a4')->stream('Resultado_Laboratorio_' . ($agendamento->PacienteNome ?? 'paciente') . '.pdf');
     }
 
 }

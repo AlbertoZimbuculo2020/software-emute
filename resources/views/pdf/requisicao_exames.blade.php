@@ -127,20 +127,15 @@
         }
 
         /* EXAM HALF WIDTH (GRID) */
-        .grid-container {
+        .grid-table {
             width: 100%;
+            border-collapse: collapse;
             margin-bottom: 10px;
         }
-        .grid-item {
-            width: 48%;
-            float: left;
-            margin-bottom: 15px;
-        }
-        .grid-item:nth-child(even) {
-            float: right;
-        }
-        .clear {
-            clear: both;
+        .grid-table td {
+            width: 50%;
+            vertical-align: top;
+            padding: 0 5px;
         }
 
         /* SIGNATURE */
@@ -154,23 +149,6 @@
             width: 300px;
             border-top: 1px solid #000;
             margin: 30px auto 5px auto;
-        }
-        @media print {
-            .no-print { display: none; }
-            body { padding: 40px; }
-        }
-        .no-print-btn {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #0066cc;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            z-index: 9999;
         }
 @if(!isset($is_economico))
     </style>
@@ -307,51 +285,55 @@
             Categoria do Exame:
         </div>
         
-        <div class="grid-container">
+        <table class="grid-table">
             @foreach($simpleExams as $idx => $exame)
-                <div class="grid-item">
-                    <div class="exam-header" style="font-size: 10px; padding: 3px;">
-                        Exame: {{ $exame->Descricao }}
-                    </div>
-                    <table class="result-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 33%; font-size: 9px;">Dados</th>
-                                <th style="width: 33%; font-size: 9px;">Resultados</th>
-                                <th style="width: 33%; font-size: 9px;">Referencias</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if(!empty($exame->Filhos))
-                                @php
-                                    $filhos = array_filter(array_map('trim', explode('|', $exame->Filhos)));
-                                    $resultados = !empty($exame->Resultado) ? array_filter(array_map('trim', explode('|', $exame->Resultado))) : [];
-                                    $referencias = !empty($exame->Referencia) ? array_filter(array_map('trim', explode('|', $exame->Referencia))) : [];
-                                @endphp
-                                @foreach($filhos as $fidx => $filho)
-                                    <tr>
-                                        <td>{{ $filho }}</td>
-                                        <td>{{ $resultados[$fidx] ?? '' }}</td>
-                                        <td>{{ $referencias[$fidx] ?? '' }}</td>
-                                    </tr>
-                                @endforeach
-                            @else
+                @if($idx % 2 == 0)
+                <tr>
+                @endif
+                    <td>
+                        <div class="exam-header" style="font-size: 10px; padding: 3px;">
+                            Exame: {{ $exame->Descricao }}
+                        </div>
+                        <table class="result-table">
+                            <thead>
                                 <tr>
-                                    <td>{{ $exame->Descricao }}</td>
-                                    <td>{{ $exame->Resultado ?? '' }}</td>
-                                    <td>{{ $exame->Referencia ?? '' }}</td>
+                                    <th style="width: 33%; font-size: 9px;">Dados</th>
+                                    <th style="width: 33%; font-size: 9px;">Resultados</th>
+                                    <th style="width: 33%; font-size: 9px;">Referencias</th>
                                 </tr>
-                            @endif
-                        </tbody>
-                    </table>
-                </div>
-                
-                @if(($idx + 1) % 2 == 0)
-                    <div class="clear"></div>
+                            </thead>
+                            <tbody>
+                                @if(!empty($exame->Filhos))
+                                    @php
+                                        $filhos = array_filter(array_map('trim', explode('|', $exame->Filhos)));
+                                        $resultados = !empty($exame->Resultado) ? array_filter(array_map('trim', explode('|', $exame->Resultado))) : [];
+                                        $referencias = !empty($exame->Referencia) ? array_filter(array_map('trim', explode('|', $exame->Referencia))) : [];
+                                    @endphp
+                                    @foreach($filhos as $fidx => $filho)
+                                        <tr>
+                                            <td>{{ $filho }}</td>
+                                            <td>{{ $resultados[$fidx] ?? '' }}</td>
+                                            <td>{{ $referencias[$fidx] ?? '' }}</td>
+                                        </tr>
+                                    @endforeach
+                                @else
+                                    <tr>
+                                        <td>{{ $exame->Descricao }}</td>
+                                        <td>{{ $exame->Resultado ?? '' }}</td>
+                                        <td>{{ $exame->Referencia ?? '' }}</td>
+                                    </tr>
+                                @endif
+                            </tbody>
+                        </table>
+                    </td>
+                @if($idx % 2 == 1 || $idx == count($simpleExams) - 1)
+                    @if($idx % 2 == 0)
+                    <td style="border: none;"></td>
+                    @endif
+                </tr>
                 @endif
             @endforeach
-            <div class="clear"></div>
-        </div>
+        </table>
     @endif
 
     <!-- SIGNATURE -->
@@ -362,14 +344,6 @@
     </div>
 
 @if(!isset($only_content) && !isset($is_economico))
-    <button class="no-print no-print-btn" onclick="window.print()">IMPRIMIR REQUISIÇÃO</button>
-    <script>
-        window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 500);
-        }
-    </script>
 </body>
 </html>
 @endif

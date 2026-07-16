@@ -4,7 +4,6 @@
     <meta charset="utf-8">
     <title>Relatório de Medicina Ocupacional</title>
     <style>
-        @page { margin: 1cm; }
         body { font-family: 'Courier', sans-serif; font-size: 10px; color: #333; line-height: 1.2; }
         .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
         .logo { max-height: 60px; margin-bottom: 5px; }
@@ -16,17 +15,13 @@
         .label { font-weight: bold; color: #666; text-transform: uppercase; font-size: 8px; display: block; }
         .value { font-weight: bold; color: #000; font-size: 10px; }
         .footer { margin-top: 30px; text-align: center; }
-        .signature { margin-top: 50px; border-top: 1px solid #000; display: inline-block; width: 250px; padding-top: 5px; font-weight: bold; }
-        .checkbox-container { display: inline-block; margin-right: 10px; }
-        .checkbox { border: 1px solid #000; width: 10px; height: 10px; display: inline-block; vertical-align: middle; margin-right: 3px; }
+        .signature { margin-top: 50px; border-top: 1px solid #000; width: 250px; padding-top: 5px; font-weight: bold; }
+        .checkbox-container { margin-right: 10px; }
+        .checkbox { border: 1px solid #000; width: 10px; height: 10px; vertical-align: middle; margin-right: 3px; }
         .checked { background: #000; }
         .table-ocupacional { width: 100%; border-collapse: collapse; margin-top: 5px; }
         .table-ocupacional th, .table-ocupacional td { border: 1px solid #ccc; padding: 4px; font-size: 9px; }
         .table-ocupacional th { background: #eee; font-weight: bold; text-align: left; text-transform: uppercase; }
-        @media print {
-            .no-print { display: none; }
-            body { margin: 0; padding: 0; }
-        }
     </style>
 </head>
 <body>
@@ -34,8 +29,8 @@
         @if($empresa && $empresa->IMAGEM)
             <img src="{{ $empresa->IMAGEM }}" class="logo">
         @endif
-        <div style="font-weight: bold; font-size: 12px;">{{ $empresa->NOME ?? 'CLÍNICA MÉDICA' }}</div>
-        <div>{{ $empresa->ENDERECO ?? '' }} | Tel: {{ $empresa->TELEFONE ?? '' }}</div>
+        <div style="font-weight: bold; font-size: 12px;">{{ $empresa->DESCRICAO ?? 'CLÍNICA MÉDICA' }}</div>
+        <div>{{ $empresa->PROVINCIA ?? '' }}, {{ $empresa->CIDADE ?? '' }}, {{ $empresa->RUA ?? '' }} | Tel: {{ $empresa->TELEFONE ?? '' }}</div>
         <div class="title">RELATÓRIO DE EXAME MÉDICO OCUPACIONAL (ASO)</div>
     </div>
 
@@ -191,12 +186,5 @@
         </div>
     </div>
 
-    <script>
-        window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 500);
-        };
-    </script>
 </body>
 </html>

@@ -18,24 +18,7 @@
         .date { text-align: right; margin-bottom: 60px; }
         .signature { text-align: center; margin-top: 80px; }
         .signature-line { border-bottom: 1px solid #000; width: 300px; margin: 0 auto 10px; }
-        .footer { position: fixed; bottom: -20px; left: 0; right: 0; text-align: center; font-size: 10px; color: #555; }
-        @media print {
-            .no-print { display: none; }
-            body { margin: 20px; }
-        }
-        .no-print-btn {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #0066cc;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            z-index: 9999;
-        }
+        .footer { text-align: center; font-size: 10px; color: #555; margin-top: 30px; }
 @if(!isset($is_economico))
     </style>
 @endif
@@ -79,20 +62,10 @@
     </div>
 
     <div class="footer">
-        {{ $empresa->Endereco ?? 'CACUACO, ECOCAMPO, 4 DE FEVEREIRO' }} | 
-        Tel: {{ $empresa->Telefone ?? '924358803' }} | 
+        {{ $empresa->RUA ?? 'CACUACO, ECOCAMPO, 4 DE FEVEREIRO' }}{{ $empresa->CIDADE ? ', ' . $empresa->CIDADE : '' }} | 
+        Tel: {{ $empresa->TELEFONE ?? '924358803' }} | 
         NIF: {{ $empresa->NIF ?? '5401150954' }}
     </div>
-@if(!isset($only_content) && !isset($is_economico))
-    <button class="no-print no-print-btn" onclick="window.print()">IMPRIMIR JUSTIFICATIVO</button>
-    <script>
-        window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 500);
-        }
-    </script>
 </body>
 </html>
-@endif
 @endif

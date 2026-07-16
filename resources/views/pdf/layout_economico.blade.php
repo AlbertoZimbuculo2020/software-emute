@@ -3,10 +3,6 @@
 <head>
     <meta charset="utf-8">
     <style>
-        @page { 
-            margin: 0; 
-            size: a4 landscape;
-        }
         body { 
             margin: 0; 
             padding: 0; 
@@ -85,12 +81,5 @@
             </td>
         </tr>
     </table>
-    <script>
-        window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 500);
-        }
-    </script>
 </body>
 </html>

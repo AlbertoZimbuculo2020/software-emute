@@ -8,11 +8,7 @@
 @if(!isset($only_content))
     @if(!isset($is_economico))
     <style>
-        @page {
-            margin: 15mm;
-        }
-    @endif
-        body { 
+        body {
             font-family: 'Helvetica', sans-serif; 
             font-size: 11px; 
             color: #000; 
@@ -59,7 +55,7 @@
         .triage-table td { border: 1px solid #000; padding: 4px; }
         .triage-label { font-weight: bold; background-color: #f9f9f9; }
         
-        .grid-triage { display: block; width: 100%; }
+        .grid-triage { width: 100%; }
         .grid-triage table { width: 100%; border-collapse: collapse; }
 
         /* CLINICAL BOXES */
@@ -80,26 +76,6 @@
         .signature-section { text-align: center; margin-top: 40px; font-size: 10px; font-weight: bold; }
         .signature-line { width: 250px; border-bottom: 1px solid #000; margin: 30px auto 5px; }
 
-        @media print {
-            .no-print { display: none; }
-            body { padding: 0; }
-            header { position: fixed; top: 0; }
-            footer { position: fixed; bottom: 0; }
-        }
-
-        .no-print-btn {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #0066cc;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            z-index: 9999;
-        }
 @if(!isset($is_economico))
     </style>
 @endif
@@ -125,7 +101,7 @@
                 <td style="vertical-align: middle; padding-left: 10px; padding-bottom: 5px;">
                     <div style="font-size: 12px; font-weight: bold; text-transform: uppercase; line-height: 1.2;">{{ $empresa->DESCRICAO }}</div>
                     <div style="font-size: 8px; color: #555; margin-top: 2px;">
-                        NIF: {{ $empresa->NIF ?? '' }} | Tel: {{ $empresa->TELEFONE ?? '' }} | Endereço: {{ $empresa->ENDERECO ?? '' }}
+                        NIF: {{ $empresa->NIF ?? '' }} | Tel: {{ $empresa->TELEFONE ?? '' }} | Endereço: {{ $empresa->PROVINCIA ?? '' }}, {{ $empresa->CIDADE ?? '' }}, {{ $empresa->RUA ?? '' }}
                     </div>
                 </td>
             </tr>
@@ -335,14 +311,6 @@
 @endif
 
 @if(!isset($only_content) && !isset($is_economico))
-    <!-- O botão foi removido para garantir que o relatório impresso/PDF saia limpo -->
-    <script>
-        window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 500);
-        }
-    </script>
 </body>
 </html>
 @endif
