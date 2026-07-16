@@ -64,6 +64,44 @@ const enviarTriage = () => {
         return;
     }
 
+    const peso = parseFloat(form.peso);
+    const temperatura = parseFloat(form.temperatura);
+    const pulso = parseInt(form.pulso);
+    const fRespiratoria = parseInt(form.f_respiratoria);
+    const oximetria = parseInt(form.oximetria);
+
+    if (form.peso && (isNaN(peso) || peso < 0.5 || peso > 300)) {
+        showNotification('Peso inválido (deve ser entre 0.5 e 300 kg).', 'error');
+        return;
+    }
+    if (form.temperatura && (isNaN(temperatura) || temperatura < 30 || temperatura > 45)) {
+        showNotification('Temperatura inválida (deve ser entre 30°C e 45°C).', 'error');
+        return;
+    }
+    if (form.pulso && (isNaN(pulso) || pulso < 20 || pulso > 250)) {
+        showNotification('Frequência cardíaca inválida (deve ser entre 20 e 250 bpm).', 'error');
+        return;
+    }
+    if (form.f_respiratoria && (isNaN(fRespiratoria) || fRespiratoria < 5 || fRespiratoria > 60)) {
+        showNotification('Frequência respiratória inválida (deve ser entre 5 e 60 rpm).', 'error');
+        return;
+    }
+    if (form.oximetria && (isNaN(oximetria) || oximetria < 50 || oximetria > 100)) {
+        showNotification('Saturação de O2 inválida (deve ser entre 50% e 100%).', 'error');
+        return;
+    }
+    if (form.tensao && !/^\d{1,3}\/\d{1,3}$/.test(form.tensao.trim())) {
+        showNotification('Pressão arterial deve estar no formato sistólica/diastólica (ex: 120/80).', 'error');
+        return;
+    }
+    if (form.tensao) {
+        const [sistolica, diastolica] = form.tensao.split('/').map(Number);
+        if (sistolica < 50 || sistolica > 300 || diastolica < 20 || diastolica > 200) {
+            showNotification('Valores de pressão arterial fora do range fisiológico (ex: 120/80).', 'error');
+            return;
+        }
+    }
+
     confirmModal.value = {
         isOpen: true,
         title: 'Enviar para Consultório',

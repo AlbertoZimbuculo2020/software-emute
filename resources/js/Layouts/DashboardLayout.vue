@@ -39,7 +39,8 @@ import {
     CheckCircle2,
     AlertCircle,
     X,
-    Menu
+    Menu,
+    UserPlus
 } from 'lucide-vue-next';
 
 const showingSidebar = ref(true);
@@ -115,6 +116,7 @@ const pageTitle = computed(() => {
         'Pacientes': 'Pacientes',
         'Medicos': 'Médicos',
         'Clientes': 'Clientes',
+        'Registo': 'Registar Entidade',
         'Utilizadores': 'Utilizadores',
         'Dashboard': 'Dashboard',
         'Empresa': 'Empresa',
@@ -217,6 +219,9 @@ const pageTitle = computed(() => {
                             <ChevronDown v-if="showingSidebar" :class="openMenus.entidades ? 'rotate-180' : ''" class="w-3 h-3 transition-transform" />
                         </button>
                         <div v-show="openMenus.entidades && showingSidebar" class="pl-10 space-y-1 animate-fadeIn">
+                            <Link v-if="can('btnCliente')" :href="route('entidades.registo')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100 font-bold text-blue-300">
+                                <UserPlus class="w-3 h-3 mr-2" /> Registar Novo
+                            </Link>
                             <Link v-if="can('btnCliente')" :href="route('clientes.index')" class="flex items-center py-1.5 text-[11px] opacity-80 hover:opacity-100">
                                 <UserRound class="w-3 h-3 mr-2" /> Clientes
                             </Link>

@@ -597,29 +597,46 @@ class ConsultorioController extends Controller
             $idade = (new \DateTime())->diff($birthDate)->y . ' Anos';
         }
 
+        $triagem = DB::table('tb_triagem')->where('IdAgenda', $idAgenda)->first();
+
+        $receita = DB::table('tb_receita')
+            ->where('IdAgenda', $idAgenda)
+            ->where('Estado', '!=', 'Removido')
+            ->get();
+
         $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
         if ($empresa && $empresa->IMAGEM) {
             $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
         }
 
         $view = 'pdf.guia_transferencia';
-        $data = compact('paciente', 'idade', 'empresa');
-        $data['correspondente'] = request('correspondente');
-        $data['motivo'] = request('motivo');
-        $data['exames_realizados'] = request('exames_realizados');
-        $data['analises'] = request('analises');
-        $data['diagnostico'] = request('diagnostico');
-        $data['tratamento'] = request('tratamento');
+        $data = compact('paciente', 'idade', 'triagem', 'receita', 'empresa');
+        $data['correspondente'] = request()->input('correspondente');
+        $data['motivo'] = request()->input('motivo');
+        $data['exames_realizados'] = request()->input('exames_realizados');
+        $data['analises'] = request()->input('analises');
+        $data['diagnostico'] = request()->input('diagnostico');
+        $data['tratamento'] = request()->input('tratamento');
+        $data['historia_clinica'] = request()->input('historia_clinica');
+        $data['hora_admissao'] = request()->input('hora_admissao') ?: ($triagem ? date('H:i', strtotime($triagem->CREATED_AT)) : '');
+        $data['hora_saida'] = request()->input('hora_saida') ?: date('H:i');
+        $data['obs_final'] = request()->input('obs_final');
 
-        if (request('modo') === 'economico') {
+        $tratamentoItensJson = request()->input('tratamento_itens', '[]');
+        $data['tratamento_itens'] = json_decode($tratamentoItensJson, true) ?? [];
+
+        if (request()->input('modo') === 'economico') {
             $data['is_economico'] = true;
-            $data['is_duplicate'] = request('duplicado') !== '0';
+            $data['is_duplicate'] = request()->input('duplicado') !== '0';
             $data['original_view'] = $view;
             $data['data'] = $data;
             return view('pdf.layout_economico', $data);
         }
-        
-        return view($view, $data);
+
+        $data['only_content'] = false;
+        $data['only_styles'] = false;
+        $pdf = Pdf::loadView($view, $data);
+        return $pdf->setPaper('a4')->stream('Guia_Transferencia_' . ($paciente->PacienteNome ?? 'paciente') . '.pdf');
     }
 
     public function imprimirMedicinaOcupacional($idAgenda)

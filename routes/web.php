@@ -11,6 +11,7 @@ use App\Http\Controllers\EmpresaController;
 use App\Http\Controllers\Entidades\ClienteController;
 use App\Http\Controllers\Entidades\PacienteController;
 use App\Http\Controllers\Entidades\MedicoController;
+use App\Http\Controllers\Entidades\RegistoController;
 use App\Http\Controllers\Hospitalar\ConsultaController;
 use App\Http\Controllers\Hospitalar\TriagemController;
 use App\Http\Controllers\Hospitalar\ConsultorioController;
@@ -159,6 +160,9 @@ Route::get('/entidades/clientes', [ClienteController::class, 'index'])->middlewa
 Route::post('/entidades/clientes', [ClienteController::class, 'store'])->middleware(['auth', 'verified'])->name('clientes.store');
 Route::put('/entidades/clientes/{codigo}', [ClienteController::class, 'update'])->middleware(['auth', 'verified'])->name('clientes.update');
 Route::delete('/entidades/clientes/{codigo}', [ClienteController::class, 'destroy'])->middleware(['auth', 'verified'])->name('clientes.destroy');
+
+Route::get('/entidades/registo', [RegistoController::class, 'index'])->middleware(['auth', 'verified'])->name('entidades.registo');
+Route::post('/entidades/registo', [RegistoController::class, 'store'])->middleware(['auth', 'verified'])->name('entidades.registo.store');
 
 Route::get('/entidades/pacientes', [PacienteController::class, 'index'])->middleware(['auth', 'verified'])->name('pacientes.index');
 Route::post('/entidades/pacientes', [PacienteController::class, 'store'])->middleware(['auth', 'verified'])->name('pacientes.store');

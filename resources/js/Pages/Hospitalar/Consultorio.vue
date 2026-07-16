@@ -434,7 +434,23 @@ const confirmarJustificativo = () => {
 };
 
 const showGuiaModal = ref(false);
-const guiaData = ref({ correspondente: '', motivo: '', exames_realizados: '', analises: '', diagnostico: '', tratamento: '' });
+const guiaData = ref({ correspondente: '', motivo: '', exames_realizados: '', analises: '', diagnostico: '', tratamento: '', historia_clinica: '', hora_admissao: '', hora_saida: '', obs_final: '', tratamento_itens: [] });
+
+const addTratamentoItem = () => {
+    guiaData.value.tratamento_itens.push({ medicamento: '', quantidade: '', dosagem: '', horario: '', via: '' });
+};
+
+const removeTratamentoItem = (index) => {
+    guiaData.value.tratamento_itens.splice(index, 1);
+};
+
+const formatTratamentoItens = () => {
+    if (guiaData.value.tratamento_itens.length === 0) return guiaData.value.tratamento;
+    return guiaData.value.tratamento_itens
+        .filter(item => item.medicamento)
+        .map(item => `${item.medicamento} ${item.dosagem || ''} - ${item.quantidade || ''} - ${item.horario || ''} - ${item.via || ''}`)
+        .join('\n');
+};
 
 const gerarGuiaTransferencia = () => {
     if (!selectedPaciente.value) return;
@@ -442,15 +458,28 @@ const gerarGuiaTransferencia = () => {
 };
 
 const confirmarGuia = () => {
-    let url = route('hospitalar.consultorio.imprimir.guia', selectedPaciente.value.Codigo);
-    const params = new URLSearchParams(guiaData.value);
-    url += '?' + params.toString();
+    if (!selectedPaciente.value) return;
+    
+    let dataToSend = { ...guiaData.value };
+    let trattamentoText = formatTratamentoItens();
+    if (trattamentoText) {
+        dataToSend.tratamento = trattamentoText;
+    }
+    if (dataToSend.tratamento_itens && dataToSend.tratamento_itens.length > 0) {
+        dataToSend.tratamento_itens = JSON.stringify(dataToSend.tratamento_itens.filter(item => item.medicamento));
+    } else {
+        dataToSend.tratamento_itens = '[]';
+    }
+    
+    const url = route('hospitalar.consultorio.imprimir.guia', selectedPaciente.value.Codigo);
+    const params = new URLSearchParams(dataToSend);
     
     if (isEconomicMode.value) {
-        url += '&modo=economico';
-        if (!isDuplicate.value) url += '&duplicado=0';
+        params.append('modo', 'economico');
+        if (!isDuplicate.value) params.append('duplicado', '0');
     }
-    window.open(url, '_blank');
+    
+    window.open(url + '?' + params.toString(), '_blank');
     showGuiaModal.value = false;
 };
 const imprimirReceita = () => {
@@ -1497,24 +1526,50 @@ const changeFontSize = (type) => {
 
         <!-- MODAL: Guia de Transferência -->
         <div v-if="showGuiaModal" class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
-            <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-300 overflow-hidden">
+            <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-300 overflow-hidden">
                 <div class="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white p-4 font-black uppercase text-[10px] flex justify-between items-center">
                     <span>Preencher Guia de Transferência</span>
                     <button @click="showGuiaModal = false"><X class="w-4 h-4"/></button>
                 </div>
-                <div class="p-6 space-y-3 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                <div class="p-6 space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar">
+                    
+                    <!-- Dados do Destino -->
                     <div class="flex flex-col gap-1">
-                        <label class="text-[9px] font-black text-slate-400 uppercase">Unidade de Destino</label>
-                        <input v-model="guiaData.correspondente" class="w-full border border-slate-300 rounded p-2 text-xs font-bold" placeholder="Nome do Hospital/Clínica" />
+                        <label class="text-[9px] font-black text-slate-400 uppercase">Unidade de Destino *</label>
+                        <input v-model="guiaData.correspondente" class="w-full border border-slate-300 rounded p-2 text-xs font-bold" placeholder="Nome do Hospital/Clínica de Destino" />
                     </div>
+
+                    <!-- Tempos -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[9px] font-black text-slate-400 uppercase">Hora de Admissão</label>
+                            <input type="time" v-model="guiaData.hora_admissao" class="w-full border border-slate-300 rounded p-2 text-xs font-bold" />
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[9px] font-black text-slate-400 uppercase">Hora de Saída</label>
+                            <input type="time" v-model="guiaData.hora_saida" class="w-full border border-slate-300 rounded p-2 text-xs font-bold" />
+                        </div>
+                    </div>
+
+                    <!-- História Clínica -->
                     <div class="flex flex-col gap-1">
-                        <label class="text-[9px] font-black text-slate-400 uppercase">Motivo da Transferência</label>
-                        <textarea v-model="guiaData.motivo" class="w-full border border-slate-300 rounded p-2 text-xs font-bold h-20 resize-none"></textarea>
+                        <label class="text-[9px] font-black text-slate-400 uppercase">História Clínica</label>
+                        <textarea v-model="guiaData.historia_clinica" class="w-full border border-slate-300 rounded p-2 text-xs font-bold h-24 resize-none" placeholder="Descreva a história clínica do paciente..."></textarea>
                     </div>
+
+                    <!-- Motivo da Transferência -->
                     <div class="flex flex-col gap-1">
-                        <label class="text-[9px] font-black text-slate-400 uppercase">Diagnóstico / Hipótese</label>
-                        <textarea v-model="guiaData.diagnostico" class="w-full border border-slate-300 rounded p-2 text-xs font-bold h-16 resize-none"></textarea>
+                        <label class="text-[9px] font-black text-slate-400 uppercase">Motivo da Transferência *</label>
+                        <textarea v-model="guiaData.motivo" class="w-full border border-slate-300 rounded p-2 text-xs font-bold h-20 resize-none" placeholder="Motivo claro da transferência..."></textarea>
                     </div>
+
+                    <!-- Diagnóstico -->
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[9px] font-black text-slate-400 uppercase">Diagnóstico *</label>
+                        <textarea v-model="guiaData.diagnostico" class="w-full border border-slate-300 rounded p-2 text-xs font-bold h-16 resize-none" placeholder="Diagnóstico / Hipótese Diagnóstica"></textarea>
+                    </div>
+
+                    <!-- Exames e Análises -->
                     <div class="grid grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1">
                             <label class="text-[9px] font-black text-slate-400 uppercase">Exames Realizados</label>
@@ -1525,10 +1580,66 @@ const changeFontSize = (type) => {
                             <textarea v-model="guiaData.analises" class="w-full border border-slate-300 rounded p-2 text-xs font-bold h-20 resize-none"></textarea>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="text-[9px] font-black text-slate-400 uppercase">Tratamento Efetuado</label>
-                        <textarea v-model="guiaData.tratamento" class="w-full border border-slate-300 rounded p-2 text-xs font-bold h-20 resize-none"></textarea>
+
+                    <!-- Tratamento Estruturado -->
+                    <div class="flex flex-col gap-2">
+                        <div class="flex items-center justify-between">
+                            <label class="text-[9px] font-black text-slate-400 uppercase">Tratamento Efetuado</label>
+                            <button @click="addTratamentoItem" type="button" class="text-[9px] font-black text-emerald-600 hover:text-emerald-700 uppercase flex items-center gap-1">
+                                + Adicionar Medicamento
+                            </button>
+                        </div>
+                        
+                        <div v-if="guiaData.tratamento_itens.length > 0" class="space-y-2">
+                            <div v-for="(item, index) in guiaData.tratamento_itens" :key="index" class="grid grid-cols-12 gap-1 items-end bg-slate-50 p-2 rounded border border-slate-200">
+                                <div class="col-span-3">
+                                    <label class="text-[8px] font-black text-slate-400 uppercase">Medicamento</label>
+                                    <input v-model="item.medicamento" class="w-full border border-slate-300 rounded p-1 text-[10px]" placeholder="Ex: Amoxicilina" />
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="text-[8px] font-black text-slate-400 uppercase">Dosagem</label>
+                                    <input v-model="item.dosagem" class="w-full border border-slate-300 rounded p-1 text-[10px]" placeholder="Ex: 500mg" />
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="text-[8px] font-black text-slate-400 uppercase">Quantidade</label>
+                                    <input v-model="item.quantidade" class="w-full border border-slate-300 rounded p-1 text-[10px]" placeholder="Ex: 10cp" />
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="text-[8px] font-black text-slate-400 uppercase">Horário</label>
+                                    <input v-model="item.horario" class="w-full border border-slate-300 rounded p-1 text-[10px]" placeholder="Ex: 8/8h" />
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="text-[8px] font-black text-slate-400 uppercase">Via</label>
+                                    <select v-model="item.via" class="w-full border border-slate-300 rounded p-1 text-[10px]">
+                                        <option value="">Selecione</option>
+                                        <option value="VO">VO (Oral)</option>
+                                        <option value="IV">IV (Intravenosa)</option>
+                                        <option value="IM">IM (Intramuscular)</option>
+                                        <option value="SC">SC (Subcutânea)</option>
+                                        <option value="Topica">Tópica</option>
+                                        <option value="Retal">Retal</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-1 flex justify-center">
+                                    <button @click="removeTratamentoItem(index)" type="button" class="text-red-400 hover:text-red-600 p-1">
+                                        <X class="w-3 h-3" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[9px] font-black text-slate-400 uppercase">Tratamento Adicional (texto livre)</label>
+                            <textarea v-model="guiaData.tratamento" class="w-full border border-slate-300 rounded p-2 text-xs font-bold h-16 resize-none" placeholder="Outros tratamentos não listados acima..."></textarea>
+                        </div>
                     </div>
+
+                    <!-- Observações Finais -->
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[9px] font-black text-slate-400 uppercase">Observações Finais</label>
+                        <textarea v-model="guiaData.obs_final" class="w-full border border-slate-300 rounded p-2 text-xs font-bold h-16 resize-none" placeholder="Observações adicionais..."></textarea>
+                    </div>
+
                     <div class="flex gap-2 pt-2">
                         <button @click="showGuiaModal = false" class="flex-1 py-3 font-black uppercase text-[10px] text-slate-400 hover:text-slate-600">Cancelar</button>
                         <button @click="confirmarGuia" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black uppercase text-[10px] shadow-lg shadow-emerald-200">Gerar Documento</button>

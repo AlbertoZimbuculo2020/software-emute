@@ -205,6 +205,44 @@ const submitAto = async () => {
 const submitSinais = async () => {
     if (!selectedPaciente.value) return;
 
+    const peso = parseFloat(sinaisForm.value.Peso);
+    const temperatura = parseFloat(sinaisForm.value.Temperatura);
+    const fc = parseInt(sinaisForm.value.FrequenciaCardioca);
+    const fr = parseInt(sinaisForm.value.FrequenciaRespiratoria);
+    const spo2 = parseInt(sinaisForm.value.SituacaoOxigenio);
+
+    if (sinaisForm.value.Peso && (isNaN(peso) || peso < 0.5 || peso > 300)) {
+        showToast('Peso inválido (deve ser entre 0.5 e 300 kg)', 'error');
+        return;
+    }
+    if (sinaisForm.value.Temperatura && (isNaN(temperatura) || temperatura < 30 || temperatura > 45)) {
+        showToast('Temperatura inválida (deve ser entre 30°C e 45°C)', 'error');
+        return;
+    }
+    if (sinaisForm.value.FrequenciaCardioca && (isNaN(fc) || fc < 20 || fc > 250)) {
+        showToast('Frequência cardíaca inválida (deve ser entre 20 e 250 bpm)', 'error');
+        return;
+    }
+    if (sinaisForm.value.FrequenciaRespiratoria && (isNaN(fr) || fr < 5 || fr > 60)) {
+        showToast('Frequência respiratória inválida (deve ser entre 5 e 60 rpm)', 'error');
+        return;
+    }
+    if (sinaisForm.value.SituacaoOxigenio && (isNaN(spo2) || spo2 < 50 || spo2 > 100)) {
+        showToast('Saturação de O2 inválida (deve ser entre 50% e 100%)', 'error');
+        return;
+    }
+    if (sinaisForm.value.PressaoArterial && !/^\d{1,3}\/\d{1,3}$/.test(sinaisForm.value.PressaoArterial.trim())) {
+        showToast('Pressão arterial deve estar no formato sistólica/diastólica (ex: 120/80)', 'error');
+        return;
+    }
+    if (sinaisForm.value.PressaoArterial) {
+        const [sistolica, diastolica] = sinaisForm.value.PressaoArterial.split('/').map(Number);
+        if (sistolica < 50 || sistolica > 300 || diastolica < 20 || diastolica > 200) {
+            showToast('Valores de pressão arterial fora do range fisiológico', 'error');
+            return;
+        }
+    }
+
     // Regras de Alerta Clínico
     const pressaoStr = sinaisForm.value.PressaoArterial || '';
     if (pressaoStr.includes('/')) {
