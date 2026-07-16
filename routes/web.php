@@ -278,6 +278,15 @@ Route::middleware('auth')->group(function () {
 Route::post('/test-database-connection', [AuthenticatedSessionController::class, 'testConnection'])->name('db.test');
 Route::post('/save-database-connection', [AuthenticatedSessionController::class, 'saveConnection'])->name('db.save');
 
+Route::get('/utilizadores/lista', function () {
+    $users = \Illuminate\Support\Facades\DB::table('utilizador')
+        ->where('ESTADO', '!=', 'Removido')
+        ->select('NOME_UTILIZADOR')
+        ->orderBy('NOME_UTILIZADOR')
+        ->get();
+    return response()->json($users);
+})->name('utilizadores.lista');
+
 // Licença
 Route::get('/licenca', [\App\Http\Controllers\LicencaController::class, 'index'])->name('licenca.index');
 Route::post('/licenca/solicitar', [\App\Http\Controllers\LicencaController::class, 'solicitar'])->name('licenca.solicitar');

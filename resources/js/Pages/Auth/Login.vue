@@ -1,7 +1,7 @@
 <script setup>
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref, watch, onMounted } from 'vue';
-import { User, Lock, Eye, EyeOff, CheckCircle, X, Server, Database, Settings, Loader2, Save, Key, Building, Stethoscope, Activity, HelpCircle } from 'lucide-vue-next';
+import { User, Lock, Eye, EyeOff, CheckCircle, X, Server, Database, Settings, Loader2, Save, Key, Building, Stethoscope, Activity, HelpCircle, Search } from 'lucide-vue-next';
 import axios from 'axios';
 
 const props = defineProps({
@@ -61,6 +61,62 @@ onMounted(() => {
 const showPassword = ref(false);
 const showServerSettings = ref(false);
 const testingConnection = ref(false);
+
+// User picker
+const showUserPicker = ref(false);
+const users = ref([]);
+const usersLoaded = ref(false);
+const userSearchQuery = ref('');
+const userPickerRef = ref(null);
+
+const loadUsers = async () => {
+    if (usersLoaded.value) return;
+    try {
+        const response = await axios.get(route('utilizadores.lista'));
+        users.value = response.data;
+        usersLoaded.value = true;
+    } catch (e) {}
+};
+
+const filteredUsers = ref([]);
+watch(userSearchQuery, (q) => {
+    const query = (q || '').toLowerCase();
+    filteredUsers.value = users.value.filter(u => u.NOME_UTILIZADOR.toLowerCase().includes(query));
+});
+
+const toggleUserPicker = async () => {
+    showUserPicker.value = !showUserPicker.value;
+    if (showUserPicker.value) {
+        await loadUsers();
+        userSearchQuery.value = '';
+        filteredUsers.value = users.value;
+        setTimeout(() => {
+            const input = userPickerRef.value?.querySelector('input');
+            if (input) input.focus();
+        }, 100);
+    }
+};
+
+const passwordInputRef = ref(null);
+
+const selectUser = (username) => {
+    form.login = username;
+    showUserPicker.value = false;
+    userSearchQuery.value = '';
+    setTimeout(() => {
+        if (passwordInputRef.value) passwordInputRef.value.focus();
+    }, 50);
+};
+
+const closeUserPicker = (e) => {
+    if (userPickerRef.value && !userPickerRef.value.contains(e.target)) {
+        showUserPicker.value = false;
+    }
+};
+
+onMounted(() => {
+    document.addEventListener('click', closeUserPicker);
+});
 
 const saveSettings = async () => {
     if (!form.db_host || !form.db_database || !form.db_username) {
@@ -155,12 +211,45 @@ const submit = () => {
                     <!-- Utilizador -->
                     <div class="space-y-1.5">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-0.5">Utilizador</label>
-                        <div class="relative group">
+                        <div class="relative group" ref="userPickerRef">
                             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                                 <User class="h-4 w-4 text-gray-300 group-focus-within:text-emerald-500 transition-colors" />
                             </div>
                             <input v-model="form.login" type="text" placeholder="O seu utilizador" required :disabled="!props.licencaValida"
-                                class="w-full pl-10 pr-4 py-3 bg-[#f8f9fc] border border-gray-200/50 text-gray-800 text-[13px] rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:bg-white transition-all font-medium placeholder-gray-300 disabled:opacity-50 disabled:bg-gray-50/50 disabled:cursor-not-allowed" />
+                                class="w-full pl-10 pr-10 py-3 bg-[#f8f9fc] border border-gray-200/50 text-gray-800 text-[13px] rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:bg-white transition-all font-medium placeholder-gray-300 disabled:opacity-50 disabled:bg-gray-50/50 disabled:cursor-not-allowed" />
+                            <button @click.prevent="toggleUserPicker" :disabled="!props.licencaValida" type="button"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-emerald-500 transition-colors disabled:opacity-30"
+                                title="Pesquisar utilizador">
+                                <Search class="w-4 h-4" />
+                            </button>
+
+                            <!-- User Picker Dropdown -->
+                            <transition enter-active-class="transition duration-150 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-100 ease-in" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
+                                <div v-if="showUserPicker" class="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl shadow-gray-200/60 overflow-hidden">
+                                    <!-- Search inside dropdown -->
+                                    <div class="p-2.5 border-b border-gray-100">
+                                        <div class="relative">
+                                            <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" />
+                                            <input v-model="userSearchQuery" type="text" placeholder="Pesquisar..." autofocus
+                                                class="w-full pl-8 pr-3 py-2 bg-[#f8f9fc] border border-gray-200/60 text-[12px] rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all font-medium placeholder-gray-300" />
+                                        </div>
+                                    </div>
+                                    <!-- User List -->
+                                    <div class="max-h-[200px] overflow-y-auto">
+                                        <div v-if="filteredUsers.length === 0" class="px-4 py-6 text-center">
+                                            <User class="w-6 h-6 text-gray-200 mx-auto mb-2" />
+                                            <p class="text-[11px] text-gray-400 font-medium">Nenhum utilizador encontrado</p>
+                                        </div>
+                                        <button v-for="user in filteredUsers" :key="user.NOME_UTILIZADOR" @click="selectUser(user.NOME_UTILIZADOR)"
+                                            class="w-full px-4 py-2.5 flex items-center space-x-3 hover:bg-emerald-50/80 transition-colors text-left group/item">
+                                            <div class="w-7 h-7 rounded-full bg-slate-100 group-hover/item:bg-emerald-100 flex items-center justify-center flex-shrink-0 transition-colors">
+                                                <User class="w-3.5 h-3.5 text-slate-400 group-hover/item:text-emerald-500 transition-colors" />
+                                            </div>
+                                            <span class="text-[12px] font-semibold text-gray-700 group-hover/item:text-emerald-600 transition-colors">{{ user.NOME_UTILIZADOR }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </transition>
                         </div>
                     </div>
 
@@ -175,7 +264,7 @@ const submit = () => {
                             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                                 <Lock class="h-4 w-4 text-gray-300 group-focus-within:text-emerald-500 transition-colors" />
                             </div>
-                            <input :type="showPassword ? 'text' : 'password'" v-model="form.senha" placeholder="••••••••" required :disabled="!props.licencaValida"
+                            <input ref="passwordInputRef" :type="showPassword ? 'text' : 'password'" v-model="form.senha" placeholder="••••••••" required :disabled="!props.licencaValida" data-password
                                 class="w-full pl-10 pr-11 py-3 bg-[#f8f9fc] border border-gray-200/50 text-gray-800 text-[13px] rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:bg-white transition-all font-medium placeholder-gray-300 disabled:opacity-50 disabled:bg-gray-50/50 disabled:cursor-not-allowed" />
                             <button @click="showPassword = !showPassword" type="button" :disabled="!props.licencaValida" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors disabled:opacity-30">
                                 <Eye v-if="!showPassword" class="w-4 h-4" />
