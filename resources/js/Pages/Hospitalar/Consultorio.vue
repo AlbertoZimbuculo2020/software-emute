@@ -452,8 +452,28 @@ const formatTratamentoItens = () => {
         .join('\n');
 };
 
-const gerarGuiaTransferencia = () => {
+const gerarGuiaTransferencia = async () => {
     if (!selectedPaciente.value) return;
+    
+    guiaData.value.correspondente = '';
+    guiaData.value.motivo = '';
+    guiaData.value.exames_realizados = '';
+    guiaData.value.analises = '';
+    guiaData.value.diagnostico = '';
+    guiaData.value.tratamento = '';
+    guiaData.value.historia_clinica = '';
+    guiaData.value.hora_admissao = '';
+    guiaData.value.hora_saida = '';
+    guiaData.value.obs_final = '';
+    guiaData.value.tratamento_itens = [];
+
+    try {
+        const response = await fetch(route('hospitalar.consultorio.exames.guia', selectedPaciente.value.Codigo));
+        const data = await response.json();
+        guiaData.value.exames_realizados = data.exames_realizados || '';
+        guiaData.value.analises = data.analises || '';
+    } catch (e) {}
+
     showGuiaModal.value = true;
 };
 

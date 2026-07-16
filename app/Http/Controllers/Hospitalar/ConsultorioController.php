@@ -604,6 +604,32 @@ class ConsultorioController extends Controller
             ->where('Estado', '!=', 'Removido')
             ->get();
 
+        $examesPaciente = DB::table('tb_resultado_exame')
+            ->where('IdAgenda', $idAgenda)
+            ->where('Estado', '!=', 'Removido')
+            ->get();
+
+        $examesImagem = $examesPaciente->filter(function ($e) {
+            return in_array(strtoupper($e->Categoria ?? ''), ['IMAGEM', 'RAIO X', 'ECOGRAFIA', 'TOMOGRAFIA', 'RESSONANCIA']);
+        });
+        $analisesLaboratorio = $examesPaciente->filter(function ($e) {
+            return !in_array(strtoupper($e->Categoria ?? ''), ['IMAGEM', 'RAIO X', 'ECOGRAFIA', 'TOMOGRAFIA', 'RESSONANCIA']);
+        });
+
+        $examesAuto = $examesImagem->map(function ($e) {
+            $line = $e->Descricao;
+            if ($e->Resultado) $line .= ' - Resultado: ' . $e->Resultado;
+            if ($e->Obs) $line .= ' (' . $e->Obs . ')';
+            return $line;
+        })->implode("\n");
+
+        $analisesAuto = $analisesLaboratorio->map(function ($e) {
+            $line = $e->Descricao;
+            if ($e->Resultado) $line .= ' - Resultado: ' . $e->Resultado;
+            if ($e->Obs) $line .= ' (' . $e->Obs . ')';
+            return $line;
+        })->implode("\n");
+
         $empresa = DB::table('tb_empresa')->where('ID_EMPRESA', 1)->first();
         if ($empresa && $empresa->IMAGEM) {
             $empresa->IMAGEM = 'data:image/jpeg;base64,' . base64_encode($empresa->IMAGEM);
@@ -613,8 +639,8 @@ class ConsultorioController extends Controller
         $data = compact('paciente', 'idade', 'triagem', 'receita', 'empresa');
         $data['correspondente'] = request()->input('correspondente');
         $data['motivo'] = request()->input('motivo');
-        $data['exames_realizados'] = request()->input('exames_realizados');
-        $data['analises'] = request()->input('analises');
+        $data['exames_realizados'] = request()->input('exames_realizados') ?: $examesAuto;
+        $data['analises'] = request()->input('analises') ?: $analisesAuto;
         $data['diagnostico'] = request()->input('diagnostico');
         $data['tratamento'] = request()->input('tratamento');
         $data['historia_clinica'] = request()->input('historia_clinica');
@@ -637,6 +663,35 @@ class ConsultorioController extends Controller
         $data['only_styles'] = false;
         $pdf = Pdf::loadView($view, $data);
         return $pdf->setPaper('a4')->stream('Guia_Transferencia_' . ($paciente->PacienteNome ?? 'paciente') . '.pdf');
+    }
+
+    public function getExamesGuia($idAgenda)
+    {
+        $examesPaciente = DB::table('tb_resultado_exame')
+            ->where('IdAgenda', $idAgenda)
+            ->where('Estado', '!=', 'Removido')
+            ->get();
+
+        $examesImagem = [];
+        $analisesLab = [];
+
+        foreach ($examesPaciente as $ex) {
+            $linha = $ex->Descricao;
+            if ($ex->Resultado) $linha .= ' - Resultado: ' . $ex->Resultado;
+            if ($ex->Obs) $linha .= ' (' . $ex->Obs . ')';
+
+            $cat = strtoupper($ex->Categoria ?? '');
+            if (in_array($cat, ['IMAGEM', 'RAIO X', 'ECOGRAFIA', 'TOMOGRAFIA', 'RESSONANCIA'])) {
+                $examesImagem[] = $linha;
+            } else {
+                $analisesLab[] = $linha;
+            }
+        }
+
+        return response()->json([
+            'exames_realizados' => implode("\n", $examesImagem),
+            'analises' => implode("\n", $analisesLab),
+        ]);
     }
 
     public function imprimirMedicinaOcupacional($idAgenda)
