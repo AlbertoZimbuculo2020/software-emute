@@ -4,298 +4,244 @@
     <meta charset="utf-8">
     <title>Guia de Transferência</title>
     <style>
-        body { font-family: sans-serif; font-size: 10px; color: #000; margin: 0; padding: 0; }
+        body { 
+            font-family: Arial, sans-serif; 
+            font-size: 11px; 
+            color: #000; 
+            margin: 0; 
+            padding: 20px; 
+        }
         
-        .header { text-align: center; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 8px; }
-        .logo { width: 70px; height: 70px; margin-bottom: 3px; }
-        .clinic-name { font-size: 13px; font-weight: bold; text-transform: uppercase; }
-        .clinic-info { font-size: 8px; color: #555; margin-top: 2px; }
+        .header-container { 
+            width: 100%; 
+            margin-bottom: 20px; 
+        }
+        .header-table {
+            width: 100%;
+            border: none;
+            border-collapse: collapse;
+        }
+        .header-table td {
+            border: none;
+            padding: 0;
+            vertical-align: top;
+        }
+        .header-left { 
+            width: 80px; 
+        }
+        .header-right { 
+            line-height: 1.4; 
+        }
+        .logo { 
+            width: 70px; 
+            max-height: 70px; 
+            margin-bottom: 5px;
+        }
         
-        .title { text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase; border: 2px solid #000; padding: 6px; background-color: #f0f0f0; }
+        .clinic-name { 
+            font-size: 13px; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+        }
+        .clinic-info { 
+            font-size: 11px; 
+        }
         
-        .section { border: 1px solid #000; margin-bottom: 8px; }
-        .section-title { font-weight: bold; font-size: 9px; text-transform: uppercase; background-color: #e8e8e8; padding: 3px 6px; border-bottom: 1px solid #000; }
-        .section-content { padding: 6px; }
+        .title { 
+            text-align: center; 
+            font-size: 16px; 
+            font-weight: bold; 
+            margin-bottom: 15px; 
+            text-transform: uppercase; 
+        }
         
-        .data-table { width: 100%; border-collapse: collapse; }
-        .data-table td { padding: 2px 4px; vertical-align: top; font-size: 10px; }
-        .data-table .label { font-weight: bold; width: 110px; font-size: 9px; }
+        table.data-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 15px; 
+        }
+        table.data-table th, table.data-table td { 
+            border: 1px solid #000; 
+            padding: 5px 8px; 
+            text-align: left; 
+        }
+        table.data-table th { 
+            background-color: #d9d9d9; 
+            font-weight: bold; 
+            text-align: center; 
+            font-size: 12px; 
+            text-transform: uppercase;
+        }
+        table.data-table .label { 
+            font-weight: bold; 
+            width: 35%; 
+        }
         
-        .vitals-table { width: 100%; border-collapse: collapse; }
-        .vitals-table td { border: 1px solid #ccc; padding: 3px 5px; text-align: center; }
-        .vital-label { font-size: 7px; font-weight: bold; text-transform: uppercase; color: #555; }
-        .vital-value { font-size: 11px; font-weight: bold; }
-        
-        .times-table { width: 100%; border-collapse: collapse; }
-        .times-table td { width: 50%; text-align: center; padding: 5px; border: 1px solid #ccc; }
-        .time-label { font-size: 8px; font-weight: bold; text-transform: uppercase; color: #555; }
-        .time-value { font-size: 13px; font-weight: bold; }
-        
-        .text-block { font-size: 10px; line-height: 1.4; min-height: 15px; }
-        
-        .treatment-table { width: 100%; border-collapse: collapse; font-size: 9px; }
-        .treatment-table th { background-color: #e8e8e8; border: 1px solid #000; padding: 2px 4px; text-align: left; font-size: 8px; text-transform: uppercase; }
-        .treatment-table td { border: 1px solid #ccc; padding: 2px 4px; }
-        
-        .note-box { border: 1px solid #ccc; padding: 6px; font-size: 8px; background-color: #fffacd; margin-top: 5px; }
-        .note-title { font-weight: bold; text-transform: uppercase; margin-bottom: 3px; font-size: 8px; }
-        
-        .stamps-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .stamps-table td { width: 50%; vertical-align: top; padding: 0 10px; }
-        .stamp-box { border-top: 1px solid #000; padding-top: 6px; text-align: center; }
-        .stamp-label { font-size: 8px; font-weight: bold; text-transform: uppercase; }
-        .stamp-area { height: 50px; border: 1px dashed #ccc; margin-top: 4px; text-align: center; }
-        .stamp-text { font-size: 7px; color: #999; line-height: 50px; }
-        
-        .footer { text-align: center; font-size: 8px; color: #555; border-top: 1px solid #ddd; padding-top: 4px; margin-top: 15px; }
+        .signature-area { 
+            margin-top: 50px; 
+            text-align: center; 
+        }
+        .signature-text { 
+            font-style: italic; 
+            margin-bottom: 40px; 
+            font-size: 11px; 
+        }
+        .signature-line { 
+            width: 250px; 
+            border-bottom: 1px solid #000; 
+            margin: 0 auto; 
+            margin-bottom: 5px;
+        }
+        .doctor-name { 
+            font-weight: bold; 
+            font-size: 11px; 
+        }
     </style>
 </head>
 <body>
-    <!-- CABEÇALHO -->
-    <div class="header">
-        @if($empresa && $empresa->IMAGEM)
-            <img src="{{ $empresa->IMAGEM }}" class="logo" /><br/>
-        @endif
-        <div class="clinic-name">{{ $empresa->DESCRICAO ?? 'CLÍNICA' }}</div>
-        <div class="clinic-info">
-            @if($empresa->RUA){{ $empresa->RUA }}@endif
-            @if($empresa->CIDADE), {{ $empresa->CIDADE }}@endif
-            @if($empresa->PROVINCIA) - {{ $empresa->PROVINCIA }}@endif
-            @if($empresa->TELEFONE) | Tel: {{ $empresa->TELEFONE }}@endif
-            @if($empresa->NIF) | NIF: {{ $empresa->NIF }}@endif
-        </div>
+    <div class="header-container">
+        <table class="header-table">
+            <tr>
+                <td class="header-left">
+                    @if(isset($empresa) && $empresa->IMAGEM)
+                        <img src="{{ $empresa->IMAGEM }}" class="logo" />
+                    @endif
+                </td>
+                <td class="header-right">
+                    <div class="clinic-name">{{ $empresa->DESCRICAO ?? 'CLÍNICA' }}</div>
+                    <div class="clinic-info">
+                        @if(isset($empresa) && $empresa->RUA){{ $empresa->RUA }}@endif
+                        @if(isset($empresa) && $empresa->CIDADE), {{ $empresa->CIDADE }}@endif
+                        @if(isset($empresa) && $empresa->PROVINCIA) - {{ $empresa->PROVINCIA }}@endif
+                        <br>
+                        @if(isset($empresa) && $empresa->TELEFONE)Tel: {{ $empresa->TELEFONE }}<br>@endif
+                        @if(isset($empresa) && $empresa->EMAIL)Email: {{ $empresa->EMAIL }}<br>@endif
+                        @if(isset($empresa) && $empresa->NIF)NIF: {{ $empresa->NIF }}@endif
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 
-    <!-- TÍTULO -->
     <div class="title">GUIA DE TRANSFERÊNCIA</div>
 
-    <!-- DADOS DO PACIENTE -->
-    <div class="section">
-        <div class="section-title">Dados do Paciente</div>
-        <div class="section-content">
-            <table class="data-table">
-                <tr>
-                    <td class="label">Nome:</td>
-                    <td>{{ $paciente->PacienteNome }}</td>
-                    <td class="label">Idade:</td>
-                    <td>{{ $idade }}</td>
-                </tr>
-                <tr>
-                    <td class="label">Sexo:</td>
-                    <td>{{ $paciente->Genero ?? '___' }}</td>
-                    <td class="label">Nº Consulta:</td>
-                    <td>{{ $paciente->Codigo }}</td>
-                </tr>
-                <tr>
-                    <td class="label">Data:</td>
-                    <td>{{ date('d/m/Y', strtotime($paciente->DataAgendamento)) }}</td>
-                    <td class="label">Médico:</td>
-                    <td>Dr(a). {{ $paciente->MedicoNome ?? '___' }}</td>
-                </tr>
-                <tr>
-                    <td class="label">Unid. Destino:</td>
-                    <td colspan="3" style="font-weight: bold; border-bottom: 1px solid #000;">{{ $correspondente ?? '___________________________________________' }}</td>
-                </tr>
-            </table>
-        </div>
-    </div>
-
-    <!-- SINAIS VITAIS -->
-    <div class="section">
-        <div class="section-title">Sinais Vitais</div>
-        <div class="section-content">
-            @if($triagem)
-            <table class="vitals-table">
-                <tr>
-                    <td style="width:25%">
-                        <div class="vital-label">Peso</div>
-                        <div class="vital-value">{{ $triagem->Peso ?? '___' }} kg</div>
-                    </td>
-                    <td style="width:25%">
-                        <div class="vital-label">Tensão Arterial</div>
-                        <div class="vital-value">{{ $triagem->PressaoArterial ?? '___' }}</div>
-                    </td>
-                    <td style="width:25%">
-                        <div class="vital-label">Freq. Cardíaca</div>
-                        <div class="vital-value">{{ $triagem->FrequenciaCardioca ?? '___' }} bpm</div>
-                    </td>
-                    <td style="width:25%">
-                        <div class="vital-label">Freq. Respiratória</div>
-                        <div class="vital-value">{{ $triagem->FrequenciaRespiratoria ?? '___' }} rpm</div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <div class="vital-label">Temperatura</div>
-                        <div class="vital-value">{{ $triagem->Temperatura ?? '___' }} °C</div>
-                    </td>
-                    <td>
-                        <div class="vital-label">SpO2</div>
-                        <div class="vital-value">{{ $triagem->SituacaoOxigenio ?? '___' }}%</div>
-                    </td>
-                    <td>
-                        <div class="vital-label">Classif. Risco</div>
-                        <div class="vital-value">{{ $triagem->ClassificacaoRisco ?? '___' }}</div>
-                    </td>
-                    <td>
-                        <div class="vital-label">Obs. Triagem</div>
-                        <div style="font-size:8px; text-align:left;">{{ $triagem->Obs ?? '___' }}</div>
-                    </td>
-                </tr>
-            </table>
-            @else
-            <div class="text-block" style="color:#999; font-style:italic;">Nenhum registo de triagem encontrado</div>
-            @endif
-        </div>
-    </div>
-
-    <!-- TEMPOS -->
-    <div class="section">
-        <div class="section-title">Tempos</div>
-        <div class="section-content">
-            <table class="times-table">
-                <tr>
-                    <td>
-                        <div class="time-label">Hora de Admissão</div>
-                        <div class="time-value">{{ $hora_admissao ?: '___:___' }}</div>
-                    </td>
-                    <td>
-                        <div class="time-label">Hora de Saída</div>
-                        <div class="time-value">{{ $hora_saida ?: '___:___' }}</div>
-                    </td>
-                </tr>
-            </table>
-        </div>
-    </div>
-
-    <!-- HISTÓRIA CLÍNICA -->
-    <div class="section">
-        <div class="section-title">História Clínica</div>
-        <div class="section-content">
-            <div class="text-block">{{ $historia_clinica ?: '—' }}</div>
-        </div>
-    </div>
-
-    <!-- MOTIVO DA TRANSFERÊNCIA -->
-    <div class="section">
-        <div class="section-title">Motivo da Transferência</div>
-        <div class="section-content">
-            <div class="text-block">{{ $motivo ?: '—' }}</div>
-        </div>
-    </div>
-
-    <!-- DIAGNÓSTICO -->
-    <div class="section">
-        <div class="section-title">Diagnóstico / Hipótese Diagnóstica</div>
-        <div class="section-content">
-            <div class="text-block">{{ $diagnostico ?: '—' }}</div>
-        </div>
-    </div>
-
-    <!-- EXAMES E ANÁLISES -->
-    <div class="section">
-        <div class="section-title">Exames e Análises Realizadas</div>
-        <div class="section-content">
-            <table class="data-table">
-                <tr>
-                    <td class="label" style="width:50%; border-bottom: 1px solid #000;">Exames:</td>
-                    <td class="label" style="width:50%; border-bottom: 1px solid #000;">Análises:</td>
-                </tr>
-                <tr>
-                    <td style="padding-top:4px;">{{ $exames_realizados ?: '—' }}</td>
-                    <td style="padding-top:4px;">{{ $analises ?: '—' }}</td>
-                </tr>
-            </table>
-        </div>
-    </div>
-
-    <!-- TRATAMENTO -->
-    <div class="section">
-        <div class="section-title">Tratamento Efetuado</div>
-        <div class="section-content">
-            @if($receita && count($receita) > 0)
-            <table class="treatment-table">
-                <thead>
-                    <tr>
-                        <th style="width:30%">Medicamento</th>
-                        <th style="width:20%">Dosagem</th>
-                        <th style="width:25%">Horário / Posologia</th>
-                        <th style="width:25%">Observações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($receita as $item)
-                    <tr>
-                        <td>{{ $item->Farmaco }}</td>
-                        <td>{{ $item->Dosagem }}</td>
-                        <td>{{ $item->Dias }}</td>
-                        <td>—</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-            @endif
-            @if($tratamento)
-            <div style="margin-top:4px;">
-                <b style="font-size:8px; text-transform:uppercase;">Tratamento Adicional:</b><br/>
-                <div class="text-block" style="margin-top:2px;">{{ $tratamento }}</div>
-            </div>
-            @endif
-            @if((!$receita || count($receita) === 0) && !$tratamento)
-            <div class="text-block" style="color:#999; font-style:italic;">Nenhum tratamento registado</div>
-            @endif
-        </div>
-    </div>
-
-    <!-- OBSERVAÇÕES FINAIS -->
-    <div class="section">
-        <div class="section-title">Observações Finais</div>
-        <div class="section-content">
-            @if($obs_final)
-            <div class="text-block" style="margin-bottom:5px;">{{ $obs_final }}</div>
-            @endif
-            <div class="note-box">
-                <div class="note-title">Nota:</div>
-                Os dados do paciente devem estar claros e completos, incluindo sinais vitais e observações pertinentes. O carimbo do médico deve acompanhar a folha de prescrição e o relatório.
-            </div>
-        </div>
-    </div>
-
-    <!-- CARIMBO E ASSINATURA -->
-    <table class="stamps-table">
+    <table class="data-table">
         <tr>
+            <th colspan="2">IDENTIFICAÇÃO DO PACIENTE</th>
+        </tr>
+        <tr>
+            <td class="label">Data da Guia:</td>
+            <td>{{ date('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td class="label">Paciente:</td>
+            <td>{{ $paciente->PacienteNome ?? '___' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Idade:</td>
+            <td>{{ $idade ?? '___' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Género:</td>
+            <td>{{ $paciente->Genero ?? '___' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Data/Hora de Admissão:</td>
+            <td>{{ $hora_admissao ?? '___' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Data/Hora de Saída:</td>
+            <td>{{ $hora_saida ?? '___' }}</td>
+        </tr>
+    </table>
+
+    <table class="data-table">
+        <tr>
+            <th colspan="2">DADOS CLÍNICOS E SINAIS VITAIS (TRIAGEM)</th>
+        </tr>
+        <tr>
+            <td class="label">Peso:</td>
+            <td>{{ $triagem->Peso ?? '0' }} kg</td>
+        </tr>
+        <tr>
+            <td class="label">Temperatura:</td>
+            <td>{{ $triagem->Temperatura ?? '0' }} °C</td>
+        </tr>
+        <tr>
+            <td class="label">Tensão Arterial (TA):</td>
+            <td>{{ $triagem->PressaoArterial ?? '0' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Frequência Cardíaca (FC):</td>
+            <td>{{ $triagem->FrequenciaCardioca ?? '0' }} bpm</td>
+        </tr>
+        <tr>
+            <td class="label">Frequência Respiratória (FR):</td>
+            <td>{{ $triagem->FrequenciaRespiratoria ?? '0' }} cpm</td>
+        </tr>
+        <tr>
+            <td class="label">Saturação (SPO2):</td>
+            <td>{{ $triagem->SituacaoOxigenio ?? '0' }} %</td>
+        </tr>
+        <tr>
+            <td class="label">Classificação de Risco:</td>
+            <td>{{ $triagem->ClassificacaoRisco ?? 'normal' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Observações da Triagem:</td>
+            <td>{{ $triagem->Obs ?? 'Sem' }}</td>
+        </tr>
+    </table>
+
+    <table class="data-table">
+        <tr>
+            <th colspan="2">INFORMAÇÕES DE TRANSFERÊNCIA</th>
+        </tr>
+        <tr>
+            <td class="label">Correspondente:</td>
+            <td>Da {{ $empresa->DESCRICAO ?? 'CLÍNICA' }} Para o Serviço de: {{ $correspondente ?? '' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Motivo da Transferência:</td>
+            <td>{{ $motivo ?? '___' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Estado Geral:</td>
+            <td>{{ $estado_geral ?? 'Razoavel' }}</td>
+        </tr>
+        <tr>
+            <td class="label">História Clínica / Sintomas:</td>
+            <td>{{ $historia_clinica ?? '___' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Exames Clínicos:</td>
+            <td>{{ $exames_realizados ?? '___' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Análises Complementares:</td>
+            <td>{{ $analises ?? '___' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Diagnóstico:</td>
+            <td>{{ $diagnostico ?? '___' }}</td>
+        </tr>
+        <tr>
+            <td class="label">Tratamento Feito:</td>
             <td>
-                <div class="stamp-box">
-                    <div class="stamp-label">Carimbo do Médico</div>
-                    <div class="stamp-area">
-                        <span class="stamp-text">[ Carimbo ]</span>
-                    </div>
-                    <div style="margin-top:5px; border-top:1px solid #000; padding-top:4px;">
-                        <span style="font-size:9px; font-weight:bold;">Dr(a). {{ $paciente->MedicoNome ?? '__________________________________' }}</span>
-                    </div>
-                    <div style="font-size:8px; color:#555;">Médico(a) Assistente</div>
-                </div>
-            </td>
-            <td>
-                <div class="stamp-box">
-                    <div class="stamp-label">Assinatura e Carimbo</div>
-                    <div class="stamp-area">
-                        <span class="stamp-text">[ Assinatura + Carimbo ]</span>
-                    </div>
-                    <div style="margin-top:5px; border-top:1px solid #000; padding-top:4px;">
-                        <span style="font-size:9px; font-weight:bold;">{{ $empresa->DESCRICAO ?? '__________________________________' }}</span>
-                    </div>
-                    <div style="font-size:8px; color:#555;">Instituição de Origem</div>
-                </div>
+                @if(isset($receita) && count($receita) > 0)
+                    @foreach($receita as $item)
+                        {{ $item->Farmaco }} ({{ $item->Dosagem }}) - {{ $item->Dias }}<br>
+                    @endforeach
+                @endif
+                {{ $tratamento ?? '' }}
             </td>
         </tr>
     </table>
 
-    <!-- RODAPÉ -->
-    <div class="footer">
-        {{ $empresa->RUA ?? '' }}{{ $empresa->CIDADE ? ', ' . $empresa->CIDADE : '' }}
-        @if($empresa->TELEFONE) | Tel: {{ $empresa->TELEFONE }}@endif
-        @if($empresa->NIF) | NIF: {{ $empresa->NIF }}@endif
+    <div class="signature-area">
+        <div class="signature-text">Assinatura do Médico Assistente</div>
+        <div class="signature-line"></div>
+        <div class="doctor-name">Dr(a).: {{ $paciente->MedicoNome ?? '_______________________' }}</div>
     </div>
 </body>
 </html>
