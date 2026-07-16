@@ -37,9 +37,12 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
+        $token = \App\Models\User::generateToken();
+
         $user = User::create([
             'NOME_UTILIZADOR' => $request->name,
-            'SENHA' => hash('sha512', $request->password),
+            'SENHA' => User::hashPassword($request->password, $token),
+            'REMEMBER_TOKEN' => $token,
             'ESTADO' => 'Activado',
         ]);
 

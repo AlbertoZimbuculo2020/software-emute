@@ -51,10 +51,14 @@ class UtilizadorController extends Controller
             'ID_PESSOA' => 'nullable|string'
         ]);
 
-        $data['SENHA'] = hash('sha512', $data['SENHA']);
         $data['ACESSO'] = $data['ACESSO'] ?? 'NAO';
         $data['ESTADO'] = $this->mapEstado($data['ESTADO'] ?? null);
         $data['CREATED_AT'] = now();
+
+        // Generate token and hash password with it (desktop-compatible)
+        $token = \App\Models\User::generateToken();
+        $data['REMEMBER_TOKEN'] = $token;
+        $data['SENHA'] = \App\Models\User::hashPassword($data['SENHA'], $token);
 
         DB::table('utilizador')->insert($data);
 
@@ -73,7 +77,10 @@ class UtilizadorController extends Controller
         ]);
 
         if (!empty($data['SENHA'])) {
-            $data['SENHA'] = hash('sha512', $data['SENHA']);
+            // Generate new token and hash password with it (desktop-compatible)
+            $token = \App\Models\User::generateToken();
+            $data['REMEMBER_TOKEN'] = $token;
+            $data['SENHA'] = \App\Models\User::hashPassword($data['SENHA'], $token);
         } else {
             unset($data['SENHA']);
         }

@@ -90,10 +90,11 @@ class LoginRequest extends FormRequest
             $this->fail('Usuário não encontrado.');
         }
 
-        // Check password using Hybrid Strategy (Bcrypt OR Multi-Legacy SHA-512)
+        // Check password using Hybrid Strategy (Bcrypt OR Desktop-Compatible SHA-512 with token)
         $authenticated = false;
         
         $storedHash = trim((string)$user->SENHA);
+        $token = $user->REMEMBER_TOKEN ?? '';
 
         // 1. Try Bcrypt (Laravel default)
         if (\Illuminate\Support\Str::startsWith($storedHash, '$2y$')) {
@@ -102,16 +103,13 @@ class LoginRequest extends FormRequest
             }
         } 
         
-        // 2. Try Legacy SHA-512 Strategies
+        // 2. Try Desktop-Compatible SHA-512: SHA512(password + token)
         if (!$authenticated) {
-            $hashedPlain = strtolower(hash('sha512', (string)$senha));
-            $hashedUTF16LE = strtolower(hash('sha512', mb_convert_encoding((string)$senha, 'UTF-16LE')));
+            $hashedWithToken = \App\Models\User::hashPassword((string)$senha, $token);
             
             $storedHashLower = strtolower($storedHash);
 
-            if ($storedHashLower === $hashedPlain) {
-                $authenticated = true;
-            } elseif ($storedHashLower === $hashedUTF16LE) {
+            if ($storedHashLower === $hashedWithToken) {
                 $authenticated = true;
             }
         }

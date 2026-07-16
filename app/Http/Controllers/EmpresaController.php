@@ -60,17 +60,22 @@ class EmpresaController extends Controller
         if (!empty($data['LOGIN']) && !empty($data['SENHA'])) {
             $userExists = DB::table('utilizador')->where('NOME_UTILIZADOR', $data['LOGIN'])->first();
             if (!$userExists) {
-                // Determine ID manually if the table doesn't AI correctly, but usually insertGetId assumes AI on primary key
+                // Generate token and hash password with it (desktop-compatible)
+                $token = \App\Models\User::generateToken();
                 $userId = DB::table('utilizador')->insertGetId([
                     'NOME_UTILIZADOR' => $data['LOGIN'],
-                    'SENHA' => hash('sha512', $data['SENHA']),
+                    'SENHA' => \App\Models\User::hashPassword($data['SENHA'], $token),
+                    'REMEMBER_TOKEN' => $token,
                     'ESTADO' => 'Activado',
                     'ACESSO' => 'SIM',
                     'ID_PERFIL' => 1
                 ]);
             } else {
+                // Generate new token and hash password with it (desktop-compatible)
+                $token = \App\Models\User::generateToken();
                 DB::table('utilizador')->where('ID_UTILIZADOR', $userExists->ID_UTILIZADOR)->update([
-                    'SENHA' => hash('sha512', (string)$data['SENHA'])
+                    'SENHA' => \App\Models\User::hashPassword((string)$data['SENHA'], $token),
+                    'REMEMBER_TOKEN' => $token
                 ]);
                 $userId = $userExists->ID_UTILIZADOR;
             }

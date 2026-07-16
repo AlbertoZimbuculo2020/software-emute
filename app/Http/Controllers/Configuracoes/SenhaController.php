@@ -22,10 +22,13 @@ class SenhaController extends Controller
             'password' => ['required', 'string', 'min:4', 'confirmed'],
         ]);
 
+        $token = \App\Models\User::generateToken();
+
         DB::table('utilizador')
             ->where('ID_UTILIZADOR', Auth::id())
             ->update([
-                'SENHA' => hash('sha512', $validated['password']),
+                'SENHA' => \App\Models\User::hashPassword($validated['password'], $token),
+                'REMEMBER_TOKEN' => $token,
             ]);
 
         return redirect()->back()->with('message', 'Senha alterada com sucesso!');

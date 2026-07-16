@@ -20,8 +20,12 @@ class PasswordController extends Controller
             'password' => ['required', Password::defaults(), 'confirmed'],
         ]);
 
-        $request->user()->update([
-            'SENHA' => hash('sha512', $validated['password']),
+        $user = $request->user();
+        $token = \App\Models\User::generateToken();
+
+        $user->update([
+            'SENHA' => \App\Models\User::hashPassword($validated['password'], $token),
+            'REMEMBER_TOKEN' => $token,
         ]);
 
         return back();
