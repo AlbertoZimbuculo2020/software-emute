@@ -16,7 +16,7 @@ const props = defineProps({
     medicos: Array,
     consultas: Array,
     seguradoras: Array,
-    agendamentos: Array,
+    agendamentos: Object,
     examesPendentes: Array,
     internamentosPendentes: Array,
     filters: Object
@@ -395,7 +395,7 @@ const startPolling = () => {
     senhaPollInterval.value = setInterval(loadSenhas, 10000);
 };
 
-watch(() => props.agendamentos.length, (newVal, oldVal) => {
+watch(() => props.agendamentos.total, (newVal, oldVal) => {
     if (newVal > oldVal) {
         showNotification('Novo agendamento recebido!', 'success');
     }
@@ -807,10 +807,11 @@ onUnmounted(() => {
                                 </div>
                             </div>
 
-                            <div class="flex-grow overflow-auto p-4 custom-scrollbar">
-                                <table class="w-full border-separate border-spacing-y-2">
+                             <div class="flex-grow overflow-auto p-4 custom-scrollbar" style="-webkit-overflow-scrolling: touch">
+                                <table class="w-full border-separate border-spacing-y-2 min-w-[700px]">
                                     <thead>
                                         <tr class="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                            <th class="px-4 py-2 text-left">Data</th>
                                             <th class="px-4 py-2 text-left">Paciente</th>
                                             <th class="px-4 py-2 text-left">Consulta</th>
                                             <th class="px-4 py-2 text-left">Médico</th>
@@ -819,8 +820,13 @@ onUnmounted(() => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr v-for="agenda in props.agendamentos" :key="agenda.Id" class="group bg-slate-50/50 hover:bg-blue-50/60 transition-all border border-transparent hover:border-blue-200 rounded-2xl">
-                                            <td class="px-4 py-3 first:rounded-l-2xl border-y border-l border-transparent">
+                                        <tr v-for="agenda in props.agendamentos.data" :key="agenda.Id" class="group bg-slate-50/50 hover:bg-blue-50/60 transition-all border border-transparent hover:border-blue-200 rounded-2xl">
+                                            <td class="px-4 py-3 first:rounded-l-2xl border-y border-l border-transparent whitespace-nowrap">
+                                                <span class="text-[10px] font-bold text-slate-600 bg-white px-2 py-1 rounded-lg border border-slate-100">
+                                                    {{ new Date(agenda.DataAgendamento).toLocaleDateString('pt-PT') }}
+                                                </span>
+                                            </td>
+                                            <td class="px-4 py-3 border-y border-transparent">
                                                 <div class="flex items-center gap-3">
                                                     <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[10px] font-black text-slate-500 shadow-sm border border-slate-100">
                                                         {{ agenda.PacienteNome?.substring(0, 2) }}
@@ -882,6 +888,23 @@ onUnmounted(() => {
                                         </tr>
                                     </tbody>
                                 </table>
+                                <div v-if="!props.agendamentos.data?.length" class="py-20 text-center opacity-30">
+                                    <Calendar class="w-10 h-10 mx-auto mb-2" />
+                                    <p class="text-[9px] font-black uppercase">Nenhuma consulta encontrada</p>
+                                </div>
+                            </div>
+                            <div v-if="props.agendamentos.last_page > 1" class="px-6 py-3 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between flex-wrap gap-2">
+                                <span class="text-[9px] font-bold text-slate-400">
+                                    Página {{ props.agendamentos.current_page }} de {{ props.agendamentos.last_page }}
+                                    ({{ props.agendamentos.total }} registos)
+                                </span>
+                                <div class="flex items-center gap-1.5">
+                                    <button @click="router.get(props.agendamentos.first_page_url, {}, { preserveState: true, replace: true })" :disabled="!props.agendamentos.prev_page_url" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-black uppercase hover:bg-blue-50 hover:border-blue-200 transition-all disabled:opacity-30 disabled:pointer-events-none">Primeira</button>
+                                    <button @click="router.get(props.agendamentos.prev_page_url, {}, { preserveState: true, replace: true })" :disabled="!props.agendamentos.prev_page_url" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-black uppercase hover:bg-blue-50 hover:border-blue-200 transition-all disabled:opacity-30 disabled:pointer-events-none">Anterior</button>
+                                    <span class="px-2 py-1 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-200 rounded-lg">{{ props.agendamentos.current_page }}</span>
+                                    <button @click="router.get(props.agendamentos.next_page_url, {}, { preserveState: true, replace: true })" :disabled="!props.agendamentos.next_page_url" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-black uppercase hover:bg-blue-50 hover:border-blue-200 transition-all disabled:opacity-30 disabled:pointer-events-none">Seguinte</button>
+                                    <button @click="router.get(props.agendamentos.last_page_url, {}, { preserveState: true, replace: true })" :disabled="!props.agendamentos.next_page_url" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-black uppercase hover:bg-blue-50 hover:border-blue-200 transition-all disabled:opacity-30 disabled:pointer-events-none">Última</button>
+                                </div>
                             </div>
                         </div>
 

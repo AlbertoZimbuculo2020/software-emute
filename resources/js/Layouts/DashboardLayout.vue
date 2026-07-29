@@ -394,7 +394,7 @@ const pageTitle = computed(() => {
 
 
             <!-- Page Slots -->
-            <div class="flex-grow overflow-y-auto overflow-x-hidden p-4 sm:p-6 custom-scrollbar relative">
+            <div class="flex-grow overflow-y-auto overflow-x-auto p-4 sm:p-6 custom-scrollbar relative" style="-webkit-overflow-scrolling: touch">
                 <slot />
             </div>
 

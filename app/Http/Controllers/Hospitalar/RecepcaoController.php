@@ -13,6 +13,7 @@ class RecepcaoController extends Controller
     {
         $startDate = $request->get('startDate', date('Y-m-d'));
         $endDate = $request->get('endDate', date('Y-m-d'));
+        $endDateEnd = $endDate . ' 23:59:59';
 
         $medicos = DB::table('tb_medico')
             ->join('tb_tipoentidade', 'tb_medico.IdTipoEntidade', '=', 'tb_tipoentidade.Codigo')
@@ -35,11 +36,10 @@ class RecepcaoController extends Controller
             ->join('tb_tipoentidade', 'tb_agendamento.IdPaciente', '=', 'tb_tipoentidade.Codigo')
             ->leftJoin('tb_tipoentidade as medico', 'tb_agendamento.IdMedico', '=', 'medico.Codigo')
             ->select('tb_agendamento.*', 'tb_tipoentidade.Nome as PacienteNome', 'medico.Nome as MedicoNome')
-            ->whereBetween('tb_agendamento.DataAgendamento', [$startDate, $endDate])
+            ->whereBetween('tb_agendamento.DataAgendamento', [$startDate, $endDateEnd])
             ->where('tb_agendamento.Estado', 'Ativo')
             ->orderBy('tb_agendamento.Id', 'desc')
-            ->limit(200)
-            ->get();
+            ->paginate(15);
 
         // Exames por Pagar (Carrinho)
         $examesPendentes = DB::table('tb_resultado_exame')

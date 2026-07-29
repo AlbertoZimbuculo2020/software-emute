@@ -11,7 +11,7 @@ import {
 } from 'lucide-vue-next';
 
 const props = defineProps({
-    aguardando: Array,
+    aguardando: [Array, Object],
     catalogoExames: Array,
     catalogoFarmacos: { type: Array, default: () => [] },
     catalogoCid:      { type: Array, default: () => [] },
@@ -19,8 +19,11 @@ const props = defineProps({
     config: { type: Object, default: () => ({ triageEnabled: true, fontSize: '10px' }) }
 });
 
-const waitlist = ref([...props.aguardando]);
+const initialData = Array.isArray(props.aguardando) ? props.aguardando : (props.aguardando?.data || []);
+const waitlist = ref([...initialData]);
 const searchTerm = ref('');
+const currentPage = ref(1);
+const perPage = 5;
 const selectedPaciente = ref(null);
 const triageData = ref(null);
 const patientHistory = ref([]);
@@ -62,6 +65,9 @@ const refreshWaitlist = async () => {
         });
 
         waitlist.value = newData;
+        if (currentPage.value > Math.ceil(newData.length / perPage)) {
+            currentPage.value = 1;
+        }
     } catch (e) {
         console.error("Erro ao atualizar fila:", e);
     }
@@ -232,6 +238,8 @@ watch(() => props.aguardando, (newList) => {
     }
     previousWaitlist.value = JSON.parse(JSON.stringify(newList));
 }, { deep: true });
+
+watch(searchTerm, () => { currentPage.value = 1; });
 
 const form = useForm({
     Codigo: '',
@@ -578,12 +586,61 @@ const todosItensReceita = computed(() => {
 });
 
 const filteredAguardando = computed(() => {
-    if (!searchTerm.value) return waitlist.value;
-    const term = searchTerm.value.toLowerCase();
-    return waitlist.value.filter(p => 
-        p.PacienteNome.toLowerCase().includes(term) ||
-        p.Codigo.toLowerCase().includes(term)
-    );
+    const list = waitlist.value.filter(p => {
+        if (!searchTerm.value) return true;
+        const term = searchTerm.value.toLowerCase();
+        return p.PacienteNome?.toLowerCase().includes(term) ||
+               p.Codigo?.toLowerCase().includes(term);
+    });
+    return list;
+});
+
+const paginatedList = computed(() => {
+    const start = (currentPage.value - 1) * perPage;
+    return filteredAguardando.value.slice(start, start + perPage);
+});
+
+const totalPages = computed(() =>
+    Math.max(1, Math.ceil(filteredAguardando.value.length / perPage))
+);
+
+const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages.value) {
+        currentPage.value = page;
+        selectedPaciente.value = null;
+    }
+};
+
+const paginationPages = computed(() => {
+    const total = totalPages.value;
+    const curr = currentPage.value;
+    const pages = [];
+
+    if (total <= 7) {
+        for (let i = 1; i <= total; i++) pages.push(i);
+        return pages;
+    }
+
+    pages.push(1);
+
+    let start = Math.max(2, curr - 1);
+    let end = Math.min(total - 1, curr + 1);
+
+    if (curr <= 3) {
+        start = 2;
+        end = 4;
+    } else if (curr >= total - 2) {
+        start = total - 3;
+        end = total - 1;
+    }
+
+    if (start > 2) pages.push('...');
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (end < total - 1) pages.push('...');
+
+    if (total > 1) pages.push(total);
+
+    return pages;
 });
 
 const selecionarPaciente = async (paciente, readOnly = false, force = false) => {
@@ -910,7 +967,7 @@ const changeFontSize = (type) => {
                     </div>
 
                     <div class="flex-grow overflow-y-auto custom-scrollbar">
-                        <div v-for="p in filteredAguardando" :key="p.Codigo" 
+                        <div v-for="p in paginatedList" :key="p.Codigo" 
                             @click="selecionarPaciente(p)"
                             :class="selectedPaciente?.Codigo === p.Codigo ? 'bg-blue-50 border-r-4 border-blue-600' : 'hover:bg-slate-50 border-r-4 border-transparent'"
                             class="p-3 cursor-pointer border-b border-slate-100 transition-all">
@@ -928,6 +985,34 @@ const changeFontSize = (type) => {
                         <div v-if="filteredAguardando.length === 0" class="p-10 text-center flex flex-col items-center opacity-20">
                             <Users class="w-12 h-12 mb-2" />
                             <span class="text-[10px] font-black uppercase">Nenhum paciente</span>
+                        </div>
+
+                        <!-- Paginação -->
+                        <div v-if="totalPages > 1" class="flex items-center justify-center gap-0.5 p-3 border-t border-slate-100">
+                            <button @click="goToPage(1)" :disabled="currentPage <= 1"
+                                class="px-2 py-1 text-[9px] font-black rounded hover:bg-slate-100 disabled:opacity-20 transition-all" title="Primeira página">
+                                &laquo;
+                            </button>
+                            <button @click="goToPage(currentPage - 1)" :disabled="currentPage <= 1"
+                                class="px-2 py-1 text-[9px] font-black rounded hover:bg-slate-100 disabled:opacity-20 transition-all" title="Anterior">
+                                &lsaquo;
+                            </button>
+                            <template v-for="(page, idx) in paginationPages" :key="idx">
+                                <span v-if="page === '...'" class="px-1 text-[9px] text-slate-400 font-black">...</span>
+                                <button v-else @click="goToPage(page)"
+                                    :class="page === currentPage ? 'bg-blue-600 text-white' : 'hover:bg-slate-100 text-slate-500'"
+                                    class="px-2.5 py-1 text-[9px] font-black rounded transition-all min-w-[24px]">
+                                    {{ page }}
+                                </button>
+                            </template>
+                            <button @click="goToPage(currentPage + 1)" :disabled="currentPage >= totalPages"
+                                class="px-2 py-1 text-[9px] font-black rounded hover:bg-slate-100 disabled:opacity-20 transition-all" title="Próximo">
+                                &rsaquo;
+                            </button>
+                            <button @click="goToPage(totalPages)" :disabled="currentPage >= totalPages"
+                                class="px-2 py-1 text-[9px] font-black rounded hover:bg-slate-100 disabled:opacity-20 transition-all" title="Última página">
+                                &raquo;
+                            </button>
                         </div>
                     </div>
                 </div>

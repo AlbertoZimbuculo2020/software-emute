@@ -31,19 +31,14 @@ class ConsultorioController extends Controller
             ->whereIn('tb_agendamento.Situacao', ['Consultorio', 'Reconsulta', 'Laboratorio'])
             ->where('tb_agendamento.Estado', 'Ativo');
 
-        // Filtragem: Médicos veem apenas os pacientes atribuídos a eles.
-        // Admins (ACESSO=SIM) veem todos os pacientes.
-        $idMedico = $user->ID_PESSOA;
-        
-        if ($user->ACESSO === 'SIM') {
-            // Admin vê todos — sem filtro
-        } elseif ($idMedico) {
-            $query->where('tb_agendamento.IdMedico', $idMedico);
+        // Filtragem: cada utilizador vê apenas os pacientes atribuídos ao seu ID_PESSOA
+        if ($user->ID_PESSOA) {
+            $query->where('tb_agendamento.IdMedico', $user->ID_PESSOA);
         } else {
             $query->where('tb_agendamento.IdMedico', 'NONE');
         }
 
-        $aguardando = $query->get();
+        $aguardando = $query->paginate(10);
 
         $catalogoExames = DB::table('tb_exames')
             ->where('Estado', 'Ativo')
@@ -95,9 +90,7 @@ class ConsultorioController extends Controller
             ->whereIn('tb_agendamento.Situacao', ['Consultorio', 'Reconsulta', 'Laboratorio'])
             ->where('tb_agendamento.Estado', 'Ativo');
 
-        if ($user->ACESSO === 'SIM') {
-            // Admin vê todos — sem filtro
-        } elseif ($user->ID_PESSOA) {
+        if ($user->ID_PESSOA) {
             $query->where('tb_agendamento.IdMedico', $user->ID_PESSOA);
         } else {
             $query->where('tb_agendamento.IdMedico', 'PROTECTED');
