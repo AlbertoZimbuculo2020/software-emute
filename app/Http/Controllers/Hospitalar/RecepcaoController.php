@@ -38,6 +38,7 @@ class RecepcaoController extends Controller
             ->whereBetween('tb_agendamento.DataAgendamento', [$startDate, $endDate])
             ->where('tb_agendamento.Estado', 'Ativo')
             ->orderBy('tb_agendamento.Id', 'desc')
+            ->limit(200)
             ->get();
 
         // Exames por Pagar (Carrinho)
@@ -53,8 +54,8 @@ class RecepcaoController extends Controller
                 'tb_tipoentidade.Codigo as PROCESSO'
             )
             ->where('tb_resultado_exame.Estado', 'Ativo')
-            // No legacy code, "Carrinho" usually means items not yet processed by cashier
             ->orderBy('tb_resultado_exame.Id', 'desc')
+            ->limit(200)
             ->get();
 
         // Área de Internamento

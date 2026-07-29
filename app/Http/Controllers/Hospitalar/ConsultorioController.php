@@ -31,14 +31,15 @@ class ConsultorioController extends Controller
             ->whereIn('tb_agendamento.Situacao', ['Consultorio', 'Reconsulta', 'Laboratorio'])
             ->where('tb_agendamento.Estado', 'Ativo');
 
-        // Filtragem estrita: No consultório, cada utilizador deve ver apenas os pacientes
-        // que lhe foram atribuídos via IdMedico.
+        // Filtragem: Médicos veem apenas os pacientes atribuídos a eles.
+        // Admins (ACESSO=SIM) veem todos os pacientes.
         $idMedico = $user->ID_PESSOA;
         
-        if ($idMedico) {
+        if ($user->ACESSO === 'SIM') {
+            // Admin vê todos — sem filtro
+        } elseif ($idMedico) {
             $query->where('tb_agendamento.IdMedico', $idMedico);
         } else {
-            // Se não houver vínculo de médico (ID_PESSOA), a fila fica vazia por segurança
             $query->where('tb_agendamento.IdMedico', 'NONE');
         }
 
@@ -94,9 +95,11 @@ class ConsultorioController extends Controller
             ->whereIn('tb_agendamento.Situacao', ['Consultorio', 'Reconsulta', 'Laboratorio'])
             ->where('tb_agendamento.Estado', 'Ativo');
 
-        if ($user->ID_PESSOA) {
+        if ($user->ACESSO === 'SIM') {
+            // Admin vê todos — sem filtro
+        } elseif ($user->ID_PESSOA) {
             $query->where('tb_agendamento.IdMedico', $user->ID_PESSOA);
-        } else if ($user->ACESSO !== 'SIM') {
+        } else {
             $query->where('tb_agendamento.IdMedico', 'PROTECTED');
         }
 
