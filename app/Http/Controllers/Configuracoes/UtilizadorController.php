@@ -12,13 +12,13 @@ class UtilizadorController extends Controller
 {
     public function index()
     {
-        $utilizadores = DB::table('utilizador as u')
+        $utilizadores = DB::table('utilizadores_web as u')
             ->leftJoin('tb_perfil as p', 'u.ID_PERFIL', '=', 'p.ID')
             ->select('u.*', 'p.PERFIL as PERFIL_DESC')
             ->get();
 
         $perfis = DB::table('tb_perfil')->get();
-        
+
         $medicos = DB::table('tb_tipoentidade')
             ->whereIn('TipoEntidade', ['Medico', 'Medicos'])
             ->where('Estado', 'Ativo')
@@ -60,7 +60,13 @@ class UtilizadorController extends Controller
         $data['REMEMBER_TOKEN'] = $token;
         $data['SENHA'] = \App\Models\User::hashPassword($data['SENHA'], $token);
 
-        DB::table('utilizador')->insert($data);
+        // 1. Cria na tabela original e obtem o ID
+        $id = DB::table('utilizador')->insertGetId($data);
+
+        // 2. Replica na tabela web com o mesmo ID
+        $dataWeb = $data;
+        $dataWeb['ID_UTILIZADOR'] = $id;
+        DB::table('utilizadores_web')->insert($dataWeb);
 
         return redirect()->back()->with('message', 'Utilizador criado com sucesso!');
     }
@@ -88,14 +94,30 @@ class UtilizadorController extends Controller
         $data['ACESSO'] = $data['ACESSO'] ?? 'NAO';
         $data['ESTADO'] = $this->mapEstado($data['ESTADO'] ?? null);
 
+        // 1. Atualiza tabela original
         DB::table('utilizador')->where('ID_UTILIZADOR', $id)->update($data);
+
+        // 2. Atualiza tabela web (mantem as duas sincronizadas
+        $sync = $data;
+        $exists = DB::table('utilizadores_web')->where('ID_UTILIZADOR', $id)->exists();
+        if ($exists) {
+            DB::table('utilizadores_web')->where('ID_UTILIZADOR', $id)->update($data);
+        } else {
+            // Caso ainda nao exista na web, cria
+            $full = DB::table('utilizador')->where('ID_UTILIZADOR', $id)->first();
+            if ($full) {
+                DB::table('utilizadores_web')->insert((array) $full);
+            }
+        }
 
         return redirect()->back()->with('message', 'Utilizador atualizado com sucesso!');
     }
 
     public function destroy($id)
     {
+        // Remove das duas tabelas
         DB::table('utilizador')->where('ID_UTILIZADOR', $id)->delete();
+        DB::table('utilizadores_web')->where('ID_UTILIZADOR', $id)->delete();
         return redirect()->back()->with('message', 'Utilizador removido com sucesso!');
     }
 

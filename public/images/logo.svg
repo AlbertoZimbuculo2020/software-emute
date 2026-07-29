@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" width="400" height="120">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#0EA5E9"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="120" rx="24" fill="url(#g)"/>
+  <g transform="translate(32,26)">
+    <circle cx="34" cy="34" r="32" fill="#ffffff" fill-opacity="0.18"/>
+    <path d="M22 44 L22 22 Q22 12 32 12 L38 12 Q48 12 48 22 L48 36 Q48 42 54 44 L58 44 Q64 44 64 50 L64 56 Q64 60 60 60 L18 60 Q14 60 14 56 L14 50 Q14 44 22 44 Z M30 36 L30 22 L38 22 L40 22 Q40 22 40 26 L40 36 Z" fill="#ffffff"/>
+  </g>
+  <text x="112" y="58" font-family="Arial Black, Arial, sans-serif" font-size="42" font-weight="900" fill="#ffffff" letter-spacing="2">EMUTE</text>
+  <text x="114" y="88" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#BFDBFE" letter-spacing="6">CLÍNICA · SAÚDE</text>
+</svg>

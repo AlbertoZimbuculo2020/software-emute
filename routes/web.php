@@ -155,6 +155,7 @@ Route::get('/hospitalar/recepcao/senhas/painel-dados', [FilaSenhaController::cla
 
 Route::get('/empresa/register', [EmpresaController::class, 'create'])->name('empresa.register');
 Route::post('/empresa/register', [EmpresaController::class, 'store'])->name('empresa.store');
+Route::get('/empresa/logo', [EmpresaController::class, 'logo'])->name('empresa.logo');
 
 Route::get('/entidades/clientes', [ClienteController::class, 'index'])->middleware(['auth', 'verified'])->name('clientes.index');
 Route::post('/entidades/clientes', [ClienteController::class, 'store'])->middleware(['auth', 'verified'])->name('clientes.store');
@@ -279,7 +280,7 @@ Route::post('/test-database-connection', [AuthenticatedSessionController::class,
 Route::post('/save-database-connection', [AuthenticatedSessionController::class, 'saveConnection'])->name('db.save');
 
 Route::get('/utilizadores/lista', function () {
-    $users = \Illuminate\Support\Facades\DB::table('utilizador')
+    $users = \Illuminate\Support\Facades\DB::table('utilizadores_web')
         ->where('ESTADO', '!=', 'Removido')
         ->select('NOME_UTILIZADOR')
         ->orderBy('NOME_UTILIZADOR')

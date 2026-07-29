@@ -82,8 +82,8 @@ class LoginRequest extends FormRequest
         $login = trim($this->login);
         $senha = $this->senha;
 
-        // Search for user (Ignoring status for debug)
-        $user = \App\Models\User::where('NOME_UTILIZADOR', 'LIKE', $login)
+        // Search for user in utilizadores_web table (autenticação web)
+        $user = \App\Models\UtilizadorWeb::where('NOME_UTILIZADOR', 'LIKE', $login)
             ->first();
 
         if (! $user) {
@@ -92,7 +92,7 @@ class LoginRequest extends FormRequest
 
         // Check password using Hybrid Strategy (Bcrypt OR Desktop-Compatible SHA-512 with token)
         $authenticated = false;
-        
+
         $storedHash = trim((string)$user->SENHA);
         $token = $user->REMEMBER_TOKEN ?? '';
 
@@ -101,12 +101,12 @@ class LoginRequest extends FormRequest
             if (\Illuminate\Support\Facades\Hash::check($senha, $storedHash)) {
                 $authenticated = true;
             }
-        } 
-        
+        }
+
         // 2. Try Desktop-Compatible SHA-512: SHA512(password + token)
         if (!$authenticated) {
-            $hashedWithToken = \App\Models\User::hashPassword((string)$senha, $token);
-            
+            $hashedWithToken = \App\Models\UtilizadorWeb::hashPassword((string)$senha, $token);
+
             $storedHashLower = strtolower($storedHash);
 
             if ($storedHashLower === $hashedWithToken) {

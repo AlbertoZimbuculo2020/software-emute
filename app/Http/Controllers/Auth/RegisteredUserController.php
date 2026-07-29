@@ -8,6 +8,7 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
@@ -38,13 +39,31 @@ class RegisteredUserController extends Controller
         ]);
 
         $token = \App\Models\User::generateToken();
+        $senhaHasheada = User::hashPassword($request->password, $token);
+        $agora = now();
 
-        $user = User::create([
+        // 1. Cria na tabela original (desktop)
+        $id = DB::table('utilizador')->insertGetId([
             'NOME_UTILIZADOR' => $request->name,
-            'SENHA' => User::hashPassword($request->password, $token),
+            'SENHA' => $senhaHasheada,
             'REMEMBER_TOKEN' => $token,
             'ESTADO' => 'Activado',
+            'ACESSO' => 'SIM',
+            'CREATED_AT' => $agora,
         ]);
+
+        // 2. Replica na tabela web
+        DB::table('utilizadores_web')->insert([
+            'ID_UTILIZADOR'   => $id,
+            'NOME_UTILIZADOR' => $request->name,
+            'SENHA'           => $senhaHasheada,
+            'REMEMBER_TOKEN'  => $token,
+            'ESTADO'          => 'Activado',
+            'ACESSO'          => 'SIM',
+            'CREATED_AT'      => $agora,
+        ]);
+
+        $user = \App\Models\UtilizadorWeb::find($id);
 
         event(new Registered($user));
 

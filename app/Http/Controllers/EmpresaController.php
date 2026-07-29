@@ -6,9 +6,40 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Carbon\Carbon;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EmpresaController extends Controller
 {
+    public function logo(Request $request)
+    {
+        $row = DB::table('tb_empresa')->select('IMAGEM')->first();
+
+        if ($row && !empty($row->IMAGEM)) {
+            $bin = $row->IMAGEM;
+            $mime = 'image/jpeg';
+            $sig = substr($bin, 0, 4);
+            if (str_starts_with($sig, "\x89PNG")) $mime = 'image/png';
+            elseif (str_starts_with($sig, "GIF8")) $mime = 'image/gif';
+            elseif (str_starts_with($sig, "BM"))   $mime = 'image/bmp';
+            elseif (str_starts_with($sig, "<?xml") || str_starts_with(ltrim($sig), '<svg')) $mime = 'image/svg+xml';
+
+            // Validar se a imagem é realmente válida antes de retornar
+            $imagemValida = @getimagesizefromstring($bin);
+            if ($imagemValida !== false) {
+                return response($bin, 200)
+                    ->header('Content-Type', $mime)
+                    ->header('Cache-Control', 'public, max-age=86400');
+            }
+        }
+
+        $fallback = public_path('images/logo.png');
+        if (file_exists($fallback)) {
+            return response()->file($fallback, ['Cache-Control' => 'public, max-age=86400']);
+        }
+
+        abort(404);
+    }
+
     public function create()
     {
         try {

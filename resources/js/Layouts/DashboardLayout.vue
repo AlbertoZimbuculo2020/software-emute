@@ -167,7 +167,7 @@ const pageTitle = computed(() => {
             <div :class="showingSidebar ? 'justify-between px-4' : 'justify-center'" class="h-16 flex items-center bg-blue-700/30 border-b border-white/10 overflow-hidden transition-all">
                 <Link v-if="showingSidebar" :href="route('dashboard')" class="flex items-center hover:opacity-80 transition-opacity">
                     <div class="min-w-[40px] h-10 flex items-center justify-center mr-3">
-                        <img src="/images/logo.png" class="h-8 w-auto object-contain" alt="Logo" />
+                        <img :src="clinicData?.logoUrl || '/images/logo.png'" class="h-8 w-auto object-contain" alt="Logo" onerror="this.onerror=null;this.src='/images/logo.png';" />
                     </div>
                     <span class="font-black text-lg tracking-tighter uppercase truncate">EMUTE</span>
                 </Link>
@@ -325,7 +325,7 @@ const pageTitle = computed(() => {
                 <div class="p-4 flex flex-col items-center">
                     <p v-if="showingSidebar" class="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 mb-2">Clínica</p>
                     <div v-if="clinicData?.logo" class="bg-white p-1.5 rounded-lg shadow-lg mb-2">
-                        <img :src="clinicData.logo" :class="showingSidebar ? 'h-10' : 'h-6'" class="w-auto object-contain mx-auto" alt="Logo Clínica" />
+                        <img :src="clinicData.logo" :class="showingSidebar ? 'h-10' : 'h-6'" class="w-auto object-contain mx-auto" alt="Logo Clínica" onerror="this.onerror=null;this.src='/images/logo.png';" />
                     </div>
                     <p v-if="showingSidebar" class="text-[10px] font-black text-white uppercase tracking-tight text-center leading-tight max-w-[140px]">
                         {{ clinicData?.nome || 'EMUTE' }}
@@ -373,7 +373,7 @@ const pageTitle = computed(() => {
                     <!-- User Dropdown/Pill -->
                     <div class="flex items-center bg-white border border-gray-200 rounded-full p-1 pr-4 shadow-sm hover:shadow-md transition-all cursor-pointer group">
                         <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-inner mr-3 group-hover:scale-105 transition-transform overflow-hidden border border-slate-100">
-                            <img v-if="clinicData?.logo" :src="clinicData.logo" class="w-full h-full object-contain p-1" alt="Logo" />
+                            <img v-if="clinicData?.logo" :src="clinicData.logo" class="w-full h-full object-contain p-1" alt="Logo" onerror="this.onerror=null;this.src='/images/logo.png';" />
                             <div v-else class="w-full h-full bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white">
                                 <span class="text-xs font-bold">{{ (user.NOME_UTILIZADOR || user.name || 'E').charAt(0).toUpperCase() }}</span>
                             </div>
