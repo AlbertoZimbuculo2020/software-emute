@@ -72,7 +72,8 @@ class RecepcaoController extends Controller
             ->where('tb_prescricao.Tipo', 'Internamento')
             ->where('tb_prescricao.Cumprimento', 'False')
             ->where('tb_prescricao.Estado', 'Ativo')
-            ->orderBy('tb_prescricao.Id', 'desc')
+            ->distinct()
+            ->orderBy('tb_agendamento.Codigo', 'desc')
             ->get();
 
         return Inertia::render('Hospitalar/Recepcao', [

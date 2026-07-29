@@ -942,6 +942,7 @@ const changeFontSize = (type) => {
         <div :style="{ fontSize: currentFontSize }" class="p-0 bg-slate-100 min-h-[calc(100vh-64px)] flex font-sans relative">
             
             <!-- Sidebar: Lista de Espera -->
+            <div v-if="showSidebar" @click="showSidebar = false" class="fixed inset-0 bg-black/30 z-20 md:hidden"></div>
             <Transition 
                 enter-active-class="transition-all duration-300 ease-in-out"
                 enter-from-class="-ml-72 opacity-0"
@@ -950,7 +951,7 @@ const changeFontSize = (type) => {
                 leave-from-class="ml-0 opacity-100"
                 leave-to-class="-ml-72 opacity-0"
             >
-                <div v-if="showSidebar" class="w-72 bg-white border-r border-slate-200 flex flex-col shadow-xl z-30 shrink-0">
+                <div v-if="showSidebar" class="w-72 bg-white border-r border-slate-200 flex flex-col shadow-xl z-30 shrink-0 absolute md:relative h-full md:h-auto top-0 left-0">
                     <div class="bg-blue-900 text-white p-4 flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <Users class="w-4 h-4" />
@@ -1072,7 +1073,7 @@ const changeFontSize = (type) => {
 <!-- Main Grid Content Area (Original Layout Restored) -->
 <div class="flex-grow overflow-x-auto overflow-y-hidden relative bg-slate-200 p-2 custom-scrollbar">
     <template v-if="selectedPaciente">
-        <div class="grid grid-cols-12 gap-2 h-full overflow-y-auto custom-scrollbar pr-1 min-w-[900px]">
+        <div class="grid grid-cols-12 gap-2 h-full overflow-y-auto custom-scrollbar pr-1">
             
             <!-- COLUNA 1: Histórico -->
             <div class="col-span-12 lg:col-span-3 flex flex-col h-full bg-white rounded shadow-sm border border-slate-300 overflow-hidden">

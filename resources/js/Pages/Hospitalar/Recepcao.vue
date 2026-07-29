@@ -431,33 +431,33 @@ onUnmounted(() => {
     <Head title="Recepção Hospitalar - Admissão" />
 
     <DashboardLayout>
-        <div class="min-h-screen bg-[#f1f5f9] p-4 lg:p-6">
-            <div class="max-w-full mx-auto space-y-6">
+        <div class="min-h-screen bg-[#f1f5f9] p-2 sm:p-4 lg:p-6">
+            <div class="max-w-full mx-auto space-y-3 sm:space-y-6">
                 
                 <!-- Modern Compact Header -->
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-200">
-                            <Activity class="w-6 h-6" />
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 sm:p-3 bg-blue-600 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-blue-200">
+                            <Activity class="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
                         <div>
-                            <h1 class="text-xl font-black text-slate-900 tracking-tight leading-none">RECEPÇÃO HOSPITALAR</h1>
-                            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Workstation de Admissão e Triagem</p>
+                            <h1 class="text-sm sm:text-xl font-black text-slate-900 tracking-tight leading-none">RECEPÇÃO</h1>
+                            <p class="text-slate-400 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest mt-0.5">Admissão e Triagem</p>
                         </div>
                     </div>
                     
-                    <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-3 sm:gap-6">
                         <div class="hidden md:block text-right">
                             <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest leading-none">Status do Sistema</p>
                             <div class="flex items-center gap-2 mt-1 justify-end">
                                 <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                                <span class="text-xs font-black text-slate-700 uppercase tracking-tighter">Conectado / Em Tempo Real</span>
+                                <span class="text-xs font-black text-slate-700 uppercase tracking-tighter">Online</span>
                             </div>
                         </div>
-                        <div class="h-10 w-px bg-slate-200"></div>
-                        <div class="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-                            <Calendar class="w-4 h-4 text-blue-600" />
-                            <span class="text-xs font-black text-slate-700">{{ new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' }) }}</span>
+                        <div class="h-8 sm:h-10 w-px bg-slate-200"></div>
+                        <div class="flex items-center gap-2 sm:gap-3 bg-slate-50 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-slate-100">
+                            <Calendar class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 shrink-0" />
+                            <span class="text-[10px] sm:text-xs font-black text-slate-700 whitespace-nowrap">{{ new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' }) }}</span>
                         </div>
                     </div>
                 </div>
@@ -759,56 +759,60 @@ onUnmounted(() => {
                             </div>
 
                             <!-- Bottom Action Bar -->
-                            <div class="p-6 bg-slate-50 border-t border-slate-100 grid grid-cols-2 gap-3">
-                                <button 
-                                    @click="admitirPaciente('Agendada')" 
-                                    class="flex flex-col items-center justify-center gap-1.5 bg-white hover:bg-blue-50 text-blue-600 p-4 rounded-2xl border border-slate-200 hover:border-blue-300 transition-all active:scale-95 shadow-sm group"
-                                >
-                                    <Calendar class="w-5 h-5 group-hover:scale-110 transition-transform" />
-                                    <span class="text-[9px] font-black uppercase tracking-tighter">Agendar</span>
-                                </button>
-                                <button 
-                                    @click="admitirPaciente('Triagem')" 
-                                    class="flex flex-col items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-2xl shadow-lg shadow-blue-200 transition-all active:scale-95 group"
-                                >
-                                    <Activity class="w-5 h-5 group-hover:scale-110 transition-transform" />
-                                    <span class="text-[9px] font-black uppercase tracking-tighter">ENVIAR TRIAGEM</span>
-                                </button>
+                            <div class="p-4 sm:p-6 bg-slate-50 border-t border-slate-100 flex flex-col gap-2">
+                                <div class="grid grid-cols-2 sm:grid-cols-2 gap-2">
+                                    <button 
+                                        @click="admitirPaciente('Agendada')" 
+                                        class="min-h-[48px] flex items-center justify-center gap-2 bg-white hover:bg-blue-50 text-blue-600 p-3 rounded-2xl border border-slate-200 hover:border-blue-300 transition-all active:scale-95 shadow-sm group"
+                                    >
+                                        <Calendar class="w-4 h-4 group-hover:scale-110 transition-transform shrink-0" />
+                                        <span class="text-[9px] font-black uppercase tracking-tighter">Agendar</span>
+                                    </button>
+                                    <button 
+                                        @click="admitirPaciente('Triagem')" 
+                                        class="min-h-[48px] flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-2xl shadow-lg shadow-blue-200 transition-all active:scale-95 group"
+                                    >
+                                        <Activity class="w-4 h-4 group-hover:scale-110 transition-transform shrink-0" />
+                                        <span class="text-[9px] font-black uppercase tracking-tighter">TRIAGEM</span>
+                                    </button>
+                                </div>
                                 <button 
                                     @click="admitirPaciente('Laboratorio')" 
-                                    class="col-span-2 flex items-center justify-center gap-3 bg-slate-900 hover:bg-black text-white p-4 rounded-2xl transition-all active:scale-95 group"
+                                    class="min-h-[48px] flex items-center justify-center gap-3 bg-slate-900 hover:bg-black text-white p-3 rounded-2xl transition-all active:scale-95 group"
                                 >
-                                    <ClipboardList class="w-5 h-5 text-amber-400" />
-                                    <span class="text-[10px] font-black uppercase tracking-widest">Solicitar Exames Externos</span>
+                                    <ClipboardList class="w-4 h-4 text-amber-400 shrink-0" />
+                                    <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Solicitar Exames Externos</span>
                                 </button>
                             </div>
                         </div>
                     </div>
 
                     <!-- RIGHT COLUMN: Multi-Dashboard -->
-                    <div class="lg:col-span-8 space-y-6">
+                    <div class="lg:col-span-8 space-y-6 min-w-0">
                         
                         <!-- Dashboard 1: Agendamentos do Dia -->
-                        <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden flex flex-col min-h-[400px]">
-                            <div class="px-6 py-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
-                                <div>
-                                    <h2 class="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
-                                        <Calendar class="w-4 h-4 text-blue-600" /> Consultas Marcadas
+                        <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden flex flex-col">
+                            <div class="px-4 sm:px-6 py-3 sm:py-4 bg-slate-50/50 border-b border-slate-100 flex flex-wrap items-center gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <h2 class="text-[10px] sm:text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                                        <Calendar class="w-4 h-4 text-blue-600 shrink-0" /> Consultas Marcadas
                                     </h2>
-                                    <p class="text-[9px] text-slate-400 font-bold uppercase mt-1">Fluxo de atendimentos do período</p>
+                                    <p class="hidden md:block text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase mt-0.5">Fluxo de atendimentos do período</p>
                                 </div>
-                                <div class="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200">
-                                    <input type="date" v-model="startDate" class="border-none focus:ring-0 text-[10px] font-bold text-slate-600 p-1" />
-                                    <span class="text-slate-300">-</span>
-                                    <input type="date" v-model="endDate" class="border-none focus:ring-0 text-[10px] font-bold text-slate-600 p-1" />
-                                    <button @click="filtrarPorData" class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all active:scale-90">
-                                        <RotateCcw class="w-3.5 h-3.5" />
+                                <div class="flex items-center gap-1 bg-white p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-slate-200">
+                                    <input type="date" v-model="startDate" class="w-[90px] sm:w-[130px] border-none focus:ring-0 text-[8px] sm:text-[10px] font-bold text-slate-600 p-0.5 sm:p-1" />
+                                    <span class="text-slate-300 text-[7px] sm:text-[9px]">-</span>
+                                    <input type="date" v-model="endDate" class="w-[90px] sm:w-[130px] border-none focus:ring-0 text-[8px] sm:text-[10px] font-bold text-slate-600 p-0.5 sm:p-1" />
+                                    <button @click="filtrarPorData" class="p-1 sm:p-1.5 bg-blue-600 text-white rounded-md sm:rounded-lg hover:bg-blue-700 transition-all active:scale-90 shrink-0">
+                                        <RotateCcw class="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                                     </button>
                                 </div>
                             </div>
 
-                             <div class="flex-grow overflow-auto p-4 custom-scrollbar" style="-webkit-overflow-scrolling: touch">
-                                <table class="w-full border-separate border-spacing-y-2 min-w-[700px]">
+                            <!-- Cards (mobile) + Table (desktop) -->
+                            <div class="flex-grow overflow-auto p-3 sm:p-4 custom-scrollbar" style="-webkit-overflow-scrolling: touch">
+                                <!-- Desktop: table -->
+                                <table class="w-full hidden lg:table border-separate border-spacing-y-2">
                                     <thead>
                                         <tr class="text-[9px] font-black text-slate-400 uppercase tracking-widest">
                                             <th class="px-4 py-2 text-left">Data</th>
@@ -834,7 +838,7 @@ onUnmounted(() => {
                                                     <div>
                                                         <p class="text-xs font-bold text-slate-800 leading-none">{{ agenda.PacienteNome }}</p>
                                                         <div class="flex items-center gap-2 mt-1.5">
-                                                            <span class="text-[8px] font-black text-blue-600 bg-blue-50 px-1 rounded border border-blue-100" title="Cód. Agendamento">{{ agenda.Codigo }}</span>
+                                                            <span class="text-[8px] font-black text-blue-600 bg-blue-50 px-1 rounded border border-blue-100">{{ agenda.Codigo }}</span>
                                                             <span class="text-[8px] font-black text-slate-400 uppercase tracking-tighter">PC: {{ agenda.IdPaciente }}</span>
                                                         </div>
                                                     </div>
@@ -860,27 +864,21 @@ onUnmounted(() => {
                                                 </span>
                                             </td>
                                             <td class="px-4 py-3 last:rounded-r-2xl border-y border-r border-transparent text-right">
-                                                <div class="flex justify-end gap-1.5 transition-opacity">
+                                                <div class="flex justify-end gap-1.5">
                                                     <button v-if="agenda.Situacao === 'Agendada'" @click="enviarParaTriagem(agenda)" class="p-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-lg transition-all shadow-sm" title="Enviar para Triagem">
                                                         <Activity class="w-3.5 h-3.5" />
                                                     </button>
                                                     <button @click="selecionarPaciente({
-                                                        Codigo: agenda.IdPaciente,
-                                                        Nome: agenda.PacienteNome,
-                                                        IdSegura: agenda.IdSeguradora
+                                                        Codigo: agenda.IdPaciente, Nome: agenda.PacienteNome, IdSegura: agenda.IdSeguradora
                                                     })" class="p-1.5 bg-white text-slate-600 hover:bg-blue-600 hover:text-white rounded-lg transition-all shadow-sm border border-slate-200" title="Editar">
                                                         <FileText class="w-3.5 h-3.5" />
                                                     </button>
-                                                    <a :href="route('hospitalar.consultorio.imprimir.ficha', agenda.Codigo)" 
-                                                       target="_blank"
-                                                       class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-all shadow-sm border border-slate-200" 
-                                                       title="Imprimir Ficha Médica">
+                                                    <a :href="route('hospitalar.consultorio.imprimir.ficha', agenda.Codigo)" target="_blank" 
+                                                       class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg transition-all shadow-sm border border-slate-200" title="Imprimir Ficha">
                                                         <Printer class="w-3.5 h-3.5" />
                                                     </a>
-                                                    <a :href="route('hospitalar.consultorio.imprimir.ficha', { id: agenda.Codigo, download: 1 })" 
-                                                       target="_blank"
-                                                       class="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all shadow-sm border border-slate-200" 
-                                                       title="Baixar Ficha (PDF)">
+                                                    <a :href="route('hospitalar.consultorio.imprimir.ficha', { id: agenda.Codigo, download: 1 })" target="_blank" 
+                                                       class="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all shadow-sm border border-slate-200" title="Baixar PDF">
                                                         <Download class="w-3.5 h-3.5" />
                                                     </a>
                                                 </div>
@@ -888,44 +886,106 @@ onUnmounted(() => {
                                         </tr>
                                     </tbody>
                                 </table>
-                                <div v-if="!props.agendamentos.data?.length" class="py-20 text-center opacity-30">
-                                    <Calendar class="w-10 h-10 mx-auto mb-2" />
-                                    <p class="text-[9px] font-black uppercase">Nenhuma consulta encontrada</p>
+
+                                <!-- Mobile: cards -->
+                                <div class="space-y-2 lg:hidden">
+                                    <div v-for="agenda in props.agendamentos.data" :key="agenda.Id" 
+                                         class="bg-slate-50/80 rounded-xl p-3 border border-slate-100 hover:bg-blue-50/60 transition-all active:scale-[0.99]">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <div class="flex items-center gap-2 min-w-0 flex-1">
+                                                <div class="w-9 h-9 bg-white rounded-full flex items-center justify-center text-[11px] font-black text-slate-500 shadow-sm border border-slate-100 shrink-0">
+                                                    {{ agenda.PacienteNome?.substring(0, 2) }}
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <p class="text-xs font-bold text-slate-800 leading-tight truncate">{{ agenda.PacienteNome }}</p>
+                                                    <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                                        <span class="text-[8px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">{{ agenda.Codigo }}</span>
+                                                        <span class="text-[8px] font-black text-slate-400">PC: {{ agenda.IdPaciente }}</span>
+                                                        <span :class="{
+                                                            'bg-amber-100 text-amber-700': agenda.Situacao === 'Agendada',
+                                                            'bg-blue-100 text-blue-700': agenda.Situacao === 'Triagem',
+                                                            'bg-emerald-100 text-emerald-700': agenda.Situacao === 'Finalizado',
+                                                            'bg-slate-200 text-slate-700': agenda.Situacao === 'Laboratorio'
+                                                        }" class="px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wider border border-black/5">
+                                                            {{ agenda.Situacao }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[9px] text-slate-500">
+                                            <span class="font-semibold flex items-center gap-1">
+                                                <Calendar class="w-3 h-3 text-blue-400" /> {{ new Date(agenda.DataAgendamento).toLocaleDateString('pt-PT') }}
+                                            </span>
+                                            <span class="font-semibold flex items-center gap-1">
+                                                <Stethoscope class="w-3 h-3 text-blue-400" /> {{ agenda.Consulta }}
+                                            </span>
+                                            <span class="font-semibold flex items-center gap-1">
+                                                <User class="w-3 h-3 text-blue-400" /> {{ agenda.MedicoNome || 'Pendente' }}
+                                            </span>
+                                        </div>
+                                        <div class="mt-2 flex items-center gap-1.5 flex-wrap">
+                                            <button v-if="agenda.Situacao === 'Agendada'" @click="enviarParaTriagem(agenda)" 
+                                                    class="min-h-[36px] px-3 py-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-lg text-[8px] font-black uppercase tracking-wider transition-all">
+                                                Triagem
+                                            </button>
+                                            <button @click="selecionarPaciente({
+                                                Codigo: agenda.IdPaciente, Nome: agenda.PacienteNome, IdSegura: agenda.IdSeguradora
+                                            })" class="min-h-[36px] px-3 py-1.5 bg-white text-slate-600 hover:bg-blue-600 hover:text-white rounded-lg text-[8px] font-black uppercase tracking-wider border border-slate-200 transition-all">
+                                                Editar
+                                            </button>
+                                            <a :href="route('hospitalar.consultorio.imprimir.ficha', agenda.Codigo)" target="_blank"
+                                               class="min-h-[36px] px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-[8px] font-black uppercase tracking-wider border border-slate-200 transition-all inline-flex items-center gap-1">
+                                                <Printer class="w-3 h-3" /> Ficha
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div v-if="!props.agendamentos.data?.length" class="py-12 text-center opacity-30">
+                                        <Calendar class="w-8 h-8 mx-auto mb-2" />
+                                        <p class="text-[9px] font-black uppercase">Nenhuma consulta encontrada</p>
+                                    </div>
                                 </div>
                             </div>
-                            <div v-if="props.agendamentos.last_page > 1" class="px-6 py-3 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between flex-wrap gap-2">
+
+                            <!-- Pagination -->
+                            <div v-if="props.agendamentos.last_page > 1" class="px-4 sm:px-6 py-3 border-t border-slate-100 bg-slate-50/30 flex flex-wrap items-center justify-between gap-2">
                                 <span class="text-[9px] font-bold text-slate-400">
-                                    Página {{ props.agendamentos.current_page }} de {{ props.agendamentos.last_page }}
-                                    ({{ props.agendamentos.total }} registos)
+                                    Pág {{ props.agendamentos.current_page }}/{{ props.agendamentos.last_page }}
+                                    ({{ props.agendamentos.total }})
                                 </span>
-                                <div class="flex items-center gap-1.5">
-                                    <button @click="router.get(props.agendamentos.first_page_url, {}, { preserveState: true, replace: true })" :disabled="!props.agendamentos.prev_page_url" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-black uppercase hover:bg-blue-50 hover:border-blue-200 transition-all disabled:opacity-30 disabled:pointer-events-none">Primeira</button>
-                                    <button @click="router.get(props.agendamentos.prev_page_url, {}, { preserveState: true, replace: true })" :disabled="!props.agendamentos.prev_page_url" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-black uppercase hover:bg-blue-50 hover:border-blue-200 transition-all disabled:opacity-30 disabled:pointer-events-none">Anterior</button>
-                                    <span class="px-2 py-1 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-200 rounded-lg">{{ props.agendamentos.current_page }}</span>
-                                    <button @click="router.get(props.agendamentos.next_page_url, {}, { preserveState: true, replace: true })" :disabled="!props.agendamentos.next_page_url" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-black uppercase hover:bg-blue-50 hover:border-blue-200 transition-all disabled:opacity-30 disabled:pointer-events-none">Seguinte</button>
-                                    <button @click="router.get(props.agendamentos.last_page_url, {}, { preserveState: true, replace: true })" :disabled="!props.agendamentos.next_page_url" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-black uppercase hover:bg-blue-50 hover:border-blue-200 transition-all disabled:opacity-30 disabled:pointer-events-none">Última</button>
+                                <div class="flex items-center gap-1">
+                                    <button @click="router.get(props.agendamentos.first_page_url, {}, { preserveState: true, replace: true })" :disabled="!props.agendamentos.prev_page_url" 
+                                            class="min-h-[32px] px-2 py-1 bg-white border border-slate-200 rounded-lg text-[8px] font-black uppercase hover:bg-blue-50 transition-all disabled:opacity-30 disabled:pointer-events-none">«</button>
+                                    <button @click="router.get(props.agendamentos.prev_page_url, {}, { preserveState: true, replace: true })" :disabled="!props.agendamentos.prev_page_url" 
+                                            class="min-h-[32px] px-2 py-1 bg-white border border-slate-200 rounded-lg text-[8px] font-black uppercase hover:bg-blue-50 transition-all disabled:opacity-30 disabled:pointer-events-none">‹</button>
+                                    <span class="px-2.5 py-1 text-[9px] font-black text-blue-600 bg-blue-50 border border-blue-200 rounded-lg min-w-[24px] text-center">{{ props.agendamentos.current_page }}</span>
+                                    <button @click="router.get(props.agendamentos.next_page_url, {}, { preserveState: true, replace: true })" :disabled="!props.agendamentos.next_page_url" 
+                                            class="min-h-[32px] px-2 py-1 bg-white border border-slate-200 rounded-lg text-[8px] font-black uppercase hover:bg-blue-50 transition-all disabled:opacity-30 disabled:pointer-events-none">›</button>
+                                    <button @click="router.get(props.agendamentos.last_page_url, {}, { preserveState: true, replace: true })" :disabled="!props.agendamentos.next_page_url" 
+                                            class="min-h-[32px] px-2 py-1 bg-white border border-slate-200 rounded-lg text-[8px] font-black uppercase hover:bg-blue-50 transition-all disabled:opacity-30 disabled:pointer-events-none">»</button>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Secondary Split Dashboard -->
-                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
                             
                             <!-- Dashboard 2: Exames por Pagar -->
-                            <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden flex flex-col h-[350px]">
-                                <div class="px-5 py-3 bg-amber-50/50 border-b border-amber-100 flex items-center justify-between">
-                                    <h3 class="text-[10px] font-black text-amber-800 uppercase tracking-widest flex items-center gap-2">
-                                        <CreditCard class="w-4 h-4" /> Exames por Pagar (Caixa)
+                            <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden flex flex-col max-h-[400px]">
+                                <div class="px-4 sm:px-5 py-3 bg-amber-50/50 border-b border-amber-100 flex items-center justify-between">
+                                    <h3 class="text-[9px] sm:text-[10px] font-black text-amber-800 uppercase tracking-widest flex items-center gap-2">
+                                        <CreditCard class="w-4 h-4 shrink-0" /> Exames por Pagar
                                     </h3>
-                                    <span class="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">{{ props.examesPendentes?.length || 0 }}</span>
+                                    <span class="bg-amber-500 text-white text-[8px] sm:text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">{{ props.examesPendentes?.length || 0 }}</span>
                                 </div>
-                                <div class="flex-grow overflow-auto p-4 custom-scrollbar">
-                                    <table class="w-full">
+                                <div class="flex-grow overflow-auto p-3 sm:p-4 custom-scrollbar" style="-webkit-overflow-scrolling: touch">
+                                    <!-- Desktop: table -->
+                                    <table class="w-full hidden sm:table">
                                         <thead class="sticky top-0 bg-white z-10">
                                             <tr class="text-[8px] font-black text-slate-400 uppercase tracking-tighter border-b border-slate-100">
                                                 <th class="py-2 text-left">Paciente</th>
                                                 <th class="py-2 text-left">Exame</th>
-                                                <th class="py-2 text-right">Valor</th>
+                                                <th class="py-2 text-right">Ação</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -941,30 +1001,46 @@ onUnmounted(() => {
                                                     <span class="text-[9px] font-semibold text-slate-500 truncate block max-w-[120px]">{{ exame.EXAME }}</span>
                                                 </td>
                                                 <td class="py-3 text-right">
-                                                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase shadow-sm transition-all active:scale-95">PAGAR</button>
-                                                </td>
-                                            </tr>
-                                            <tr v-if="!props.examesPendentes?.length">
-                                                <td colspan="3" class="py-20 text-center opacity-30">
-                                                    <CreditCard class="w-10 h-10 mx-auto mb-2" />
-                                                    <p class="text-[9px] font-black uppercase">Nenhum exame pendente</p>
+                                                    <button class="min-h-[36px] bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase shadow-sm transition-all active:scale-95">PAGAR</button>
                                                 </td>
                                             </tr>
                                         </tbody>
                                     </table>
+                                    <!-- Mobile: cards -->
+                                    <div class="space-y-2 sm:hidden">
+                                        <div v-for="exame in props.examesPendentes" :key="exame.Id"
+                                             class="bg-amber-50/40 rounded-xl p-3 border border-amber-100 active:scale-[0.99] transition-all">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="text-xs font-bold text-slate-800 leading-tight">{{ exame.PACIENTE }}</p>
+                                                    <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                                        <span class="text-[8px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">{{ exame.AGENDA }}</span>
+                                                        <span class="text-[8px] font-black text-slate-400">PC: {{ exame.PROCESSO }}</span>
+                                                    </div>
+                                                </div>
+                                                <button class="min-h-[36px] bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-[8px] font-black uppercase shadow-sm transition-all shrink-0">PAGAR</button>
+                                            </div>
+                                            <p class="text-[10px] font-semibold text-slate-500 mt-1.5">{{ exame.EXAME }}</p>
+                                        </div>
+                                        <div v-if="!props.examesPendentes?.length" class="py-12 text-center opacity-30">
+                                            <CreditCard class="w-8 h-8 mx-auto mb-2" />
+                                            <p class="text-[9px] font-black uppercase">Nenhum exame pendente</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Dashboard 3: Área de Internamento -->
-                            <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden flex flex-col h-[350px]">
-                                <div class="px-5 py-3 bg-emerald-50/50 border-b border-emerald-100 flex items-center justify-between">
-                                    <h3 class="text-[10px] font-black text-emerald-800 uppercase tracking-widest flex items-center gap-2">
-                                        <Activity class="w-4 h-4" /> Área de Internamento
+                            <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden flex flex-col max-h-[400px]">
+                                <div class="px-4 sm:px-5 py-3 bg-emerald-50/50 border-b border-emerald-100 flex items-center justify-between">
+                                    <h3 class="text-[9px] sm:text-[10px] font-black text-emerald-800 uppercase tracking-widest flex items-center gap-2">
+                                        <Activity class="w-4 h-4 shrink-0" /> Internamento
                                     </h3>
-                                    <span class="bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">{{ props.internamentosPendentes?.length || 0 }}</span>
+                                    <span class="bg-emerald-500 text-white text-[8px] sm:text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">{{ props.internamentosPendentes?.length || 0 }}</span>
                                 </div>
-                                <div class="flex-grow overflow-auto p-4 custom-scrollbar">
-                                    <table class="w-full">
+                                <div class="flex-grow overflow-auto p-3 sm:p-4 custom-scrollbar" style="-webkit-overflow-scrolling: touch">
+                                    <!-- Desktop: table -->
+                                    <table class="w-full hidden sm:table">
                                         <thead class="sticky top-0 bg-white z-10">
                                             <tr class="text-[8px] font-black text-slate-400 uppercase tracking-tighter border-b border-slate-100">
                                                 <th class="py-2 text-left">Paciente</th>
@@ -985,17 +1061,34 @@ onUnmounted(() => {
                                                     {{ new Date(interna.DataInternamento).toLocaleDateString('pt-PT') }}
                                                 </td>
                                                 <td class="py-3 text-right">
-                                                    <button class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase shadow-sm transition-all active:scale-95">INTERNAR</button>
-                                                </td>
-                                            </tr>
-                                            <tr v-if="!props.internamentosPendentes?.length">
-                                                <td colspan="3" class="py-20 text-center opacity-30">
-                                                    <Users class="w-10 h-10 mx-auto mb-2" />
-                                                    <p class="text-[9px] font-black uppercase">Nenhum internamento pendente</p>
+                                                    <button class="min-h-[36px] bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase shadow-sm transition-all active:scale-95">INTERNAR</button>
                                                 </td>
                                             </tr>
                                         </tbody>
                                     </table>
+                                    <!-- Mobile: cards -->
+                                    <div class="space-y-2 sm:hidden">
+                                        <div v-for="interna in props.internamentosPendentes" :key="interna.Codigo"
+                                             class="bg-emerald-50/40 rounded-xl p-3 border border-emerald-100 active:scale-[0.99] transition-all">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="text-xs font-bold text-slate-800 leading-tight">{{ interna.Paciente }}</p>
+                                                    <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                                        <span class="text-[8px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">{{ interna.Codigo }}</span>
+                                                        <span class="text-[8px] text-slate-400 font-medium">{{ interna.Consulta }}</span>
+                                                    </div>
+                                                </div>
+                                                <button class="min-h-[36px] bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-[8px] font-black uppercase shadow-sm transition-all shrink-0">INTERNAR</button>
+                                            </div>
+                                            <p class="text-[10px] font-semibold text-slate-500 mt-1.5">
+                                                {{ new Date(interna.DataInternamento).toLocaleDateString('pt-PT') }}
+                                            </p>
+                                        </div>
+                                        <div v-if="!props.internamentosPendentes?.length" class="py-12 text-center opacity-30">
+                                            <Users class="w-8 h-8 mx-auto mb-2" />
+                                            <p class="text-[9px] font-black uppercase">Nenhum internamento pendente</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

@@ -25,6 +25,8 @@ class DynamicDatabaseConnection
                 "database.connections.{$default}.database" => $request->session()->get('db_database'),
                 "database.connections.{$default}.username" => $request->session()->get('db_username'),
                 "database.connections.{$default}.password" => $request->session()->get('db_password'),
+                "database.connections.{$default}.charset" => 'utf8mb4',
+                "database.connections.{$default}.collation" => 'utf8mb4_unicode_ci',
             ];
 
             config($config);

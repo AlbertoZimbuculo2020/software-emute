@@ -32,7 +32,7 @@ class ConsultorioController extends Controller
             ->where('tb_agendamento.Estado', 'Ativo');
 
         // Filtragem: cada utilizador vê apenas os pacientes atribuídos ao seu ID_PESSOA
-        if ($user->ID_PESSOA) {
+        if (!empty($user->ID_PESSOA)) {
             $query->where('tb_agendamento.IdMedico', $user->ID_PESSOA);
         } else {
             $query->where('tb_agendamento.IdMedico', 'NONE');
@@ -90,10 +90,10 @@ class ConsultorioController extends Controller
             ->whereIn('tb_agendamento.Situacao', ['Consultorio', 'Reconsulta', 'Laboratorio'])
             ->where('tb_agendamento.Estado', 'Ativo');
 
-        if ($user->ID_PESSOA) {
+        if (!empty($user->ID_PESSOA)) {
             $query->where('tb_agendamento.IdMedico', $user->ID_PESSOA);
         } else {
-            $query->where('tb_agendamento.IdMedico', 'PROTECTED');
+            $query->where('tb_agendamento.IdMedico', 'NONE');
         }
 
         return response()->json($query->get());
